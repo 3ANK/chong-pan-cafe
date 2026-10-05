@@ -60,7 +60,7 @@ function saveVisibleEdits(){
     if(ingredientList)detail.ingredients=toLines(ingredientList);
     if(stepList)detail.steps=toLines(stepList);
     if(size){const match=size.innerText.match(/ขนาดแก้ว\s*(.*?)\s*ออนซ์/);if(match&&match[1])detail.size=match[1].trim();}
-  }function render(){
+  }}function render(){
   const q=$('search').value.trim(),category=$('category').value;
   $('cards').replaceChildren();let count=0;normalizeRecipeOrder();featuredRecipe=recipeOrder[0]||'';
   for(const key of recipeOrder){
