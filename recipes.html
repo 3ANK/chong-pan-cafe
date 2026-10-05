@@ -214,7 +214,8 @@ $('login').addEventListener('submit',async event=>{
     if(!crypto.subtle)throw new Error('unsupported');
     currentPassphrase=$('password').value;
     const remote=await loadCloudRecipeState();
-    const state=await decryptRecipeState(remote?.payload||payload,currentPassphrase);
+    let state=await decryptRecipeState(remote?.payload||payload,currentPassphrase);
+    if(!remote){try{const oldRecipes=JSON.parse(localStorage.getItem(STORAGE_KEY)||'null');if(Array.isArray(oldRecipes)){state={recipes:oldRecipes,featuredRecipe:localStorage.getItem(PIN_KEY)||''};$('saveStatus').textContent='พบสูตรที่บันทึกไว้ในอุปกรณ์นี้ กดบันทึกหลังเข้าสู่ระบบผู้ดูแลเพื่อซิงก์';}}catch(e){}}
     applyRecipeState(state);$('gate').hidden=true;$('book').hidden=false;$('lock').hidden=false;$('password').value='';$('adminLoginForm').hidden=true;render();subscribeToRecipeUpdates();$('search').focus();
   }catch(error){currentPassphrase='';$('error').textContent=error.message==='unsupported'?'กรุณาเปิดหน้านี้ผ่าน HTTPS':(error.message==='permission'||error.message==='Failed to fetch'?'โหลดสูตรไม่สำเร็จ กรุณาตรวจสอบอินเทอร์เน็ต':'รหัสผ่านไม่ถูกต้อง กรุณาลองอีกครั้ง');}
   finally{$('submit').disabled=false;}
