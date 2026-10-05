@@ -81,8 +81,7 @@ function saveVisibleEdits(){
       card.append(list);
       if(detail.size){const size=document.createElement('p');size.className='tag';size.dataset.field='size';size.textContent='ขนาดแก้ว '+detail.size+' ออนซ์';card.insertBefore(size,list);}
       if(detail.steps?.length){const heading=document.createElement('h3');heading.textContent='วิธีทำ';const steps=document.createElement('ol');steps.className='ingredients';steps.dataset.field='steps';for(const text of detail.steps){const li=document.createElement('li');li.textContent=text;steps.append(li);}card.append(heading,steps);}
-      for(const text of detail.notes||[]){const note=document.createElement('p');note.className='recipe-note';note.textContent=text;card.append(note);}
-      if(detail.source){const source=document.createElement('p');source.className='source';source.textContent='ต้นฉบับ: '+detail.source;card.append(source);}
+      for(const text of detail.notes||[]){if(text.includes('ต้นฉบับไม่ระบุขนาดแก้ว'))continue;const note=document.createElement('p');note.className='recipe-note';note.textContent=text;card.append(note);}
     }else{const status=document.createElement('p');status.className='empty';status.textContent='ยังไม่มีสูตร · รอเพิ่มวัตถุดิบ ปริมาณ และวิธีทำ';card.append(status);}
     if(editing){
       const actions=document.createElement('div');actions.className='recipe-actions';
