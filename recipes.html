@@ -45,14 +45,26 @@ function updateEditControls(){
   $('cards').classList.toggle('editing',editing);
 }
 function setEditableCards(){
-  for(const card of $('cards').querySelectorAll('[data-has-detail="true"]')){
-    for(const item of card.querySelectorAll('[data-field="ingredients"],[data-field="steps"],[data-field="size"]')){
+  for(const card of $('cards').querySelectorAll('[data-recipe-name]')){
+    for(const item of card.querySelectorAll('[data-field="title"],[data-field="ingredients"],[data-field="steps"],[data-field="size"]')){
       item.contentEditable=editing?'true':'false';item.dataset.editable=editing?'true':'false';
     }
   }
 }
 function saveVisibleEdits(){
-  for(const card of $('cards').querySelectorAll('[data-has-detail="true"]')){
+  const cards=[...$('cards').querySelectorAll('[data-recipe-name]')],renames=[];
+  for(const card of cards){
+    const group=recipes[Number(card.dataset.groupIndex)],title=card.querySelector('[data-field="title"]');
+    if(!group||!title)continue;
+    const newName=title.innerText.trim();
+    if(newName===title.dataset.originalTitle)continue;
+    if(!newName){$('saveStatus').textContent='กรุณาใส่ชื่อสูตร';title.focus();return false;}
+    if(group.names.some(name=>name===newName&&name!==card.dataset.recipeName)||renames.some(item=>item.group===group&&item.newName===newName)){
+      $('saveStatus').textContent='มีสูตรชื่อนี้ในหมวดเดียวกันแล้ว กรุณาใช้ชื่ออื่นหรือเติมเลขสูตร';title.focus();return false;
+    }
+    renames.push({card,group,title,oldName:card.dataset.recipeName,newName});
+  }
+  for(const card of cards){
     const group=recipes[Number(card.dataset.groupIndex)],detail=group?.details?.[card.dataset.recipeName];
     if(!detail)continue;
     const ingredientList=card.querySelector('ul[data-field="ingredients"]'),stepList=card.querySelector('ol[data-field="steps"]');
@@ -61,7 +73,18 @@ function saveVisibleEdits(){
     if(ingredientList)detail.ingredients=toLines(ingredientList);
     if(stepList)detail.steps=toLines(stepList);
     if(size){const match=size.innerText.match(/ขนาดแก้ว\s*(.*?)\s*ออนซ์/);if(match&&match[1])detail.size=match[1].trim();}
-  }}function render(){
+  }
+  for(const {card,group,title,oldName,newName} of renames){
+    const oldKey=recipeKey(group.category,oldName),newKey=recipeKey(group.category,newName);
+    group.names=group.names.map(name=>name===oldName?newName:name);
+    if(group.details?.[oldName]){const detail=group.details[oldName];delete group.details[oldName];detail.title=newName;group.details[newName]=detail;}
+    recipeOrder=recipeOrder.map(key=>key===oldKey?newKey:key);
+    if(featuredRecipe===oldKey)featuredRecipe=newKey;
+    card.dataset.recipeName=newName;title.dataset.originalTitle=newName;
+  }
+  return true;
+}
+function render(){
   const q=$('search').value.trim(),category=$('category').value;
   $('cards').replaceChildren();let count=0;normalizeRecipeOrder();featuredRecipe=recipeOrder[0]||'';
   for(const key of recipeOrder){
@@ -73,7 +96,8 @@ function saveVisibleEdits(){
     const card=document.createElement('article');card.className='panel';
     card.dataset.groupIndex=String(recipes.indexOf(group));card.dataset.recipeName=name;card.dataset.hasDetail=String(!!detail);
     const tag=document.createElement('span');tag.className='tag';tag.textContent=group.category;
-    const title=document.createElement('h2');const rawTitle=detail?.title?detail.title+(name.includes(' · สูตร ')?' · '+name.split(' · ').at(-1):''):name;title.textContent=rawTitle.replace(/\s*[·•]?\s*(?:สูตรจากสมุดร้าน|สูตรสมุดร้าน)\s*$/,'').trim();
+    const title=document.createElement('h2');const rawTitle=detail?.title?detail.title+(name.includes(' · สูตร ')&&!detail.title.endsWith(name.split(' · ').at(-1))?' · '+name.split(' · ').at(-1):''):name;title.dataset.field='title';title.textContent=rawTitle.replace(/\s*[·•]?\s*(?:สูตรจากสมุดร้าน|สูตรสมุดร้าน)\s*$/,'').trim();
+    title.dataset.originalTitle=title.textContent;title.setAttribute('aria-label','ชื่อสูตร');
     card.append(tag,title);
     if(detail){
       const list=document.createElement('ul');list.className='ingredients';list.dataset.field='ingredients';
@@ -86,9 +110,9 @@ function saveVisibleEdits(){
     if(editing){
       const actions=document.createElement('div');actions.className='recipe-actions';
       const move=document.createElement('button');move.type='button';move.textContent=recipeOrder[0]===key?'อยู่ลำดับแรกแล้ว':'ดันสูตรขึ้นเป็นอันแรก';move.disabled=recipeOrder[0]===key;
-      move.addEventListener('click',()=>{saveVisibleEdits();recipeOrder=[key,...recipeOrder.filter(item=>item!==key)];featuredRecipe=key;$('saveStatus').textContent='ย้ายสูตรขึ้นลำดับแรกแล้ว สูตรเดิมเลื่อนลงมา กดบันทึกเพื่อเก็บการเปลี่ยนแปลง';render();setEditableCards();});
+      move.addEventListener('click',()=>{if(!saveVisibleEdits())return;const currentKey=recipeKey(group.category,card.dataset.recipeName);recipeOrder=[currentKey,...recipeOrder.filter(item=>item!==currentKey)];featuredRecipe=currentKey;$('saveStatus').textContent='ย้ายสูตรขึ้นลำดับแรกแล้ว สูตรเดิมเลื่อนลงมา กดบันทึกเพื่อเก็บการเปลี่ยนแปลง';render();setEditableCards();});
       const remove=document.createElement('button');remove.type='button';remove.textContent='ลบสูตร';
-      remove.addEventListener('click',()=>{saveVisibleEdits();const groupIndex=Number(card.dataset.groupIndex),target=recipes[groupIndex];target.names=target.names.filter(item=>item!==name);if(target.details)delete target.details[name];recipeOrder=recipeOrder.filter(item=>item!==key);if(featuredRecipe===key)featuredRecipe=recipeOrder[0]||'';if(!target.names.length)recipes.splice(groupIndex,1);refreshCategories();render();setEditableCards();$('saveStatus').textContent='ลบออกจากรายการแล้ว กดบันทึกเพื่อยืนยัน หรือยกเลิกเพื่อคืนสูตร';});
+      remove.addEventListener('click',()=>{if(!saveVisibleEdits())return;const groupIndex=Number(card.dataset.groupIndex),target=recipes[groupIndex],name=card.dataset.recipeName,key=recipeKey(target.category,name);target.names=target.names.filter(item=>item!==name);if(target.details)delete target.details[name];recipeOrder=recipeOrder.filter(item=>item!==key);if(featuredRecipe===key)featuredRecipe=recipeOrder[0]||'';if(!target.names.length)recipes.splice(groupIndex,1);refreshCategories();render();setEditableCards();$('saveStatus').textContent='ลบออกจากรายการแล้ว กดบันทึกเพื่อยืนยัน หรือยกเลิกเพื่อคืนสูตร';});
       actions.append(move,remove);card.append(actions);
     }
     $('cards').append(card);
@@ -99,11 +123,11 @@ function saveVisibleEdits(){
 
 $('editMode').addEventListener('click',()=>{
   editBackup=JSON.parse(JSON.stringify(recipes));orderBackup=[...recipeOrder];featuredBackup=featuredRecipe;editing=true;
-  $('saveStatus').textContent='แก้ไขรายการ หรือดันสูตรขึ้นลำดับแรก/ลบ';
+  $('saveStatus').textContent='แตะชื่อสูตรเพื่อแก้ไขชื่อ หรือแก้ไขรายการ ดันสูตรขึ้นลำดับแรก/ลบ แล้วกดบันทึก';
   updateEditControls();render();setEditableCards();
 });
 $('addRecipeButton').addEventListener('click',()=>{
-  saveVisibleEdits();$('newRecipeError').textContent='';
+  if(!saveVisibleEdits())return;$('newRecipeError').textContent='';
   $('newRecipeCategory').value=$('category').value||'';
   $('newRecipeForm').hidden=false;$('newRecipeName').focus();
 });
@@ -132,7 +156,7 @@ $('cancelEdits').addEventListener('click',()=>{  if(editBackup)recipes=editBacku
 $('saveEdits').addEventListener('click',async()=>{
   $('saveEdits').disabled=true;$('saveStatus').textContent='กำลังบันทึกและซิงก์สูตร…';
   try{
-    saveVisibleEdits();
+    if(!saveVisibleEdits())return;
     const encrypted=await encryptRecipeState({version:1,recipes,recipeOrder},currentPassphrase);
     const saved=await supabaseFetch('rest/v1/rpc/save_recipe_state',{method:'POST',body:{p_passcode:currentPassphrase,p_payload:encrypted}});
     if(!saved?.id)throw new Error('permission');lastUpdatedAt=saved.updated_at||'';
