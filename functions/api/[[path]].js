@@ -16,7 +16,7 @@ const validStatus=new Set(['accepted','preparing','ready','completed','cancelled
 async function body(req){const raw=await req.text();if(raw.length>18000)throw new Error('คำขอใหญ่เกินกำหนด');try{return JSON.parse(raw)}catch{throw new Error('รูปแบบ JSON ไม่ถูกต้อง')}}
 async function getOrders(db,where='',args=[]){const q=`SELECT * FROM orders ${where} ORDER BY created_at DESC LIMIT 100`;const result=await db.prepare(q).bind(...args).all();const rows=result.results||[];if(!rows.length)return [];const ids=rows.map(x=>x.id);const binds=ids.map(()=>'?').join(',');const its=(await db.prepare(`SELECT * FROM order_items WHERE order_id IN (${binds})`).bind(...ids).all()).results||[];return rows.map(o=>({...o,items:its.filter(i=>i.order_id===o.id).map(i=>({id:i.catalog_id,name:i.name,qty:i.qty,price:i.unit_price,eggPrice:i.egg_price,sweetness:i.sweetness,egg:i.egg,note:i.note}))}));}
 
-const safeQrPath=s=>/^\/assets\/payment\/[A-Za-z0-9_.-]+\.(?:png|jpe?g|webp)$/i.test(s);
+const safeQrPath=s=>/^\/assets\/payment\/[A-Za-z0-9_.-]+\.(?:png|jpe?g|webp|svg)$/i.test(s);
 const safeOaId=s=>/^@[A-Za-z0-9._-]{3,40}$/.test(s);
 async function paymentConfig(db,env){
  const results=(await db.prepare("SELECT key,value FROM shop_settings WHERE key IN ('payment_qr_path','line_oa_basic_id')").all()).results||[];

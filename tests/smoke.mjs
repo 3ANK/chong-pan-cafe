@@ -45,7 +45,7 @@ assert.ok(appJS.includes('if(state.member){')&&appJS.includes('showShopAfterLogi
 const adminHtml=readFileSync(new URL('../admin/index.html',import.meta.url),'utf8');
 const adminJS=readFileSync(new URL('../admin/admin.js',import.meta.url),'utf8');
 assert.ok(!html.includes('id="adminPanel"')&&!html.includes('id="adminTab"'));
-assert.ok(html.includes('id="paymentSelector"')&&html.includes('id="paymentDialog"'));
+assert.ok(html.includes('id="paymentSelector"')&&html.includes('id="paymentDialog"'));assert.ok(html.includes('class="shop-payment-label">ชง&ปั่น'));
 assert.ok(html.includes('name="paymentMethod" value="cash" checked'));
 assert.ok(html.includes('name="paymentMethod" value="qr" id="payQrOption" disabled'));
 assert.ok(adminHtml.includes('id="adminPrivate" hidden')&&adminHtml.includes('id="paymentSettingsForm"'));
@@ -91,7 +91,7 @@ r=await call('admin/readiness','GET',undefined,cookie);assert.equal(r.status,200
 assert.ok(r.data.checks.some(c=>c.id==='alert_token'&&!c.ok));
 // Owner-only settings; fake names and placeholder paths only in test DB.
 r=await call('admin/payment/config','POST',{qrPath:'/assets/payment/shop-qr.png',oaId:'wrong'},cookie);assert.equal(r.status,400);
-r=await call('admin/payment/config','POST',{qrPath:'/assets/payment/shop-qr.png',oaId:'@chongpanTest'},cookie);assert.equal(r.status,200);assert.equal(r.data.qrEnabled,false); // Real QR asset still needs verified deployment.
+r=await call('admin/payment/config','POST',{qrPath:'/assets/payment/shop-qr.svg',oaId:'@chongpanTest'},cookie);assert.equal(r.status,200);assert.equal(r.data.qrEnabled,false); // Real QR asset still needs verified deployment.
 env.PAYMENT_QR_READY='true';
 r=await call('admin/payment/config','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.qrEnabled,true);
 r=await call('payment/config');assert.equal(r.data.oaId,'@chongpanTest');

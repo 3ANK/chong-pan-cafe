@@ -34,8 +34,8 @@
 <dialog id="optionDialog"><form method="dialog"><div class="dialogtop"><h2 id="optionTitle">เลือกตัวเลือก</h2><button class="iconbtn" value="cancel" aria-label="ปิด">✕</button></div></form><label id="sweetnessGroup">ความหวาน<select id="sweetness"><option>ปกติ</option><option>หวานน้อย</option><option>ไม่หวาน</option></select></label><label id="eggGroup" hidden>เพิ่มไข่ (ราคาต่อจาน)<select id="egg"><option value="">ไม่เพิ่มไข่</option><option value="fried">ไข่ดาว +10 บาท</option><option value="omelet">ไข่เจียว +10 บาท</option><option value="creamy">ไข่ข้น +20 บาท</option></select></label><label>หมายเหตุรายการนี้<input id="itemNote" maxlength="140" placeholder="เพิ่มคำขอพิเศษ"></label><button class="primary full" id="addSelectedItem">ใส่ตะกร้า</button></dialog>
 <dialog id="paymentDialog" class="pay-dialog"><div class="dialogtop"><h2>ชำระเงินด้วย QR ร้าน</h2><button id="closePaymentDialog" type="button" class="iconbtn" aria-label="ปิด">✕</button></div>
 <p>ออเดอร์ <strong id="paymentOrderRef"></strong></p><p>ยอดที่ต้องชำระ <strong id="paymentAmount"></strong></p>
-<img id="shopPaymentQr" class="shop-payment-qr" alt="QR รับเงินของร้านชง&ปั่น">
-<p class="caption">สแกน QR ด้วยแอปธนาคาร ตรวจสอบชื่อผู้รับเงินให้ตรงกับร้านก่อนโอน</p>
+<img id="shopPaymentQr" class="shop-payment-qr" alt="QR PromptPay รับเงินร้านชง&ปั่น"><p class="shop-payment-label">ชง&ปั่น</p>
+<p class="caption">สแกน QR ด้วยแอปธนาคารและตรวจชื่อผู้รับเงินให้ตรงกับร้านก่อนโอน หากใช้มือถือเครื่องเดียว ให้จับภาพหน้าจอ QR นี้ แล้วเลือกสแกนจากรูปภาพในแอปธนาคาร</p>
 <a id="sendSlipLink" class="primary full pay-slip-link" href="#" target="_blank" rel="noopener noreferrer">ส่งสลิปเข้า LINE OA ร้าน</a>
 <p class="caption">เมื่อเปิดแชต LINE OA ให้กดส่งข้อความหมายเลขออเดอร์ และแนบรูปสลิปด้วยตัวเอง การกดปุ่มนี้ไม่ได้ส่งสลิปอัตโนมัติหรือยืนยันว่าร้านได้รับเงินแล้ว</p>
 <button id="donePaymentDialog" class="secondary full" type="button">เสร็จแล้ว / กลับไปดูออเดอร์</button></dialog>
