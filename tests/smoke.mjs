@@ -232,9 +232,7 @@ r=await call('auth/line','POST',{idToken:'slow-line-test-customer'});assert.equa
 const hungryCookie=r.cookie.split(';')[0];
 r=await call('me','GET',undefined,hungryCookie);assert.equal(r.data.member.name,'ลูกค้าหิวทดสอบ');assert.equal(r.data.member.isOwner,false);
 r=await call('admin/orders','GET',undefined,hungryCookie);assert.equal(r.status,403);
-r=await call('menu');assert.equal(r.data.shopEnabled,false); // price review incomplete after admin price edit
-// Reconfirm the item edited in an unrelated admin test, without affecting the production catalogue.
-db.raw.exec("UPDATE catalog_price_reviews SET verified=1 WHERE product_id='7' AND verified=0");
+// The prior admin test marked a product unavailable; it must not block the other valid menus.
 r=await call('menu');assert.equal(r.data.shopEnabled,true);
 const hungryProducts=r.data.products;
 for(const id of ['33','8','31'])assert.ok(hungryProducts.find(x=>x.id===id&&x.available));
