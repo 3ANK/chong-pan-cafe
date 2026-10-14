@@ -104,9 +104,14 @@ Live preview: https://chongpan-ordering-v2.pages.dev/ and https://chongpan-order
 Main marketing website: https://ชงปั่น.com . Its NEW menu links go to Cloudflare while original LINE checkout stays unchanged until all steps below pass.
 
 ### Actions only the shop's LINE admin can complete
-1. In LINE Developers Console open LINE Login channel **2011951537**, LIFF app **2011951537-7IBatvMp**.
-2. Set the LIFF **Endpoint URL** to **https://chongpan-ordering-v2.pages.dev/** (root); do not use /order as endpoint. The old LIFF deep link /order is handled by Pages _redirects and points to the new app.
-3. Open both https://liff.line.me/2011951537-7IBatvMp/order and https://chongpan-ordering-v2.pages.dev/member/ from the LINE mobile app, verify login and owner access.
+
+**Preferred zero-downtime option (keep original LIFF and checkout untouched):**
+1. LINE Developers Console → existing LINE Login channel **2011951537** → **LIFF** → **Add**. Create a second LIFF app, e.g. "ชงปั่น เมนูใหม่", Size=Full, Endpoint URL **https://chongpan-ordering-v2.pages.dev/**, scope **openid** and **profile**.
+2. A new LIFF ID is generated. Replace Cloudflare Pages Production `LIFF_ID` (currently legacy `2011951537-7IBatvMp`) with the **new** LIFF ID. Keep the same `LINE_CHANNEL_ID` and provider for stable member IDs.
+3. Open https://liff.line.me/NEW_LIFF_ID/order from LINE on a real phone; verify both customer and owner login and the member points page. Existing https://liff.line.me/2011951537-7IBatvMp/order remains on the old service.
+4. Only after checkout readiness tests pass, change Netlify marketing site's order button links to the new LIFF URL. Do not delete the old LIFF app yet because customers may have saved old links.
+
+**Fallback only when a second LIFF is impossible:** change the original LIFF Endpoint to the new Cloudflare root. This immediately redirects the old customer LIFF link. Do not change the original endpoint while new checkout is closed, or the old ordering link will stop working.
 4. Ensure the LINE Official Account has Messaging API enabled and the owner is reachable as a friend. Generate a **Messaging API channel access token** for that OA (NOT a LINE Login ID token), then save it as an encrypted Pages Production secret named `LINE_MESSAGING_ACCESS_TOKEN`. Do not paste secrets into code or chat.
 5. Order notification must arrive at the owner LINE account **in an actual end-to-end pilot order** (not only an HTTP 200 result). No test order should be placed in production until checkout flags are explicitly enabled.
 
