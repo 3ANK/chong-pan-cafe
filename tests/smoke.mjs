@@ -91,9 +91,13 @@ r=await call('admin/line/test','POST',{});assert.equal(r.status,403);
 r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()});assert.equal(r.status,401);
 r=await call('orders','POST',{paymentMethod:'cash',items:[]},'', 'https://evil.invalid');assert.equal(r.status,403);
 const realFetch=globalThis.fetch;
-globalThis.fetch=async (url)=>{
+let lastOwnerOrderNotification='';
+globalThis.fetch=async (url,init)=>{
  if(String(url)==='https://api.line.me/oauth2/v2.1/verify')return new Response(JSON.stringify({aud:'2011951537',sub:'U'+'a'.repeat(32),name:'ทดสอบ',exp:Math.floor(Date.now()/1000)+600}),{status:200});
- if(String(url)==='https://api.line.me/v2/bot/message/push')return new Response('',{status:200});
+ if(String(url)==='https://api.line.me/v2/bot/message/push'){
+  lastOwnerOrderNotification=JSON.parse(init.body).messages[0].text;
+  return new Response('',{status:200});
+ }
  throw new Error('Unexpected external request in test: '+url)
 };
 r=await call('auth/line','POST',{idToken:'fake-test-token'});assert.equal(r.status,200);assert.ok(r.cookie?.includes('HttpOnly'));const cookie=r.cookie.split(';')[0];
@@ -162,6 +166,19 @@ for(const id of ['31','32']){
  r=await call('orders','POST',{paymentMethod:'cash',items:[{id,qty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,35);
 }
 r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,40);
+
+ // Regression: LINE push uses readable Thai egg names (and per-plate extras), never raw internal codes.
+ r=await call('orders','POST',{paymentMethod:'cash',items:[
+  {id:'3',qty:3,sweetness:'หวานน้อย'},
+  {id:'33',qty:1,egg:'omelet'},
+  {id:'33',qty:2,egg:'creamy'}
+ ],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+ assert.equal(r.status,201);
+ assert.ok(lastOwnerOrderNotification.includes('1× กะเพราหมู +ไข่เจียว (+10 บาท/จาน)'));
+ assert.ok(lastOwnerOrderNotification.includes('2× กะเพราหมู +ไข่ข้น (+20 บาท/จาน)'));
+ assert.ok(!lastOwnerOrderNotification.includes('omelet')&&!lastOwnerOrderNotification.includes('creamy'));
+ assert.ok(lastOwnerOrderNotification.includes('หวานน้อย'));
+
 r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.products.length,90);
 r=await call('admin/menu','PATCH',{id:'7',price:50,available:false},cookie);assert.equal(r.status,200);
 r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.data.products.find(x=>x.id==='7').verified,0);

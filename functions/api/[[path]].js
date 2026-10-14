@@ -11,6 +11,7 @@ async function session(req,env){if(!env.SESSION_SECRET)return null;try{const tok
 async function newCookie(env,data){const payload=b64(new TextEncoder().encode(JSON.stringify({...data,exp:Date.now()+7*86400000})));return `chongpan_sid=${payload}.${await hmac(env.SESSION_SECRET,payload)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`}
 const owner=(s,env)=>!!s?.sub&&!!env.OWNER_LINE_USER_ID&&s.sub===env.OWNER_LINE_USER_ID;
 function eggPrice(s){return({fried:10,omelet:10,creamy:20})[s]??null}
+const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'};
 const validSweet=new Set(['','ปกติ','หวานน้อย','ไม่หวาน','ไม่เติมน้ำตาล','เติมหวานน้อย','เติมหวานปกติ']);
 const validStatus=new Set(['accepted','preparing','ready','completed','cancelled']);
 async function body(req){const raw=await req.text();if(raw.length>18000)throw new Error('คำขอใหญ่เกินกำหนด');try{return JSON.parse(raw)}catch{throw new Error('รูปแบบ JSON ไม่ถูกต้อง')}}
@@ -87,7 +88,7 @@ async function createOrder(req,env,db,s){if(!s)return fail('กรุณาเ�
  total+=pair===null?(p.price+extra)*qty:Math.floor(qty/2)*pair+(qty%2)*p.price;
  validated.push(item)}if(total<0||total>200000)return fail('ยอดสั่งซื้อเกินกำหนด');const id=crypto.randomUUID();const name=safe(s.name||'สมาชิก LINE',80);const steps=[db.prepare('INSERT INTO orders(id,request_key,line_user_id,display_name,fulfillment,delivery_address,note,total,status,payment_method,payment_status) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(id,requestKey,s.sub,name,data.fulfillment,address,safe(data.note,300),total,'pending',paymentMethod,'unpaid'),...validated.map(i=>db.prepare('INSERT INTO order_items(id,order_id,catalog_id,name,unit_price,egg_price,qty,sweetness,egg,note) VALUES(?,?,?,?,?,?,?,?,?,?)').bind(crypto.randomUUID(),id,i.id,i.name,i.price,i.extra,i.qty,i.sweetness,i.egg,i.note))];try{await db.batch(steps)}catch(e){const old=await db.prepare('SELECT id,total FROM orders WHERE line_user_id=? AND request_key=?').bind(s.sub,requestKey).first();if(old)return json({orderId:old.id,total:old.total,reused:true});throw e}let alertOk=false;
  try{
-  const lines=validated.map(i=>`${i.qty}× ${i.name}${i.sweetness?' ('+i.sweetness+')':''}${i.egg?' +ไข่:'+i.egg:''}${i.note?' | '+i.note:''}`);
+  const lines=validated.map(i=>`${i.qty}× ${i.name}${i.sweetness?' ('+i.sweetness+')':''}${i.egg?' +'+eggNames[i.egg]+' (+'+i.extra+' บาท/จาน)':''}${i.note?' | '+i.note:''}`);
   const msg=[`มีออเดอร์ใหม่ #${id.slice(0,8)}`,
    `ลูกค้า: ${name}`,`ยอด: ${total} บาท`,`ชำระเงิน: ${paymentMethod==='qr'?'สแกน QR · รอตรวจสลิปใน LINE OA':'เงินสด · รอรับเงินจริง'}`,
    `วิธีรับ: ${data.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน'}`,
