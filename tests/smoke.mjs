@@ -42,6 +42,7 @@ r=await call('me');assert.equal(r.data.member,null);
 r=await call('loyalty/info');assert.equal(r.status,200);assert.equal(r.data.policy.bahtPerPoint,25);assert.equal(r.data.rewardsEnabled,false);
 r=await call('points');assert.equal(r.status,401);
 r=await call('admin/readiness');assert.equal(r.status,403);
+r=await call('admin/shop','POST',{enabled:true,ownerConfirmed:true});assert.equal(r.status,403);
 r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()});assert.equal(r.status,401);
 r=await call('orders','POST',{items:[]},'', 'https://evil.invalid');assert.equal(r.status,403);
 const realFetch=globalThis.fetch;
@@ -54,6 +55,7 @@ r=await call('auth/line','POST',{idToken:'fake-test-token'});assert.equal(r.stat
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.isOwner,true);
 r=await call('admin/readiness','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.catalog.total,90);assert.equal(r.data.catalog.unverified,90);assert.equal(r.data.ordersEnabled,false);
 assert.ok(r.data.checks.some(c=>c.id==='alert_token'&&!c.ok));
+r=await call('admin/shop','POST',{enabled:true,ownerConfirmed:true},cookie);assert.equal(r.status,409);
 r=await call('points','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.member.points,0);assert.deepEqual(r.data.history,[]);
 r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
 // Only test mode: explicitly switch on both the environment flag and DB flag.
@@ -63,6 +65,10 @@ r=await call('health');assert.equal(r.data.ordersEnabled,false); // cannot go li
 db.raw.exec("UPDATE catalog_price_reviews SET verified=1 WHERE product_id IN (SELECT id FROM catalog WHERE available=1)");
 r=await call('health');assert.equal(r.data.ordersEnabled,false); // Another gate: LINE must be configured.
 env.LINE_MESSAGING_ACCESS_TOKEN='fake-test-token';env.LIFF_ID='2011951537-7IBatvMp';env.LIFF_ENDPOINT_CONFIRMED='true';
+r=await call('admin/shop','POST',{enabled:false},cookie);assert.equal(r.status,200);assert.equal(r.data.shopEnabled,false);
+r=await call('health');assert.equal(r.data.ordersEnabled,false);
+r=await call('admin/shop','POST',{enabled:true,ownerConfirmed:false},cookie);assert.equal(r.status,400);
+r=await call('admin/shop','POST',{enabled:true,ownerConfirmed:true},cookie);assert.equal(r.status,200);assert.equal(r.data.shopEnabled,true);
 r=await call('health');assert.equal(r.data.ordersEnabled,true);
 r=await call('admin/readiness','GET',undefined,cookie);assert.equal(r.data.checks.every(c=>c.ok),true);
 r=await call('orders','POST',{items:[{id:'not-in-menu',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,400);
