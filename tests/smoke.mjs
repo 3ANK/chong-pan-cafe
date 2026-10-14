@@ -169,7 +169,7 @@ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfi
 
  // Regression: LINE push uses readable Thai egg names (and per-plate extras), never raw internal codes.
  r=await call('orders','POST',{paymentMethod:'cash',items:[
-  {id:'3',qty:3,sweetness:'หวานน้อย'},
+  {id:'1',qty:3,sweetness:'หวานน้อย'},
   {id:'33',qty:1,egg:'omelet'},
   {id:'33',qty:2,egg:'creamy'}
  ],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
@@ -177,7 +177,8 @@ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfi
  assert.ok(lastOwnerOrderNotification.includes('1× กะเพราหมู +ไข่เจียว (+10 บาท/จาน)'));
  assert.ok(lastOwnerOrderNotification.includes('2× กะเพราหมู +ไข่ข้น (+20 บาท/จาน)'));
  assert.ok(!lastOwnerOrderNotification.includes('omelet')&&!lastOwnerOrderNotification.includes('creamy'));
- assert.ok(lastOwnerOrderNotification.includes('หวานน้อย'));
+ assert.ok(lastOwnerOrderNotification.includes('3× เอสเพรสโซ (หวานน้อย)'));
+ assert.equal(r.data.total,302);
 
 r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.products.length,90);
 r=await call('admin/menu','PATCH',{id:'7',price:50,available:false},cookie);assert.equal(r.status,200);
