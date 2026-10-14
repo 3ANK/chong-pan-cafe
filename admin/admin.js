@@ -44,7 +44,7 @@ function paymentText(o){
 function orderCard(o){
  const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'};
  const items=(o.items||[]).map(i=>{
-  const modifiers=[i.sweetness||'',i.egg?(eggNames[i.egg]||'')+(Number(i.eggPrice)>0?' +'+Number(i.eggPrice)+' บาท/จาน':''):'',i.note||''].filter(Boolean);
+  const modifiers=[i.sweetness||'',i.egg?(eggNames[i.egg]||'')+' '+(i.eggQty??1)+' ฟอง/จาน'+(Number(i.eggPrice)>0?' +'+Number(i.eggPrice)+' บาท/จาน':''):'',i.note||''].filter(Boolean);
   return escapeText(i.name)+' ×'+Number(i.qty)+(modifiers.length?' ('+modifiers.map(escapeText).join(' · ')+')':'');
  }).join(' · ');
  const options=(nextStatuses[o.status]||[]).map(s=>'<button class="secondary" type="button" data-status="'+s+'" data-order="'+escapeText(o.id)+'">'+escapeText(statuses[s]||s)+'</button>').join('');

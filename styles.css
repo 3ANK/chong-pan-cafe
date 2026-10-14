@@ -140,7 +140,7 @@ dialog{max-width:calc(100vw - 20px);max-width:calc(100dvw - 20px)}
 }
 
 /* Quantity selector available for every dish and drink in the option modal. */
-.option-quantity-group{margin-top:16px;padding:13px 14px;border-radius:16px;background:#f6f8f2;border:1px solid #d8e1c8;min-width:0}
+ .option-quantity-group{margin-top:16px;padding:13px 14px;border-radius:16px;background:#f6f8f2;border:1px solid #d8e1c8;min-width:0}
 .option-quantity-title{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
 .option-quantity-title strong{font-size:15px}
 #optionQuantityPrice{font-weight:800;color:var(--green);font-size:17px}
@@ -150,3 +150,10 @@ dialog{max-width:calc(100vw - 20px);max-width:calc(100dvw - 20px)}
 #optionQuantity{font-size:23px;font-weight:850;min-width:28px;text-align:center;font-variant-numeric:tabular-nums}
 .option-quantity-caption{font-size:11px;color:var(--muted);margin-left:auto}
 @media(max-width:375px){.option-quantity-controls{gap:11px}.option-quantity-caption{flex:1 0 100%;margin-left:0;text-align:center}}
+
+/* Savory topping quantities are per plate, independent of ordered plate count. */
+.egg-quantity-group{margin-top:12px;padding:13px 14px;border:1px solid #d8e1c8;border-radius:16px;background:#f6f8f2}
+.egg-quantity-group[hidden]{display:none!important}
+.egg-quantity-group .option-quantity-title strong{font-size:15px}
+.egg-quantity-group .option-quantity-controls{margin-top:10px}
+#eggQuantity{font-size:23px;font-weight:850;min-width:28px;text-align:center;font-variant-numeric:tabular-nums}

@@ -19,6 +19,7 @@ function createD1(){
  db.exec(readFileSync(new URL('../migrations/010_loyverse_confirmed_prices.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/010_loyverse_confirmed_prices.sql',import.meta.url),'utf8')); // idempotence
  db.exec(readFileSync(new URL('../migrations/011_order_payment_options.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/012_egg_quantity_per_plate.sql',import.meta.url),'utf8'));
  return {
   raw:db,
   prepare(sql){const stmt=db.prepare(sql);let args=[];return {
@@ -46,6 +47,11 @@ assert.ok(css.includes('[hidden]{display:none!important}'));
 assert.ok(html.includes('<label id="eggGroup" hidden>'));
 assert.ok(appJS.includes("show('sweetnessGroup',!!p.drink)"));
 assert.ok(appJS.includes("show('eggGroup',p.category==='กะเพรา')"));
+assert.ok(html.includes('id="eggQuantityGroup"')&&html.includes('id="increaseEggQty"'));
+assert.ok(appJS.includes('function setOptionEggQuantity(next)'));
+assert.ok(appJS.includes('eggQty:egg?(eggQty??1):0'));
+assert.ok(css.includes('.egg-quantity-group[hidden]'));
+
 assert.ok(appJS.includes("egg:p.category==='กะเพรา'?$('egg').value:''"));
 
 assert.ok(appJS.includes('await Promise.all([bootMenu(),bootPayments()]);')&&appJS.includes('await loadMember();'));
@@ -174,11 +180,31 @@ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfi
   {id:'33',qty:2,egg:'creamy'}
  ],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
  assert.equal(r.status,201);
- assert.ok(lastOwnerOrderNotification.includes('1× กะเพราหมู +ไข่เจียว (+10 บาท/จาน)'));
- assert.ok(lastOwnerOrderNotification.includes('2× กะเพราหมู +ไข่ข้น (+20 บาท/จาน)'));
+ assert.ok(lastOwnerOrderNotification.includes('1× กะเพราหมู +ไข่เจียว 1 ฟอง/จาน (+10 บาท/จาน)'));
+ assert.ok(lastOwnerOrderNotification.includes('3× เอสเพรสโซ (หวานน้อย)'));
+ assert.ok(lastOwnerOrderNotification.includes('2× กะเพราหมู +ไข่ข้น 1 ฟอง/จาน (+20 บาท/จาน)'));
  assert.ok(!lastOwnerOrderNotification.includes('omelet')&&!lastOwnerOrderNotification.includes('creamy'));
  assert.ok(lastOwnerOrderNotification.includes('3× เอสเพรสโซ (หวานน้อย)'));
  assert.equal(r.data.total,302);
+ // Two dishes with two fried eggs EACH: 4 eggs and 138 THB total.
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:2,egg:'fried',eggQty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+ assert.equal(r.status,201);assert.equal(r.data.total,138);
+ const eggOrderId=r.data.orderId;
+ assert.ok(lastOwnerOrderNotification.includes('2× กะเพราหมู +ไข่ดาว 2 ฟอง/จาน (+20 บาท/จาน)'));
+ r=await call('orders','GET',undefined,cookie);
+ const eggOrder=r.data.orders.find(o=>o.id===eggOrderId);
+ assert.equal(eggOrder.items[0].eggQty,2);
+ assert.equal(eggOrder.items[0].eggPrice,20);
+ // Mixed egg quantities must remain separate. Existing clients without eggQty imply one per plate.
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:1,egg:'fried'}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+ assert.equal(r.status,201);assert.equal(r.data.total,59);
+ assert.ok(lastOwnerOrderNotification.includes('1× กะเพราหมู +ไข่ดาว 1 ฟอง/จาน'));
+ for(const badEggQty of [0,6,-1,1.5,'2']){
+  r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:1,egg:'fried',eggQty:badEggQty}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+  assert.equal(r.status,400);
+ }
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'1',qty:1,eggQty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,400);
+
 
 r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.products.length,90);
 r=await call('admin/menu','PATCH',{id:'7',price:50,available:false},cookie);assert.equal(r.status,200);
