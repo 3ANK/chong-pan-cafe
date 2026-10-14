@@ -9,6 +9,9 @@ function createD1(){
  db.exec(readFileSync(new URL('../migrations/001_schema.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/002_seed_recovered_catalog.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/003_legacy_points.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/004_menu_photos_and_preview_prices.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/005_catalog_drafts_and_reviews.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/005_catalog_drafts_and_reviews.sql',import.meta.url),'utf8')); // idempotence
  return {
   raw:db,
   prepare(sql){const stmt=db.prepare(sql);let args=[];return {
@@ -30,7 +33,7 @@ async function call(path, method='GET', data=undefined,cookie='',origin='http://
  return {status:res.status,data:await res.json(),cookie:res.headers.get('set-cookie')};
 }
 let r=await call('health'); assert.equal(r.status,200);assert.equal(r.data.ordersEnabled,false);
-r=await call('menu');assert.equal(r.data.products.length,38);assert.equal(r.data.shopEnabled,false);assert.equal(r.data.products.find(x=>x.id==='7').price,45);
+r=await call('menu');assert.equal(r.data.products.length,90);assert.equal(r.data.shopEnabled,false);assert.equal(r.data.products.find(x=>x.id==='7').price,45);
 r=await call('me');assert.equal(r.data.member,null);
 r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()});assert.equal(r.status,401);
 r=await call('orders','POST',{items:[]},'', 'https://evil.invalid');assert.equal(r.status,403);
@@ -44,6 +47,11 @@ r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.isOwner,tru
 r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
 // Only test mode: explicitly switch on both the environment flag and DB flag.
 env.SHOP_ENABLED='true'; db.raw.exec("UPDATE shop_settings SET value='1' WHERE key='shop_enabled'");
+r=await call('health');assert.equal(r.data.ordersEnabled,false); // cannot go live with unverified prices
+// Only the test suite can simulate the owner having verified all sellable prices.
+db.raw.exec("UPDATE catalog_price_reviews SET verified=1 WHERE product_id IN (SELECT id FROM catalog WHERE available=1)");
+r=await call('health');assert.equal(r.data.ordersEnabled,true);
+r=await call('orders','POST',{items:[{id:'84',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,400);
 const requestKey=crypto.randomUUID();
 r=await call('orders','POST',{items:[{id:'7',qty:2,price:1,sweetness:'ปกติ'}],fulfillment:'pickup',requestKey},cookie);assert.equal(r.status,201);assert.equal(r.data.total,90);const orderId=r.data.orderId;
 r=await call('orders','POST',{items:[{id:'7',qty:2}],fulfillment:'pickup',requestKey},cookie);assert.equal(r.status,200);assert.equal(r.data.reused,true);
@@ -63,7 +71,13 @@ const req2=crypto.randomUUID();
 r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:req2},cookie);assert.equal(r.status,201);
 for(const status of ['accepted','ready','completed']) {const x=await call('admin/orders','PATCH',{id:r.data.orderId,status},cookie);assert.equal(x.status,200)}
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,9);
+r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.products.length,90);
 r=await call('admin/menu','PATCH',{id:'7',price:50,available:false},cookie);assert.equal(r.status,200);
+r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.data.products.find(x=>x.id==='7').verified,0);
+r=await call('admin/menu','PATCH',{id:'84',price:0,available:true,verified:true},cookie);assert.equal(r.status,400);
+r=await call('admin/menu','POST',{name:'เมนูทดสอบ',category:'น้ำปั่น',price:42,drink:true},cookie);assert.equal(r.status,201);
+r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.data.products.length,91);
+r=await call('admin/menu','GET');assert.equal(r.status,403);
 r=await call('menu');assert.equal(r.data.products.find(x=>x.id==='7').available,false);
 globalThis.fetch=realFetch;
-console.log('PASS: health, 38 products, closed checkout, origin blocking, LINE verification mock, signed cookie, total server-side 90 not 2, idempotency, owner/admin transitions, no double points, catalog edit');
+console.log('PASS: health, 90 products and 7 safe drafts, verification gate, closed checkout, origin blocking, LINE verification mock, signed cookie, total server-side 90 not 2, idempotency, owner/admin transitions, no double points, catalog edit');

@@ -5,7 +5,7 @@ New dedicated Cloudflare Pages + Functions + D1 project; original `chongpan-memb
 ## Current stage
 
 - Shop checkout is **OFF** by design until owner verifies LINE Login endpoint, the current Loyverse catalog, pricing, and payments. This is an operational safeguard, not a bug.
-- Menu seed includes **38 products** with documented historical prices from October 2026. This is not the full latest live catalog (the original used about 90 Loyverse SKU). Do **not** declare the clone complete or turn on production orders until the current catalog is verified/imported.
+- Catalogue migration now stages **90 entries**, of which **seven are disabled drafts with unknown prices** (IDs 84–90). The original 83 recovered entries also require owner price review. This is not the full latest live catalog (the original used about 90 Loyverse SKU). Do **not** declare the clone complete or turn on production orders until the current catalog is verified/imported.
 - Point rule: 1 point for each full 25 THB of an order when it is completed; no fractional carry. Points are stored in D1 only, not imported from old Site.
 - Owner view requires authenticated LINE user ID to match server-side `OWNER_LINE_USER_ID`. Client cannot choose owner status.
 - Client never supplies trusted price. Server calculates totals from D1; all order mutations validate sessions and same-origin requests.
@@ -66,4 +66,10 @@ No credentials, tokens, customer databases, or encrypted recipes are in this rep
 - Owner-provided screenshot balances for 11 accounts / 49 points were inserted directly into private D1 (without personal data in this repository), marked **pending identity matching**. No real account received legacy points yet.
 - After customers have logged into the NEW LINE site, only authenticated owner can go to **จัดการร้าน → ย้ายแต้มสมาชิกเก่า** and manually match their verified identity; a migration can be applied once and will remain included in points after future orders are completed.
 - Check disputed names or changed balances with owner; eight-character legacy codes are NOT verified full LINE IDs and cannot be used as automatic login evidence.
-- Current menu remains an incomplete 38-item historical seed. Checkout remains **OFF** pending current catalog and end-to-end test. Do not change actual customer ordering links or flip `SHOP_ENABLED` until this is done.
+- The menu now has 83 recovered items plus seven disabled draft items pending confirmation. Checkout remains **OFF** pending current catalog and end-to-end test. Do not change actual customer ordering links or flip `SHOP_ENABLED` until this is done.
+## 2026-10-14 — Owner review editor + staged catalogue completion
+- Apply migration `005_catalog_drafts_and_reviews.sql` to **chongpan-orders-v2 only**. Seven items (IDs 84–90) were mentioned as missing during handoff. Their prices and even continued sale must be confirmed; initially `price=0`, `available=0`, and they cannot be ordered.
+- All products have a per-item owner price review flag. Admin → จัดการเมนู allows price edits, stock toggles, owner price verification, and draft creation. A saved price change invalidates verification unless explicitly reconfirmed.
+- Checkout requires both existing flags **and no unverified available menu prices**. Do not bulk-approve unknown prices or enable orders without actual LINE callback, payment, and notification tests.
+- Basket prices are refreshed from the server menu (never trusted at checkout). Payment is still offline; no account or QR has been invented.
+- Keep the older live ordering URL untouched until owner approves a cutover. 
