@@ -1,0 +1,41 @@
+-- Recovery seed from chongpan-handoff.md (11 Oct 2026).
+-- WARNING: Loyverse may have updated prices since this snapshot. SHOP_ENABLED stays false.
+-- Do not run this seed on the dormitory D1 database.
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('7','กาแฟโตนด','กาแฟ',45,'https://xn--72cf0ch4i2f.com/assets/coffee-palm.jpg','☕',1,1,0);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('8','ชาไทยเย็น','ชาและนม',25,'','🧋',1,1,1);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('48','มัทฉะโตนด','มัทฉะ',45,'','🍵',1,1,2);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('49','ชาไทยโตนด','ชาและนม',45,'','🧋',1,1,3);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('50','ชาเขียวโตนด','ชาและนม',45,'','🍵',1,1,4);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('51','ชาไต้หวันไข่มุก','ชาและนม',30,'','🧋',1,1,5);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('52','นมเผือกไข่มุก','ชาและนม',30,'','🧋',1,1,6);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('53','บ๊วยโซดา','โซดา',30,'','🥤',1,1,7);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('54','บ๊วยปั่น','ผลไม้สดปั่น',30,'','🥤',1,1,8);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('55','ข้าวหมูกระเทียม','ข้าวกระเทียม',49,'','🍛',0,1,9);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('56','ข้าวไก่กระเทียม','ข้าวกระเทียม',49,'','🍛',0,1,10);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('57','ข้าวไข่ข้น','ข้าวไข่',40,'','🍳',0,1,11);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('58','ข้าวไข่เจียว','ข้าวไข่',40,'','🍳',0,1,12);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('59','ข้าวไข่ดาว','ข้าวไข่',40,'','🍳',0,1,13);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('60','ไข่ดาว','ไข่สั่งแยก',10,'','🍳',0,1,14);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('61','ไข่เจียว','ไข่สั่งแยก',10,'','🍳',0,1,15);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('62','ไข่ข้น','ไข่สั่งแยก',20,'','🍳',0,1,16);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('63','น้ำมะพร้าว','น้ำผลไม้',30,'https://xn--72cf0ch4i2f.com/assets/coconut.png','🥥',1,1,17);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('64','โกโก้','ชาและนม',25,'','🍫',1,1,18);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('65','โอวัลติน','ชาและนม',25,'','🥛',1,1,19);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('66','ไมโล','ชาและนม',25,'','🥛',1,1,20);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('67','มัทฉะลาเต้','มัทฉะ',50,'','🍵',1,1,21);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('68','ฝรั่งปั่น','ผลไม้สดปั่น',30,'','🍐',1,1,22);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('69','โกโก้ปั่น','น้ำปั่น',30,'','🍫',1,1,23);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('70','มอคค่า','กาแฟ',35,'','☕',1,1,24);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('71','สตรอว์เบอร์รี่นมสดปั่น','น้ำปั่น',40,'','🍓',1,1,25);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('72','มิกซ์ผลไม้ 3 อย่างปั่น','ผลไม้สดปั่น',40,'','🍉',1,1,26);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('73','ชาไทยปั่น','น้ำปั่น',30,'','🧋',1,1,27);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('74','ชาเขียวปั่น','น้ำปั่น',30,'','🍵',1,1,28);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('75','นมชมพูปั่น','น้ำปั่น',30,'','🥛',1,1,29);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('76','บลูฮาวายโซดา','โซดา',30,'','🥤',1,1,30);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('77','แดงโซดา','โซดา',30,'','🥤',1,1,31);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('78','แดงมะนาวโซดา','โซดา',30,'','🍋',1,1,32);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('79','ดิปสังขยาชาไทย','ดิปสังขยา',15,'','🍮',0,1,33);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('80','ดิปสังขยาใบเตย','ดิปสังขยา',15,'','🍮',0,1,34);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('81','ไข่มุก','ท็อปปิง',10,'','⚫',0,1,35);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('82','ไข่ต้ม','ไข่สั่งแยก',10,'','🥚',0,1,36);
+INSERT OR IGNORE INTO catalog(id,name,category,price,image,emoji,drink,available,sort_order) VALUES('83','ข้าวสวย','ข้าวสั่งแยก',10,'','🍚',0,1,37);
