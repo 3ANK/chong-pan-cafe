@@ -93,14 +93,14 @@ $('adminContent').addEventListener('click',async e=>{
  const id=b.dataset.confirmPay||b.dataset.completeOrder||b.dataset.order;
  if(b.dataset.completeOrder){
   const expected=Number(b.dataset.points)||0;
-  if(!confirm('ยืนยันว่าได้ส่งมอบสินค้าและรับเงินแล้ว?\\n\\nระบบจะปิดออเดอร์และเพิ่ม +'+expected+' แต้มให้ลูกค้าอัตโนมัติ (ทุก 25 บาท = 1 แต้ม)\\nแต้มจะได้รับเพียงครั้งเดียวต่อออเดอร์'))return;
+  if(!confirm('ยืนยันว่าได้ส่งมอบสินค้าและรับเงินแล้ว?\n\nระบบจะปิดออเดอร์และเพิ่ม +'+expected+' แต้มให้ลูกค้าอัตโนมัติ (ทุก 25 บาท = 1 แต้ม)\nแต้มจะได้รับเพียงครั้งเดียวต่อออเดอร์'))return;
   b.disabled=true;
   try{
    const result=await request('admin/orders',{method:'PATCH',body:JSON.stringify({id,status:'completed'})});
    await loadOrders();
    alert('ส่งมอบสำเร็จ และเพิ่ม +'+Number(result.pointsAdded||0)+' แต้มให้ลูกค้าเรียบร้อย');
   }catch(err){
-   alert('ยังยืนยันผลการให้แต้มไม่ได้: '+err.message+'\\nระบบจะโหลดสถานะล่าสุดเพื่อป้องกันการกดซ้ำ');
+   alert('ยังยืนยันผลการให้แต้มไม่ได้: '+err.message+'\nระบบจะโหลดสถานะล่าสุดเพื่อป้องกันการกดซ้ำ');
    await loadOrders();
   }
   return;
