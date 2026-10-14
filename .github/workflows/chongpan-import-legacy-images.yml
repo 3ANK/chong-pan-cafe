@@ -29,7 +29,7 @@ jobs:
           base='https://chongpan-members.oakenzebra4.chatgpt.site'
           dest=Path('assets/products')
           dest.mkdir(parents=True,exist_ok=True)
-          ids=list(range(55,63))+list(range(64,84))+list(range(84,91))
+          ids=list(range(55,91))
           failures=[]
           for n in ids:
               path=dest/f'{n:02d}.webp'
@@ -65,6 +65,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No new image files"
           else
-            git commit -m "Import and optimize 35 original menu images into own hosting"
+            git commit -m "Import and optimize remaining original menu images into own hosting"
             git push origin HEAD:chongpan-ordering-v2
           fi
