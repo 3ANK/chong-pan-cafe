@@ -18,6 +18,7 @@ function createD1(){
  db.exec(readFileSync(new URL('../migrations/009_order_notifications.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/010_loyverse_confirmed_prices.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/010_loyverse_confirmed_prices.sql',import.meta.url),'utf8')); // idempotence
+ db.exec(readFileSync(new URL('../migrations/011_order_payment_options.sql',import.meta.url),'utf8'));
  return {
   raw:db,
   prepare(sql){const stmt=db.prepare(sql);let args=[];return {
@@ -59,11 +60,15 @@ r=await call('menu');assert.equal(r.data.products.length,90);assert.equal(r.data
 r=await call('me');assert.equal(r.data.member,null);
 r=await call('loyalty/info');assert.equal(r.status,200);assert.equal(r.data.policy.bahtPerPoint,25);assert.equal(r.data.rewardsEnabled,false);
 r=await call('points');assert.equal(r.status,401);
+r=await call('payment/config');assert.equal(r.status,200);assert.equal(r.data.qrEnabled,false);
+r=await call('admin/payment/config','GET');assert.equal(r.status,403);
+r=await call('admin/orders/payment','PATCH',{id:'bad',confirmed:true});assert.equal(r.status,403);
+
 r=await call('admin/readiness');assert.equal(r.status,403);
 r=await call('admin/shop','POST',{enabled:true,ownerConfirmed:true});assert.equal(r.status,403);
 r=await call('admin/line/test','POST',{});assert.equal(r.status,403);
-r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()});assert.equal(r.status,401);
-r=await call('orders','POST',{items:[]},'', 'https://evil.invalid');assert.equal(r.status,403);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()});assert.equal(r.status,401);
+r=await call('orders','POST',{paymentMethod:'cash',items:[]},'', 'https://evil.invalid');assert.equal(r.status,403);
 const realFetch=globalThis.fetch;
 globalThis.fetch=async (url)=>{
  if(String(url)==='https://api.line.me/oauth2/v2.1/verify')return new Response(JSON.stringify({aud:'2011951537',sub:'U'+'a'.repeat(32),name:'ทดสอบ',exp:Math.floor(Date.now()/1000)+600}),{status:200});
@@ -74,10 +79,14 @@ r=await call('auth/line','POST',{idToken:'fake-test-token'});assert.equal(r.stat
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.isOwner,true);
 r=await call('admin/readiness','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.catalog.total,90);assert.equal(r.data.catalog.unverified,0);assert.equal(r.data.ordersEnabled,false);
 assert.ok(r.data.checks.some(c=>c.id==='alert_token'&&!c.ok));
+// Owner-only settings; fake names and placeholder paths only in test DB.
+r=await call('admin/payment/config','POST',{qrPath:'/assets/payment/shop-qr.png',oaId:'wrong'},cookie);assert.equal(r.status,400);
+r=await call('admin/payment/config','POST',{qrPath:'/assets/payment/shop-qr.png',oaId:'@chongpanTest'},cookie);assert.equal(r.status,200);assert.equal(r.data.qrEnabled,true);
+r=await call('payment/config');assert.equal(r.data.oaId,'@chongpanTest');
 r=await call('admin/line/test','POST',{},cookie);assert.equal(r.status,409);
 r=await call('admin/shop','POST',{enabled:true,ownerConfirmed:true},cookie);assert.equal(r.status,409);
 r=await call('points','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.member.points,0);assert.deepEqual(r.data.history,[]);
-r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
 // Only test mode: explicitly switch on both the environment flag and DB flag.
 env.SHOP_ENABLED='true'; db.raw.exec("UPDATE shop_settings SET value='1' WHERE key='shop_enabled'");
 db.raw.exec("UPDATE catalog_price_reviews SET verified=0 WHERE product_id='7'"); // simulate a pending price review
@@ -93,35 +102,43 @@ r=await call('admin/shop','POST',{enabled:true,ownerConfirmed:false},cookie);ass
 r=await call('admin/shop','POST',{enabled:true,ownerConfirmed:true},cookie);assert.equal(r.status,200);assert.equal(r.data.shopEnabled,true);
 r=await call('health');assert.equal(r.data.ordersEnabled,true);
 r=await call('admin/readiness','GET',undefined,cookie);assert.equal(r.data.checks.every(c=>c.ok),true);
-r=await call('orders','POST',{items:[{id:'not-in-menu',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,400);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'not-in-menu',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,400);
 const requestKey=crypto.randomUUID();
-r=await call('orders','POST',{items:[{id:'7',qty:2,price:1,sweetness:'ปกติ'}],fulfillment:'pickup',requestKey},cookie);assert.equal(r.status,201);assert.equal(r.data.total,90);assert.equal(r.data.ownerAlertOk,true);const orderId=r.data.orderId;
-r=await call('orders','POST',{items:[{id:'7',qty:2}],fulfillment:'pickup',requestKey},cookie);assert.equal(r.status,200);assert.equal(r.data.reused,true);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:2,price:1,sweetness:'ปกติ'}],fulfillment:'pickup',requestKey},cookie);assert.equal(r.status,201);assert.equal(r.data.total,90);assert.equal(r.data.ownerAlertOk,true);const orderId=r.data.orderId;
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:2}],fulfillment:'pickup',requestKey},cookie);assert.equal(r.status,200);assert.equal(r.data.reused,true);
 r=await call('orders','GET',undefined,cookie);assert.equal(r.data.orders.length,1);
 for(const status of ['accepted','preparing','ready','completed']){r=await call('admin/orders','PATCH',{id:orderId,status},cookie);assert.equal(r.status,200,JSON.stringify(r));}
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,3);
 r=await call('points','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.member.points,3);assert.ok(r.data.history.some(x=>x.kind==='order'&&x.delta===3));
 r=await call('admin/orders','PATCH',{id:orderId,status:'completed'},cookie);assert.equal(r.status,409);
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,3);
+// QR paid orders cannot complete or earn points until owner has verified funds.
+r=await call('orders','POST',{paymentMethod:'qr',items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+assert.equal(r.status,201);const qrOrderId=r.data.orderId;
+r=await call('orders','GET',undefined,cookie);assert.ok(r.data.orders.some(x=>x.id===qrOrderId&&x.payment_method==='qr'&&x.payment_status==='unpaid'));
+for(const status of ['accepted','preparing','ready']){const x=await call('admin/orders','PATCH',{id:qrOrderId,status},cookie);assert.equal(x.status,200)}
+r=await call('admin/orders','PATCH',{id:qrOrderId,status:'completed'},cookie);assert.equal(r.status,409);
+r=await call('admin/orders/payment','PATCH',{id:qrOrderId,confirmed:true},cookie);assert.equal(r.status,200);
+r=await call('admin/orders','PATCH',{id:qrOrderId,status:'completed'},cookie);assert.equal(r.status,200);
 // Import an example legacy account, restricted to owner; point awards remain after future order completion.
 db.raw.exec("INSERT INTO legacy_accounts(legacy_code,display_name,snapshot_points) VALUES('ABCDEF12','ลูกค้าทดสอบ',5)");
 r=await call('admin/legacy','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.legacy.length,1);
 r=await call('admin/legacy/assign','POST',{legacyCode:'ABCDEF12',lineUserId:env.OWNER_LINE_USER_ID,ownerVerified:false},cookie);assert.equal(r.status,400);
 r=await call('admin/legacy/assign','POST',{legacyCode:'ABCDEF12',lineUserId:env.OWNER_LINE_USER_ID,ownerVerified:true},cookie);assert.equal(r.status,200);assert.equal(r.data.pointsTransferred,5);
-r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,8);
-r=await call('points','GET',undefined,cookie);assert.equal(r.data.member.points,8);assert.ok(r.data.history.some(x=>x.kind==='legacy'&&x.delta===5));assert.equal(r.data.history.length,2);
+r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,9);
+r=await call('points','GET',undefined,cookie);assert.equal(r.data.member.points,9);assert.ok(r.data.history.some(x=>x.kind==='legacy'&&x.delta===5));assert.equal(r.data.history.length,3);
 r=await call('admin/legacy/assign','POST',{legacyCode:'ABCDEF12',lineUserId:env.OWNER_LINE_USER_ID,ownerVerified:true},cookie);assert.equal(r.status,409);
 const req2=crypto.randomUUID();
-r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:req2},cookie);assert.equal(r.status,201);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:req2},cookie);assert.equal(r.status,201);
 for(const status of ['accepted','ready','completed']) {const x=await call('admin/orders','PATCH',{id:r.data.orderId,status},cookie);assert.equal(x.status,200)}
-r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,9);
+r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,10);
 // Bread and milk bundle must be calculated on server, not only visual cart.
-r=await call('orders','POST',{items:[{id:'30',qty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,25);
-r=await call('orders','POST',{items:[{id:'30',qty:3}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,40);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,25);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:3}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,40);
 for(const id of ['31','32']){
- r=await call('orders','POST',{items:[{id,qty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,35);
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id,qty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,35);
 }
-r=await call('orders','POST',{items:[{id:'84',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,40);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,40);
 r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.products.length,90);
 r=await call('admin/menu','PATCH',{id:'7',price:50,available:false},cookie);assert.equal(r.status,200);
 r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.data.products.find(x=>x.id==='7').verified,0);
@@ -137,11 +154,11 @@ globalThis.fetch=async url=>{
  if(String(url)==='https://api.line.me/v2/bot/message/push'){attemptedPush=true;return new Response('LINE temporarily unavailable',{status:503})}
  throw Error('Unexpected external URL');
 };
-r=await call('orders','POST',{items:[{id:'30',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
 assert.equal(r.status,201);assert.equal(attemptedPush,true);assert.equal(r.data.ownerAlertOk,false);assert.equal(r.data.shopAutoPaused,true);
 assert.equal(db.raw.prepare("SELECT value FROM shop_settings WHERE key='shop_enabled'").get().value,'0');
 assert.equal(db.raw.prepare("SELECT COUNT(*) AS n FROM order_notifications WHERE delivered=0").get().n,1);
 r=await call('health');assert.equal(r.data.ordersEnabled,false);
-r=await call('orders','POST',{items:[{id:'30',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
 globalThis.fetch=realFetch;
 console.log('PASS: health, 90 products reconciled to old order display, verification gate, closed checkout, origin blocking, LINE verification mock, signed cookie, total server-side 90 not 2, idempotency, owner/admin transitions, no double points, order notification fail-closed, catalog edit');
