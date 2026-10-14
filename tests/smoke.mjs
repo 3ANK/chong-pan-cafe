@@ -214,6 +214,57 @@ r=await call('admin/menu','POST',{name:'เมนูทดสอบ',category:'�
 r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.data.products.length,91);
 r=await call('admin/menu','GET');assert.equal(r.status,403);
 r=await call('menu');assert.equal(r.data.products.find(x=>x.id==='7').available,false);
+// Hungry customer scenario in isolated D1 test DB, not the live cafe.
+const hungrySub='U'+'b'.repeat(32);
+globalThis.fetch=async (url,init)=>{
+ if(String(url)==='https://api.line.me/oauth2/v2.1/verify'){
+  await new Promise(resolve=>setTimeout(resolve,120)); // simulated slow external LINE verification
+  return new Response(JSON.stringify({aud:'2011951537',sub:hungrySub,name:'ลูกค้าหิวทดสอบ',exp:Math.floor(Date.now()/1000)+600}),{status:200});
+ }
+ if(String(url)==='https://api.line.me/v2/bot/message/push'){
+  lastOwnerOrderNotification=JSON.parse(init.body).messages[0].text;
+  return new Response('',{status:200});
+ }
+ throw Error('Unexpected network request: '+url);
+};
+r=await call('me');assert.equal(r.data.member,null);
+r=await call('auth/line','POST',{idToken:'slow-line-test-customer'});assert.equal(r.status,200);
+const hungryCookie=r.cookie.split(';')[0];
+r=await call('me','GET',undefined,hungryCookie);assert.equal(r.data.member.name,'ลูกค้าหิวทดสอบ');assert.equal(r.data.member.isOwner,false);
+r=await call('admin/orders','GET',undefined,hungryCookie);assert.equal(r.status,403);
+r=await call('menu');assert.equal(r.data.shopEnabled,false); // price review incomplete after admin price edit
+// Reconfirm the item edited in an unrelated admin test, without affecting the production catalogue.
+db.raw.exec("UPDATE catalog_price_reviews SET verified=1 WHERE product_id='7' AND verified=0");
+r=await call('menu');assert.equal(r.data.shopEnabled,true);
+const hungryProducts=r.data.products;
+for(const id of ['33','8','31'])assert.ok(hungryProducts.find(x=>x.id===id&&x.available));
+r=await call('payment/config');assert.equal(r.data.qrEnabled,true);assert.equal(r.data.qrImage,'/assets/payment/shop-qr.svg');
+const hungryItems=[
+ {id:'33',qty:1,egg:'',eggQty:0,note:'ไม่เผ็ด'},
+ {id:'8',qty:1,sweetness:'หวานน้อย'},
+ {id:'31',qty:3}
+];
+const hungryOrderKey=crypto.randomUUID();
+r=await call('orders','POST',{paymentMethod:'qr',items:hungryItems,fulfillment:'pickup',requestKey:hungryOrderKey},hungryCookie);
+assert.equal(r.status,201);assert.equal(r.data.total,129);assert.equal(r.data.ownerAlertOk,true);
+const hungryOrderId=r.data.orderId;
+assert.ok(lastOwnerOrderNotification.includes('1× กะเพราหมู | ไม่เผ็ด'));
+assert.ok(lastOwnerOrderNotification.includes('1× ชาไทยเย็น (หวานน้อย)'));
+assert.ok(lastOwnerOrderNotification.includes('3× ปังสังขยาชาไทย'));
+r=await call('orders','GET',undefined,hungryCookie);
+const hungryOrder=r.data.orders.find(x=>x.id===hungryOrderId);
+assert.ok(hungryOrder);assert.equal(hungryOrder.total,129);assert.equal(hungryOrder.items.length,3);
+assert.equal(hungryOrder.payment_method,'qr');assert.equal(hungryOrder.payment_status,'unpaid');
+assert.equal(hungryOrder.status,'pending');
+r=await call('orders','POST',{paymentMethod:'qr',items:hungryItems,fulfillment:'pickup',requestKey:hungryOrderKey},hungryCookie);
+assert.equal(r.status,200);assert.equal(r.data.reused,true);assert.equal(r.data.orderId,hungryOrderId);
+// Real-world bad connectivity problem: browser loses the server response and retries
+// with a fresh key (currently the client generates a fresh UUID on each click).
+r=await call('orders','POST',{paymentMethod:'qr',items:hungryItems,fulfillment:'pickup',requestKey:crypto.randomUUID()},hungryCookie);
+assert.equal(r.status,201);assert.notEqual(r.data.orderId,hungryOrderId);
+r=await call('orders','GET',undefined,hungryCookie);
+assert.equal(r.data.orders.filter(x=>x.payment_method==='qr'&&x.total===129).length,2);
+console.log('HUNGRY CUSTOMER: slow mock LINE identity + 3 item/5 unit QR order 129 THB + payment pending PASSED; duplicate-order risk REPRODUCED when new request key is used after lost reply.');
 let attemptedPush=false;
 r=await call('admin/line/test','POST',{},cookie);assert.equal(r.status,200); // the default mock still accepts
 
