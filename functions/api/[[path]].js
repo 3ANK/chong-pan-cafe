@@ -113,7 +113,8 @@ async function createOrder(req,env,db,s){
    `วิธีรับ: ${data.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน'}`,
    ...(data.fulfillment==='delivery'?[`ที่อยู่: ${address}`]:[]),
    ...(data.note?[`หมายเหตุ: ${safe(data.note,300)}`]:[]),
-   ...lines].join('\n').slice(0,4750);
+   ...lines].join('\n').slice(0,4350)+
+   '\n\n📲 กดรับ / จัดการออเดอร์นี้:\nhttps://chongpan-ordering-v2.pages.dev/admin/?order='+encodeURIComponent(id);
   const push=await fetch('https://api.line.me/v2/bot/message/push',{
    method:'POST',headers:{Authorization:`Bearer ${env.LINE_MESSAGING_ACCESS_TOKEN}`,'Content-Type':'application/json'},
    body:JSON.stringify({to:env.OWNER_LINE_USER_ID,messages:[{type:'text',text:msg}]})

@@ -67,6 +67,12 @@ assert.ok(html.includes('name="paymentMethod" value="cash" checked'));
 assert.ok(html.includes('name="paymentMethod" value="qr" id="payQrOption" disabled'));
 assert.ok(adminHtml.includes('id="adminPrivate" hidden')&&adminHtml.includes('id="paymentSettingsForm"'));
 assert.ok(adminJS.includes("if(!next.member?.isOwner)")&&adminJS.includes("admin/orders/payment"));
+assert.ok(adminHtml.includes('id="orderFocusStatus"'));
+assert.ok(adminJS.includes("const selectedOrderId="));
+assert.ok(adminJS.includes("redirectUri:location.origin+'/admin/'+location.search"));
+assert.ok(adminJS.includes("data-order-id="));
+assert.ok(adminJS.includes("card?.scrollIntoView({behavior:'smooth',block:'center'})"));
+assert.ok(adminJS.includes("s==='accepted'?'รับออเดอร์'"));
 assert.ok(appJS.includes("https://line.me/R/oaMessage/")&&appJS.includes('paymentMethod'));
 assert.ok(appJS.includes("const link='https://line.me/R/oaMessage/'+encodeURIComponent(cfg.oaId);"));
 assert.ok(!appJS.includes('encodeURIComponent(message)')&&!appJS.includes('แจ้งส่งสลิปชำระเงิน'));
@@ -189,6 +195,9 @@ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfi
  assert.ok(!lastOwnerOrderNotification.includes('omelet')&&!lastOwnerOrderNotification.includes('creamy'));
  assert.ok(lastOwnerOrderNotification.includes('3× เอสเพรสโซ (หวานน้อย)'));
  assert.equal(r.data.total,302);
+ assert.ok(lastOwnerOrderNotification.includes('กดรับ / จัดการออเดอร์นี้:'));
+ assert.ok(lastOwnerOrderNotification.includes('https://chongpan-ordering-v2.pages.dev/admin/?order='+r.data.orderId));
+ assert.ok(!lastOwnerOrderNotification.includes('chongpan-members.oakenzebra4.chatgpt.site'));
  // Two dishes with two fried eggs EACH: 4 eggs and 138 THB total.
  r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:2,egg:'fried',eggQty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
  assert.equal(r.status,201);assert.equal(r.data.total,138);

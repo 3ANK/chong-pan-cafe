@@ -29,3 +29,9 @@
 .admin-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
 .admin-actions button{width:100%;white-space:normal;min-width:0}
 }
+
+/* LINE notification deep link highlights one specific owner-authorized order. */
+.focus-order-status{padding:12px 14px;margin:12px 0;background:#e9f2dd;border:1px solid #aec790;border-radius:12px;color:#2b491f;font-weight:700}
+.focus-order-status[hidden]{display:none!important}
+.admin-list .ordercard.focus-order{outline:3px solid #658a38;outline-offset:2px;background:#f7fbea;scroll-margin-top:18px}
+.admin-list .ordercard.focus-order [data-status="accepted"]{background:#416a2a;color:#fff;font-weight:800}

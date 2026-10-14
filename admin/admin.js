@@ -5,6 +5,8 @@ const escapeText=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const fmt=n=>'฿'+Number(n||0).toLocaleString('th-TH');
 const statuses={pending:'รอร้านรับ',accepted:'ร้านรับแล้ว',preparing:'กำลังทำ',ready:'พร้อมรับ/ส่ง',completed:'ส่งมอบแล้ว',cancelled:'ยกเลิก'};
 const nextStatuses={pending:['accepted','cancelled'],accepted:['preparing','ready','cancelled'],preparing:['ready','cancelled'],ready:['completed','cancelled']};
+const deepLinkOrderId=new URLSearchParams(location.search).get('order');
+const selectedOrderId=deepLinkOrderId&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(deepLinkOrderId)?deepLinkOrderId:null;
 async function request(path,options={}){
  const r=await fetch('/api/'+path,{credentials:'same-origin',headers:{'Content-Type':'application/json'},...options});
  const d=await r.json();if(!r.ok)throw Error(d.error||'เกิดข้อผิดพลาด');return d;
@@ -26,7 +28,7 @@ async function initAdmin(userInitiated=false){
   if(!liff.isLoggedIn()){
    loginStatus('กำลังเปิด LINE เพื่อยืนยันตัวตน…');
    if(!userInitiated&&new URL(location).searchParams.has('liff.state'))throw Error('LINE ยังไม่เชื่อมต่อ กรุณากดลองใหม่');
-   liff.login({redirectUri:location.origin+'/admin/'});
+   liff.login({redirectUri:location.origin+'/admin/'+location.search});
    return;
   }
   const token=liff.getIDToken();if(!token)throw Error('ไม่ได้รับ LINE ID Token');
@@ -47,10 +49,10 @@ function orderCard(o){
   const modifiers=[i.sweetness||'',i.egg?(eggNames[i.egg]||'')+' '+(i.eggQty??1)+' ฟอง/จาน'+(Number(i.eggPrice)>0?' +'+Number(i.eggPrice)+' บาท/จาน':''):'',i.note||''].filter(Boolean);
   return escapeText(i.name)+' ×'+Number(i.qty)+(modifiers.length?' ('+modifiers.map(escapeText).join(' · ')+')':'');
  }).join(' · ');
- const options=(nextStatuses[o.status]||[]).map(s=>'<button class="secondary" type="button" data-status="'+s+'" data-order="'+escapeText(o.id)+'">'+escapeText(statuses[s]||s)+'</button>').join('');
+ const options=(nextStatuses[o.status]||[]).map(s=>'<button class="secondary" type="button" data-status="'+s+'" data-order="'+escapeText(o.id)+'">'+escapeText(s==='accepted'?'รับออเดอร์':statuses[s]||s)+'</button>').join('');
  const payButton=o.payment_status!=='verified'&&o.status!=='cancelled'?
  '<button type="button" class="primary payment-verify" data-confirm-pay="'+escapeText(o.id)+'">ยืนยันว่าได้รับเงินจริงแล้ว</button>':'';
- return '<article class="ordercard"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statuses[o.status]||o.status)+'</span></div>'+
+ return '<article class="ordercard" data-order-id="'+escapeText(o.id)+'" tabindex="-1"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statuses[o.status]||o.status)+'</span></div>'+
  '<div class="admin-order-details"><p>'+items+'</p><p><strong>'+fmt(o.total)+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+'</p>'+
  '<p>ลูกค้า: '+escapeText(o.display_name||'')+' · '+escapeText(o.delivery_address||'')+'</p>'+
  '<p>หมายเหตุ: '+escapeText(o.note||'ไม่มี')+'</p></div>'+
@@ -59,8 +61,21 @@ function orderCard(o){
 }
 async function loadOrders(){
  const el=$('adminContent');el.textContent='กำลังโหลดออเดอร์…';
- try{const orders=(await request('admin/orders')).orders;el.innerHTML=orders.length?orders.map(orderCard).join(''):'<p class="empty">ยังไม่มีออเดอร์</p>'}
- catch(e){el.textContent=e.message}
+ try{
+  const orders=(await request('admin/orders')).orders;
+  el.innerHTML=orders.length?orders.map(orderCard).join(''):'<p class="empty">ยังไม่มีออเดอร์</p>';
+  if(selectedOrderId){
+   const focused=orders.find(o=>o.id===selectedOrderId);
+   const status=$('orderFocusStatus');
+   status.hidden=false;
+   if(focused){
+    const card=Array.from(el.querySelectorAll('[data-order-id]')).find(node=>node.dataset.orderId===selectedOrderId);
+    card?.classList.add('focus-order');
+    status.textContent='ออเดอร์ #'+focused.id.slice(0,8).toUpperCase()+' · '+(statuses[focused.status]||focused.status)+' — ตรวจรายละเอียด แล้วกดรับออเดอร์ด้านล่าง';
+    requestAnimationFrame(()=>card?.scrollIntoView({behavior:'smooth',block:'center'}));
+   }else status.textContent='ไม่พบออเดอร์ที่เปิดจาก LINE ในรายการล่าสุด กรุณารีเฟรชหรือตรวจหมายเลขออเดอร์';
+  }
+ }catch(e){el.textContent=e.message}
 }
 $('adminContent').addEventListener('click',async e=>{
  const b=e.target.closest('[data-confirm-pay], [data-status]');if(!b)return;
