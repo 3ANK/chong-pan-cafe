@@ -46,3 +46,14 @@ body.line-auth-pending #basketBar{display:none!important}
 .line-gate-status{margin:25px auto 14px;color:#45633f;font-size:14px;font-weight:750}
 .line-gate-button{width:100%;margin:10px 0 12px;min-height:48px}
 .line-gate-help{margin-top:20px;color:#728072;font-size:12px;line-height:1.65}
+
+/* Payment selection and receipt workflow */
+.pay-methods{margin:16px 0;padding:14px;border-radius:13px;border:1px solid #d8ddcc}
+.pay-methods legend{font-weight:800}.pay-method{display:flex;align-items:center;gap:10px;padding:12px 5px;font-size:15px}
+.pay-method input{width:19px;height:19px;accent-color:#596b35}.pay-method span{display:flex;flex-direction:column;gap:4px}
+.pay-method small{color:#647264;font-size:12px}.pay-method:has(input:disabled){opacity:.56}
+#adminShortcut[hidden]{display:none!important}
+.pay-dialog{width:min(95%,460px);border:0;border-radius:19px;padding:22px;max-height:92vh;overflow:auto}
+.pay-dialog::backdrop{background:#151d17a8}.shop-payment-qr{display:block;width:min(100%,320px);height:auto;aspect-ratio:1;object-fit:contain;margin:18px auto;background:#fff;border:1px solid #e1e8d8;border-radius:13px}
+.pay-slip-link{display:block;text-align:center;text-decoration:none;padding:14px;margin:12px 0}
+.pay-slip-reopen{margin-top:10px}.pay-label{font-weight:700;color:#405a32}
