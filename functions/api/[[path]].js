@@ -55,7 +55,27 @@ async function pointHistory(db, sessionData){
 }
 async function createOrder(req,env,db,s){if(!s)return fail('กรุณาเข้าสู่ LINE',401);const config=await menu(db,env);if(!config.shopEnabled)return fail('ร้านยังไม่เปิดรับออเดอร์ผ่านระบบใหม่',503);const data=await body(req);if(!Array.isArray(data.items)||!data.items.length||data.items.length>35)return fail('จำนวนรายการไม่ถูกต้อง');if(!['pickup','delivery'].includes(data.fulfillment))return fail('วิธีรับอาหารไม่ถูกต้อง');const address=safe(data.deliveryAddress,500);if(data.fulfillment==='delivery'&&!address)return fail('โปรดระบุที่อยู่จัดส่ง');const requestKey=text(data.requestKey);if(!/^[0-9a-fA-F-]{36}$/.test(requestKey))return fail('รหัสคำขอไม่ถูกต้อง');const existing=await db.prepare('SELECT id,total FROM orders WHERE line_user_id=? AND request_key=?').bind(s.sub,requestKey).first();if(existing)return json({orderId:existing.id,total:existing.total,reused:true});const stock=new Map(config.products.map(p=>[p.id,p]));const validated=[];let total=0;for(const raw of data.items){const p=stock.get(String(raw?.id));const qty=Number(raw?.qty);if(!p||!p.available||p.price<=0||!Number.isInteger(qty)||qty<1||qty>20)return fail('เมนูหรือจำนวนสินค้าไม่ถูกต้อง');const sweetness=safe(raw.sweetness,40);const egg=safe(raw.egg,20);if(!validSweet.has(sweetness)||(sweetness&&!p.drink))return fail('ตัวเลือกความหวานไม่ถูกต้อง');const extra=egg?eggPrice(egg):0;if(extra===null||(egg&&p.category!=='กะเพรา'))return fail('ตัวเลือกไข่ไม่ถูกต้อง');const item={id:p.id,name:p.name,qty,price:p.price,egg,sweetness,note:safe(raw.note,140),extra};const pair=extra===0?(p.id==='30'&&p.price===15?25:(p.id==='31'||p.id==='32')&&p.price===20?35:null):null;
  total+=pair===null?(p.price+extra)*qty:Math.floor(qty/2)*pair+(qty%2)*p.price;
- validated.push(item)}if(total<0||total>200000)return fail('ยอดสั่งซื้อเกินกำหนด');const id=crypto.randomUUID();const name=safe(s.name||'สมาชิก LINE',80);const steps=[db.prepare('INSERT INTO orders(id,request_key,line_user_id,display_name,fulfillment,delivery_address,note,total,status) VALUES(?,?,?,?,?,?,?,?,?)').bind(id,requestKey,s.sub,name,data.fulfillment,address,safe(data.note,300),total,'pending'),...validated.map(i=>db.prepare('INSERT INTO order_items(id,order_id,catalog_id,name,unit_price,egg_price,qty,sweetness,egg,note) VALUES(?,?,?,?,?,?,?,?,?,?)').bind(crypto.randomUUID(),id,i.id,i.name,i.price,i.extra,i.qty,i.sweetness,i.egg,i.note))];try{await db.batch(steps)}catch(e){const old=await db.prepare('SELECT id,total FROM orders WHERE line_user_id=? AND request_key=?').bind(s.sub,requestKey).first();if(old)return json({orderId:old.id,total:old.total,reused:true});throw e}if(env.LINE_MESSAGING_ACCESS_TOKEN&&env.OWNER_LINE_USER_ID){try{await fetch('https://api.line.me/v2/bot/message/push',{method:'POST',headers:{Authorization:`Bearer ${env.LINE_MESSAGING_ACCESS_TOKEN}`,'Content-Type':'application/json'},body:JSON.stringify({to:env.OWNER_LINE_USER_ID,messages:[{type:'text',text:`มีออเดอร์ใหม่ #${id.slice(0,8)}\nยอด ${total} บาท\n${validated.map(i=>`${i.qty}× ${i.name}`).join('\n')}`.slice(0,4800)}]})})}catch{/* Order persists even if LINE alert fails. */}}return json({orderId:id,total},201)}
+ validated.push(item)}if(total<0||total>200000)return fail('ยอดสั่งซื้อเกินกำหนด');const id=crypto.randomUUID();const name=safe(s.name||'สมาชิก LINE',80);const steps=[db.prepare('INSERT INTO orders(id,request_key,line_user_id,display_name,fulfillment,delivery_address,note,total,status) VALUES(?,?,?,?,?,?,?,?,?)').bind(id,requestKey,s.sub,name,data.fulfillment,address,safe(data.note,300),total,'pending'),...validated.map(i=>db.prepare('INSERT INTO order_items(id,order_id,catalog_id,name,unit_price,egg_price,qty,sweetness,egg,note) VALUES(?,?,?,?,?,?,?,?,?,?)').bind(crypto.randomUUID(),id,i.id,i.name,i.price,i.extra,i.qty,i.sweetness,i.egg,i.note))];try{await db.batch(steps)}catch(e){const old=await db.prepare('SELECT id,total FROM orders WHERE line_user_id=? AND request_key=?').bind(s.sub,requestKey).first();if(old)return json({orderId:old.id,total:old.total,reused:true});throw e}let alertOk=false;
+ try{
+  const lines=validated.map(i=>`${i.qty}× ${i.name}${i.sweetness?' ('+i.sweetness+')':''}${i.egg?' +ไข่:'+i.egg:''}${i.note?' | '+i.note:''}`);
+  const msg=[`มีออเดอร์ใหม่ #${id.slice(0,8)}`,
+   `ลูกค้า: ${name}`,`ยอด: ${total} บาท`,
+   `วิธีรับ: ${data.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน'}`,
+   ...(data.fulfillment==='delivery'?[`ที่อยู่: ${address}`]:[]),
+   ...(data.note?[`หมายเหตุ: ${safe(data.note,300)}`]:[]),
+   ...lines].join('\n').slice(0,4750);
+  const push=await fetch('https://api.line.me/v2/bot/message/push',{
+   method:'POST',headers:{Authorization:`Bearer ${env.LINE_MESSAGING_ACCESS_TOKEN}`,'Content-Type':'application/json'},
+   body:JSON.stringify({to:env.OWNER_LINE_USER_ID,messages:[{type:'text',text:msg}]})
+  });
+  alertOk=push.ok;
+ }catch{/* Order is in DB; emergency stop below prevents further silent orders. */}
+ await db.prepare('INSERT INTO order_notifications(order_id,delivered) VALUES(?,?)').bind(id,alertOk?1:0).run();
+ if(!alertOk){
+  await db.prepare("UPDATE shop_settings SET value='0' WHERE key='shop_enabled'").run();
+  return json({orderId:id,total,ownerAlertOk:false,shopAutoPaused:true},201);
+ }
+ return json({orderId:id,total,ownerAlertOk:true},201)}
 // Balances comprise points from completed orders and explicitly approved, idempotent adjustments.
 function refreshPoints(db,userId){return db.prepare(`UPDATE members SET points =
   (SELECT COALESCE(SUM(delta),0) FROM points_ledger WHERE line_user_id=?) +
