@@ -40,6 +40,14 @@ assert.ok(html.includes('<body class="line-auth-pending">'));
 assert.ok(html.includes('id="lineGateRetry"')&&html.includes('id="shopShell" hidden'));
 assert.ok(css.includes('body.line-auth-pending #basketBar{display:none!important}'));
 assert.ok(css.includes('#shopShell[hidden]'));
+// Native hidden attributes must win over dialog label {display:block}.
+// Drinks should not expose egg toppings, while savory dishes should not expose sweetness.
+assert.ok(css.includes('[hidden]{display:none!important}'));
+assert.ok(html.includes('<label id="eggGroup" hidden>'));
+assert.ok(appJS.includes("show('sweetnessGroup',!!p.drink)"));
+assert.ok(appJS.includes("show('eggGroup',p.category==='กะเพรา')"));
+assert.ok(appJS.includes("egg:p.category==='กะเพรา'?$('egg').value:''"));
+
 assert.ok(appJS.includes('await Promise.all([bootMenu(),bootPayments()]);')&&appJS.includes('await loadMember();'));
 assert.ok(appJS.includes('if(state.member){')&&appJS.includes('showShopAfterLogin();'));
 const adminHtml=readFileSync(new URL('../admin/index.html',import.meta.url),'utf8');
