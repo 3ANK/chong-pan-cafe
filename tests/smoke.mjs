@@ -350,6 +350,10 @@ assert.ok(css.includes('.option-quantity-controls{display:flex'));
 
 // Customer UX: 3 sticky main groups, focused subcategories, cross-sell prompt.
 assert.ok(html.includes('id="menuGroupTabs"')&&html.includes('id="nextStepBar"'));
+assert.ok(html.includes('วันนี้รับอะไรดีคะ?'));
+assert.ok(html.includes('น้องชงปั่นยินดีต้อนรับค่ะ'));
+assert.ok(!html.includes('วันนี้รับอะไรดีครับ?'));
+
 assert.ok(html.includes('data-menu-group="food"')&&html.includes('data-menu-group="drinks"')&&html.includes('data-menu-group="dessert"'));
 assert.ok(css.includes('.menu-explorer{position:sticky')&&css.includes('.next-step-bar{position:fixed'));
 assert.ok(appJS.includes("function setMenuGroup(group,scroll=true)"));
