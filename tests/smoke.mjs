@@ -13,6 +13,7 @@ function createD1(){
  db.exec(readFileSync(new URL('../migrations/005_catalog_drafts_and_reviews.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/005_catalog_drafts_and_reviews.sql',import.meta.url),'utf8')); // idempotence
  db.exec(readFileSync(new URL('../migrations/006_owner_prices.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/007_old_order_menu_reconciliation.sql',import.meta.url),'utf8'));
  return {
   raw:db,
   prepare(sql){const stmt=db.prepare(sql);let args=[];return {
@@ -34,7 +35,7 @@ async function call(path, method='GET', data=undefined,cookie='',origin='http://
  return {status:res.status,data:await res.json(),cookie:res.headers.get('set-cookie')};
 }
 let r=await call('health'); assert.equal(r.status,200);assert.equal(r.data.ordersEnabled,false);
-r=await call('menu');assert.equal(r.data.products.length,90);assert.equal(r.data.shopEnabled,false);assert.equal(r.data.products.find(x=>x.id==='7').price,40);
+r=await call('menu');assert.equal(r.data.products.length,90);assert.equal(r.data.shopEnabled,false);assert.equal(r.data.products.find(x=>x.id==='7').price,40);assert.equal(r.data.products.find(x=>x.id==='84').price,40);assert.equal(r.data.products.find(x=>x.id==='64').price,40);assert.equal(r.data.products.find(x=>x.id==='69').price,50);
 r=await call('me');assert.equal(r.data.member,null);
 r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()});assert.equal(r.status,401);
 r=await call('orders','POST',{items:[]},'', 'https://evil.invalid');assert.equal(r.status,403);
@@ -52,7 +53,7 @@ r=await call('health');assert.equal(r.data.ordersEnabled,false); // cannot go li
 // Only the test suite can simulate the owner having verified all sellable prices.
 db.raw.exec("UPDATE catalog_price_reviews SET verified=1 WHERE product_id IN (SELECT id FROM catalog WHERE available=1)");
 r=await call('health');assert.equal(r.data.ordersEnabled,true);
-r=await call('orders','POST',{items:[{id:'84',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,400);
+r=await call('orders','POST',{items:[{id:'not-in-menu',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,400);
 const requestKey=crypto.randomUUID();
 r=await call('orders','POST',{items:[{id:'7',qty:2,price:1,sweetness:'ปกติ'}],fulfillment:'pickup',requestKey},cookie);assert.equal(r.status,201);assert.equal(r.data.total,80);const orderId=r.data.orderId;
 r=await call('orders','POST',{items:[{id:'7',qty:2}],fulfillment:'pickup',requestKey},cookie);assert.equal(r.status,200);assert.equal(r.data.reused,true);
@@ -75,6 +76,10 @@ r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,9);
 // Bread and milk bundle must be calculated on server, not only visual cart.
 r=await call('orders','POST',{items:[{id:'30',qty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,25);
 r=await call('orders','POST',{items:[{id:'30',qty:3}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,40);
+for(const id of ['31','32']){
+ r=await call('orders','POST',{items:[{id,qty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,35);
+}
+r=await call('orders','POST',{items:[{id:'84',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,40);
 r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.products.length,90);
 r=await call('admin/menu','PATCH',{id:'7',price:50,available:false},cookie);assert.equal(r.status,200);
 r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.data.products.find(x=>x.id==='7').verified,0);
@@ -84,4 +89,4 @@ r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.data.products.l
 r=await call('admin/menu','GET');assert.equal(r.status,403);
 r=await call('menu');assert.equal(r.data.products.find(x=>x.id==='7').available,false);
 globalThis.fetch=realFetch;
-console.log('PASS: health, 90 products and 7 safe drafts, verification gate, closed checkout, origin blocking, LINE verification mock, signed cookie, total server-side 90 not 2, idempotency, owner/admin transitions, no double points, catalog edit');
+console.log('PASS: health, 90 products reconciled to old order display, verification gate, closed checkout, origin blocking, LINE verification mock, signed cookie, total server-side 90 not 2, idempotency, owner/admin transitions, no double points, catalog edit');

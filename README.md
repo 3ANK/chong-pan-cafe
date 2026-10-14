@@ -77,3 +77,10 @@ No credentials, tokens, customer databases, or encrypted recipes are in this rep
 ### Price and promotion corrections
 - Migration `006_owner_prices.sql` brings **กาแฟโตนด** from stale 45 to historically owner-requested 40 THB, but keeps it unverified until the current price is checked against Loyverse.
 - **ปังเนยนม** is 15 THB each or 25 THB per pair; discounts are reflected in cart and recomputed server-side. This remains conditional on base price being 15 THB. No discount is inferred for other bread items.
+
+### 2026-10-14 — Old site exact catalogue comparison
+- Verified the original `https://chongpan-members.oakenzebra4.chatgpt.site/order` rendered **90 cards**. Reconciled by original product IDs, not guessed name matches.
+- Migration `007_old_order_menu_reconciliation.sql` fills prices of formerly seven draft items from the original site (84=40 THB; 85–90=30 THB), preserves their review flags as **unverified**, and makes them available for menu browsing. Checkout stays blocked.
+- Corrected old-page mismatches: **โกโก้เย็น 40** and **โกโก้ปั่น 50**; aligned descriptive menu names to the old site. **กาแฟโตนด 40** remains based on owner's earlier instruction, although original order page still shows 45.
+- Extra 2-slice bread discount: ปังสังขยาชาไทย / ปังสังขยาใบเตย 2 for 35 THB, alongside ปังเนยนม 2 for 25 THB. Checkout computes promotion server side.
+- The 28 still-unpictured products need lasting licensed photos uploaded to the new site. Do not hotlink the old chatgpt.site assets because the legacy account may disappear.
