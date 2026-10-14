@@ -299,3 +299,16 @@ assert.ok(appJS.includes('if(other.qty+item.qty>20)return toast('));
 assert.ok(appJS.includes("$('egg').addEventListener('change',()=>setOptionEggQuantity(1))"));
 assert.ok(css.includes('.option-quantity-controls{display:flex'));
 // Verify single item and discounted pair calculations are still server-authoritative.
+
+
+// Customer UX: 3 sticky main groups, focused subcategories, cross-sell prompt.
+assert.ok(html.includes('id="menuGroupTabs"')&&html.includes('id="nextStepBar"'));
+assert.ok(html.includes('data-menu-group="food"')&&html.includes('data-menu-group="drinks"')&&html.includes('data-menu-group="dessert"'));
+assert.ok(css.includes('.menu-explorer{position:sticky')&&css.includes('.next-step-bar{position:fixed'));
+assert.ok(appJS.includes("function setMenuGroup(group,scroll=true)"));
+assert.ok(appJS.includes("function suggestNextStep(product)")&&appJS.includes("suggestNextStep(state.selectedProduct);"));
+assert.ok(appJS.includes("return p.drink?'drinks':'food'"));
+assert.ok(appJS.includes("state.selectedCategory='ทั้งหมด';paintMenuGroupTabs();paintCategories();paintCatalog()"));
+assert.ok(appJS.includes("const pendingKeyName='chongpan-v2-pending-checkout'"));
+assert.ok(appJS.includes("fingerprint:payloadFingerprint")&&appJS.includes("localStorage.removeItem(pendingKeyName)"));
+assert.ok(appJS.includes("new AbortController()")&&appJS.includes("Promise.race(["));

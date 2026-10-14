@@ -84,7 +84,21 @@ async function pointHistory(db, sessionData){
   policy:{bahtPerPoint:25,awardWhen:'completed',fractionalCarry:false},
   rewardsEnabled:false});
 }
-async function createOrder(req,env,db,s){if(!s)return fail('กรุณาเข้าสู่ LINE',401);const config=await menu(db,env);if(!config.shopEnabled)return fail('ร้านยังไม่เปิดรับออเดอร์ผ่านระบบใหม่',503);const data=await body(req);const paymentMethod=data.paymentMethod===undefined?'cash':data.paymentMethod;const paymentSettings=await paymentConfig(db,env);if(!['cash','qr'].includes(paymentMethod))return fail('กรุณาเลือกชำระเงินสดหรือสแกนจ่าย');if(paymentMethod==='qr'&&!paymentSettings.qrEnabled)return fail('ยังไม่เปิดสแกนจ่าย กรุณาเลือกเงินสด',409);if(!Array.isArray(data.items)||!data.items.length||data.items.length>35)return fail('จำนวนรายการไม่ถูกต้อง');if(!['pickup','delivery'].includes(data.fulfillment))return fail('วิธีรับอาหารไม่ถูกต้อง');const address=safe(data.deliveryAddress,500);if(data.fulfillment==='delivery'&&!address)return fail('โปรดระบุที่อยู่จัดส่ง');const requestKey=text(data.requestKey);if(!/^[0-9a-fA-F-]{36}$/.test(requestKey))return fail('รหัสคำขอไม่ถูกต้อง');const existing=await db.prepare('SELECT id,total FROM orders WHERE line_user_id=? AND request_key=?').bind(s.sub,requestKey).first();if(existing)return json({orderId:existing.id,total:existing.total,reused:true});const stock=new Map(config.products.map(p=>[p.id,p]));const validated=[];let total=0;for(const raw of data.items){const p=stock.get(String(raw?.id));const qty=Number(raw?.qty);if(!p||!p.available||p.price<=0||!Number.isInteger(qty)||qty<1||qty>20)return fail('เมนูหรือจำนวนสินค้าไม่ถูกต้อง');const sweetness=safe(raw.sweetness,40);const egg=safe(raw.egg,20);if(!validSweet.has(sweetness)||(sweetness&&!p.drink))return fail('ตัวเลือกความหวานไม่ถูกต้อง');const baseEggPrice=egg?eggPrice(egg):0;
+async function createOrder(req,env,db,s){
+ if(!s)return fail('กรุณาเข้าสู่ LINE',401);
+ const data=await body(req);
+ const requestKey=text(data.requestKey);
+ if(!/^[0-9a-fA-F-]{36}$/.test(requestKey))return fail('รหัสคำขอไม่ถูกต้อง');
+ // A retry for an already-persisted order must work even after checkout is auto-paused.
+ const existing=await db.prepare('SELECT id,total,payment_method FROM orders WHERE line_user_id=? AND request_key=?').bind(s.sub,requestKey).first();
+ if(existing){
+  const delivery=await db.prepare('SELECT delivered FROM order_notifications WHERE order_id=?').bind(existing.id).first();
+  return json({orderId:existing.id,total:existing.total,paymentMethod:existing.payment_method,reused:true,
+   ownerAlertOk:delivery?.delivered===1,confirmationPending:!delivery});
+ }
+ const config=await menu(db,env);
+ if(!config.shopEnabled)return fail('ร้านยังไม่เปิดรับออเดอร์ผ่านระบบใหม่',503);
+ const paymentMethod=data.paymentMethod===undefined?'cash':data.paymentMethod;const paymentSettings=await paymentConfig(db,env);if(!['cash','qr'].includes(paymentMethod))return fail('กรุณาเลือกชำระเงินสดหรือสแกนจ่าย');if(paymentMethod==='qr'&&!paymentSettings.qrEnabled)return fail('ยังไม่เปิดสแกนจ่าย กรุณาเลือกเงินสด',409);if(!Array.isArray(data.items)||!data.items.length||data.items.length>35)return fail('จำนวนรายการไม่ถูกต้อง');if(!['pickup','delivery'].includes(data.fulfillment))return fail('วิธีรับอาหารไม่ถูกต้อง');const address=safe(data.deliveryAddress,500);if(data.fulfillment==='delivery'&&!address)return fail('โปรดระบุที่อยู่จัดส่ง');const stock=new Map(config.products.map(p=>[p.id,p]));const validated=[];let total=0;for(const raw of data.items){const p=stock.get(String(raw?.id));const qty=Number(raw?.qty);if(!p||!p.available||p.price<=0||!Number.isInteger(qty)||qty<1||qty>20)return fail('เมนูหรือจำนวนสินค้าไม่ถูกต้อง');const sweetness=safe(raw.sweetness,40);const egg=safe(raw.egg,20);if(!validSweet.has(sweetness)||(sweetness&&!p.drink))return fail('ตัวเลือกความหวานไม่ถูกต้อง');const baseEggPrice=egg?eggPrice(egg):0;
  const eggQty=raw.eggQty===undefined?(egg?1:0):raw.eggQty;
  if(baseEggPrice===null||(egg&&p.category!=='กะเพรา')||!Number.isInteger(eggQty)||eggQty<0||eggQty>5||(egg&&eggQty===0)||(!egg&&eggQty!==0))return fail('ตัวเลือกหรือจำนวนไข่ไม่ถูกต้อง');
  const extra=baseEggPrice*eggQty;

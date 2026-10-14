@@ -157,3 +157,21 @@ dialog{max-width:calc(100vw - 20px);max-width:calc(100dvw - 20px)}
 .egg-quantity-group .option-quantity-title strong{font-size:15px}
 .egg-quantity-group .option-quantity-controls{margin-top:10px}
 #eggQuantity{font-size:23px;font-weight:850;min-width:28px;text-align:center;font-variant-numeric:tabular-nums}
+
+/* 3 first-level mobile menu groups, with small scrollable subcategories. */
+.menu-explorer{position:sticky;top:0;z-index:4;background:#f5f6f0;padding:10px 0 2px;margin:12px 0;scroll-margin-top:0;box-shadow:0 7px 15px #263e170d}
+.menu-group-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.menu-group-tabs button{min-width:0;min-height:46px;padding:9px 3px;border:1px solid #dce6d3;background:#fff;color:#415d2f;border-radius:13px;font-size:clamp(11px,3.2vw,15px);font-weight:800}
+.menu-group-tabs button.selected{background:var(--green);border-color:var(--green);color:white;box-shadow:0 2px 6px #2a3b192b}
+.menu-group-tabs button:focus-visible,.categories button:focus-visible{outline:3px solid #e4b044;outline-offset:2px}
+.category-hint{font-size:11px;font-weight:750;color:var(--muted);padding:7px 1px 0}
+.menu-explorer .categories{margin:5px -13px 0;padding:3px 13px 9px;max-width:calc(100% + 26px)}
+.menu-explorer .categories button{min-height:38px}
+.next-step-bar{position:fixed;z-index:8;bottom:88px;bottom:calc(88px + env(safe-area-inset-bottom));left:0;right:0;pointer-events:none;padding:0 12px}
+.next-step-bar[hidden]{display:none!important}
+.next-step-inner{pointer-events:auto;max-width:900px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:8px;background:#edf4e3;box-shadow:0 4px 20px #263e1725;border:1px solid #bdd4a9;border-radius:14px}
+#nextStepLabel{min-width:0;flex:1;font-size:12px;font-weight:700;color:#365127;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+#nextStepButton{font-size:12px;min-height:42px;padding:10px 8px;flex-shrink:0}
+.next-step-close{background:transparent;border:0;color:#556845;min-width:30px;min-height:42px;font-size:17px}
+@media(min-width:620px){.menu-explorer .categories{margin:5px 0 0;padding:3px 0 9px;max-width:100%}}
+@media(max-width:360px){#nextStepLabel{font-size:11px;max-width:86px}#nextStepButton{font-size:11px}}

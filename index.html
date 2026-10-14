@@ -22,9 +22,24 @@
 <main>
 <section class="summary" aria-label="สถานะสมาชิก"><div><small>บัญชีสมาชิก</small><strong id="memberName">ยังไม่ได้เข้าสู่ระบบ</strong></div><div><small>แต้มสะสม</small><strong><span id="points">–</span> <span class="pts">แต้ม</span></strong><a class="summary-points-link" href="/member/">ดูบัตรสมาชิกและประวัติแต้ม →</a></div></section>
 <nav class="tabs" aria-label="เมนูหลัก"><button data-tab="menu" class="selected">เมนูอาหาร</button><a class="tab-link" href="/member/">บัตรสมาชิก / แต้มสะสม</a><button data-tab="history">ออเดอร์ของฉัน</button></nav>
-<section id="menuPanel" class="panel"><div class="search"><span>⌕</span><input id="search" type="search" placeholder="ค้นหาเครื่องดื่มและอาหาร…" aria-label="ค้นหาเมนู"></div><div id="categories" class="categories"></div><div id="catalog" class="catalog"><div class="empty">กำลังโหลดเมนู…</div></div></section>
+<section id="menuPanel" class="panel"><div class="search"><span>⌕</span><input id="search" type="search" placeholder="ค้นหาเครื่องดื่มและอาหาร…" aria-label="ค้นหาเมนู"></div><div id="menuExplorer" class="menu-explorer">
+<nav id="menuGroupTabs" class="menu-group-tabs" aria-label="เลือกประเภทเมนู">
+<button type="button" class="selected" data-menu-group="food" aria-pressed="true">🍚 อาหาร</button>
+<button type="button" data-menu-group="drinks" aria-pressed="false">🥤 เครื่องดื่ม</button>
+<button type="button" data-menu-group="dessert" aria-pressed="false">🍞 ขนม</button>
+</nav>
+<div id="categoryHint" class="category-hint">เลือกหมวดย่อย</div>
+<div id="categories" class="categories" role="group" aria-label="หมวดย่อย"></div>
+</div><div id="catalog" class="catalog"><div class="empty">กำลังโหลดเมนู…</div></div></section>
 <section id="historyPanel" class="panel" hidden><h2>ประวัติออเดอร์</h2><div id="orderHistory" class="empty">กรุณาเข้าสู่ระบบ LINE เพื่อดูประวัติ</div></section>
 </main>
+</div>
+<div id="nextStepBar" class="next-step-bar" hidden role="status">
+ <div class="next-step-inner">
+  <span id="nextStepLabel">เพิ่มรายการแล้ว</span>
+  <button id="nextStepButton" type="button" class="primary">🥤 เลือกเครื่องดื่มต่อ →</button>
+  <button id="nextStepDismiss" type="button" class="next-step-close" aria-label="ปิดคำแนะนำ">✕</button>
+ </div>
 </div>
 <div class="basket" id="basketBar" hidden><div><small>ตะกร้าของคุณ</small><strong id="basketLabel">0 รายการ</strong></div><button id="openBasket" class="primary">ดูตะกร้า · ฿<span id="basketTotal">0</span> <span aria-hidden="true">→</span></button></div>
 <dialog id="cartDialog"><form method="dialog"><div class="dialogtop"><h2>ตรวจสอบรายการ</h2><button class="iconbtn" value="cancel" aria-label="ปิด">✕</button></div></form><div id="cartItems"></div><div class="totalrow"><span>รวม</span><strong id="cartSum">฿0</strong></div><div id="checkoutArea"><label>วิธีรับอาหาร<select id="fulfillment"><option value="pickup">รับที่ร้าน</option><option value="delivery">จัดส่ง</option></select></label><label id="addressLabel" hidden>ที่อยู่จัดส่ง<textarea id="deliveryAddress" maxlength="500" placeholder="สถานที่จัดส่งและรายละเอียด"></textarea></label><label>หมายเหตุสำหรับร้าน<textarea id="orderNote" maxlength="300" placeholder="เช่น ไม่ใส่น้ำแข็ง"></textarea></label><fieldset id="paymentSelector" class="pay-methods"><legend>วิธีชำระเงิน</legend>
