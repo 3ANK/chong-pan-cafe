@@ -73,3 +73,7 @@ No credentials, tokens, customer databases, or encrypted recipes are in this rep
 - Checkout requires both existing flags **and no unverified available menu prices**. Do not bulk-approve unknown prices or enable orders without actual LINE callback, payment, and notification tests.
 - Basket prices are refreshed from the server menu (never trusted at checkout). Payment is still offline; no account or QR has been invented.
 - Keep the older live ordering URL untouched until owner approves a cutover. 
+
+### Price and promotion corrections
+- Migration `006_owner_prices.sql` brings **กาแฟโตนด** from stale 45 to historically owner-requested 40 THB, but keeps it unverified until the current price is checked against Loyverse.
+- **ปังเนยนม** is 15 THB each or 25 THB per pair; discounts are reflected in cart and recomputed server-side. This remains conditional on base price being 15 THB. No discount is inferred for other bread items.
