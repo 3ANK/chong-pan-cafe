@@ -270,10 +270,17 @@ globalThis.fetch=async url=>{
  if(String(url)==='https://api.line.me/v2/bot/message/push'){attemptedPush=true;return new Response('LINE temporarily unavailable',{status:503})}
  throw Error('Unexpected external URL');
 };
-r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
-assert.equal(r.status,201);assert.equal(attemptedPush,true);assert.equal(r.data.ownerAlertOk,false);assert.equal(r.data.shopAutoPaused,true);
+const failedNotificationKey=crypto.randomUUID();
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',requestKey:failedNotificationKey},cookie);
+assert.equal(r.status,201);const failedOrderId=r.data.orderId;assert.equal(attemptedPush,true);assert.equal(r.data.ownerAlertOk,false);assert.equal(r.data.shopAutoPaused,true);
 assert.equal(db.raw.prepare("SELECT value FROM shop_settings WHERE key='shop_enabled'").get().value,'0');
 assert.equal(db.raw.prepare("SELECT COUNT(*) AS n FROM order_notifications WHERE delivered=0").get().n,1);
+// Recover the SAME order even when a failed alert automatically disables checkout.
+const ordersBeforeRetry=db.raw.prepare("SELECT COUNT(*) AS n FROM orders").get().n;
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',requestKey:failedNotificationKey},cookie);
+assert.equal(r.status,200);assert.equal(r.data.reused,true);assert.equal(r.data.orderId,failedOrderId);
+assert.equal(r.data.ownerAlertOk,false);
+assert.equal(db.raw.prepare("SELECT COUNT(*) AS n FROM orders").get().n,ordersBeforeRetry);
 r=await call('health');assert.equal(r.data.ordersEnabled,false);
 r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
 globalThis.fetch=realFetch;
@@ -310,5 +317,8 @@ assert.ok(appJS.includes("function suggestNextStep(product)")&&appJS.includes("s
 assert.ok(appJS.includes("return p.drink?'drinks':'food'"));
 assert.ok(appJS.includes("state.selectedCategory='ทั้งหมด';paintMenuGroupTabs();paintCategories();paintCatalog()"));
 assert.ok(appJS.includes("const pendingKeyName='chongpan-v2-pending-checkout'"));
+assert.ok(appJS.includes("if(r.confirmationPending){")&&appJS.includes('กำลังตรวจสอบการแจ้งร้าน'));
+assert.ok(appJS.includes('ส่งออเดอร์และไปสแกนจ่าย'));
+
 assert.ok(appJS.includes("fingerprint:payloadFingerprint")&&appJS.includes("localStorage.removeItem(pendingKeyName)"));
 assert.ok(appJS.includes("new AbortController()")&&appJS.includes("Promise.race(["));

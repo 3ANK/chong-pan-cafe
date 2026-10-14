@@ -250,7 +250,9 @@ async function placeOrder(){
   const r=await request('orders',{method:'POST',body:JSON.stringify({items,fulfillment,deliveryAddress,paymentMethod,note:$('orderNote').value.trim(),requestKey:reqKey})});
   try{localStorage.removeItem(pendingKeyName)}catch{}
   state.basket=[];saveBasket();paintBasket();$('cartDialog').close();
-  if(r.ownerAlertOk!==true){
+  if(r.confirmationPending){
+   alert('บันทึกออเดอร์ #'+r.orderId.slice(0,8)+' แล้ว ขณะนี้กำลังตรวจสอบการแจ้งร้าน กรุณารอร้านยืนยัน และยังไม่ต้องโอนเงิน อย่าสั่งซ้ำ');
+  }else if(r.ownerAlertOk!==true){
    alert('ระบบบันทึกออเดอร์ #'+r.orderId.slice(0,8)+' แล้ว แต่แจ้งร้านไม่สำเร็จ กรุณาโทร 062-594-6399 เพื่อยืนยัน อย่าสั่งซ้ำและยังไม่ต้องโอนเงิน');
   }else{
    toast('ส่งออเดอร์สำเร็จ #'+r.orderId.slice(0,8));
@@ -293,7 +295,10 @@ $('increaseOptionQty').addEventListener('click',()=>setOptionQuantity(optionQuan
 $('egg').addEventListener('change',()=>setOptionEggQuantity(1));
 $('decreaseEggQty').addEventListener('click',()=>setOptionEggQuantity(optionEggQuantity-1));
 $('increaseEggQty').addEventListener('click',()=>setOptionEggQuantity(optionEggQuantity+1));
-$('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>{hideNextStep();$('cartDialog').showModal()});$('fulfillment').addEventListener('change',()=>show('addressLabel',$('fulfillment').value==='delivery'));$('placeOrder').addEventListener('click',placeOrder);$('closePaymentDialog').addEventListener('click',()=>$('paymentDialog').close());
+$('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>{hideNextStep();$('cartDialog').showModal();void bootPayments()});$('fulfillment').addEventListener('change',()=>show('addressLabel',$('fulfillment').value==='delivery'));document.querySelectorAll('input[name="paymentMethod"]').forEach(el=>el.addEventListener('change',()=>{
+ $('placeOrder').textContent=el.value==='qr'?'ส่งออเดอร์และไปสแกนจ่าย':'ยืนยันสั่งอาหาร';
+}));
+$('placeOrder').addEventListener('click',placeOrder);$('closePaymentDialog').addEventListener('click',()=>$('paymentDialog').close());
 $('donePaymentDialog').addEventListener('click',()=>$('paymentDialog').close());
 restoreBasket();
 (async()=>{
