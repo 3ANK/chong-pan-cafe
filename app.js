@@ -68,6 +68,14 @@ async function bootMenu(){try{const r=await request('menu');state.products=r.pro
    if(!p||!p.available||p.price<=0)return null;
    return {...it,name:p.name,price:p.price,egg:p.category==='กะเพรา'?it.egg:'',sweetness:p.drink?it.sweetness:''};
   }).filter(Boolean);saveBasket();
-  state.liffId=r.liffId||'';state.canOrder=!!r.shopEnabled;$('statusBanner').className='notice '+(state.canOrder?'ok':'warn');$('statusBanner').textContent=state.canOrder?'พร้อมรับออเดอร์ผ่าน LINE':'ระบบใหม่อยู่ระหว่างทดสอบ · ยังไม่รับออเดอร์จริง · ราคาอ้างอิงจากข้อมูลเดิม';state.ready=true;paintCategories();paintCatalog();paintBasket()}catch(e){$('statusBanner').className='notice warn';$('statusBanner').textContent='เชื่อมต่อเมนูไม่สำเร็จ';$('catalog').innerHTML='<p class="empty">'+escapeText(e.message)+'</p>'}}
+  state.liffId=r.liffId||'';state.canOrder=!!r.shopEnabled;show('legacyCheckout',!state.canOrder);$('statusBanner').className='notice '+(state.canOrder?'ok':'warn');$('statusBanner').textContent=state.canOrder?'พร้อมรับออเดอร์ผ่าน LINE':'ระบบใหม่อยู่ระหว่างทดสอบ · ยังไม่รับออเดอร์จริง · ราคาอ้างอิงจากข้อมูลเดิม';state.ready=true;paintCategories();paintCatalog();paintBasket()}catch(e){$('statusBanner').className='notice warn';$('statusBanner').textContent='เชื่อมต่อเมนูไม่สำเร็จ';$('catalog').innerHTML='<p class="empty">'+escapeText(e.message)+'</p>'}}
 $('search').addEventListener('input',paintCatalog);document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));$('loginBtn').addEventListener('click',authenticate);$('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>$('cartDialog').showModal());$('fulfillment').addEventListener('change',()=>show('addressLabel',$('fulfillment').value==='delivery'));$('placeOrder').addEventListener('click',placeOrder);$('refreshAdmin').addEventListener('click',loadAdmin);$('manageCatalog').addEventListener('click',()=>window.openChongpanCatalog?.());$('manageLegacy').addEventListener('click',manageLegacy);
+$('checkReadiness').addEventListener('click',async()=>{
+ const el=$('readinessReport');el.hidden=false;el.textContent='กำลังตรวจสอบความพร้อม…';
+ try{
+  const r=await request('admin/readiness');
+  el.innerHTML='<strong>สถานะระบบ: '+(r.ordersEnabled?'พร้อมเปิดรับออเดอร์':'ยังไม่พร้อม')+'</strong><p>สินค้า '+r.catalog.total+' รายการ · รอยืนยันราคา '+r.catalog.unverified+' รายการ</p><ul>'+
+   r.checks.map(x=>'<li>'+escapeText(x.label)+' — '+(x.ok?'พร้อม ✓':'ยังไม่พร้อม')+'</li>').join('')+'</ul><p class="caption">ต้องทดสอบ LINE Login และข้อความแจ้งออเดอร์ถึงมือถือเจ้าของร้านจริงก่อนเปิดรับออเดอร์</p>';
+ }catch(e){el.textContent=e.message}
+});
 restoreBasket();paintBasket();Promise.all([bootMenu(),loadMember()]).then(async()=>{if(state.liffId&&window.liff&&new URL(location).searchParams.has('liff.state')){try{await authenticate()}catch{}}});
