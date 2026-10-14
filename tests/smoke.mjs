@@ -91,7 +91,9 @@ r=await call('admin/readiness','GET',undefined,cookie);assert.equal(r.status,200
 assert.ok(r.data.checks.some(c=>c.id==='alert_token'&&!c.ok));
 // Owner-only settings; fake names and placeholder paths only in test DB.
 r=await call('admin/payment/config','POST',{qrPath:'/assets/payment/shop-qr.png',oaId:'wrong'},cookie);assert.equal(r.status,400);
-r=await call('admin/payment/config','POST',{qrPath:'/assets/payment/shop-qr.png',oaId:'@chongpanTest'},cookie);assert.equal(r.status,200);assert.equal(r.data.qrEnabled,true);
+r=await call('admin/payment/config','POST',{qrPath:'/assets/payment/shop-qr.png',oaId:'@chongpanTest'},cookie);assert.equal(r.status,200);assert.equal(r.data.qrEnabled,false); // Real QR asset still needs verified deployment.
+env.PAYMENT_QR_READY='true';
+r=await call('admin/payment/config','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.qrEnabled,true);
 r=await call('payment/config');assert.equal(r.data.oaId,'@chongpanTest');
 r=await call('admin/line/test','POST',{},cookie);assert.equal(r.status,409);
 r=await call('admin/shop','POST',{enabled:true,ownerConfirmed:true},cookie);assert.equal(r.status,409);
