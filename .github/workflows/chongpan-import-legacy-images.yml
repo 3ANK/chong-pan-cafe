@@ -1,0 +1,70 @@
+name: Import missing owner menu images
+on:
+  push:
+    branches: [chongpan-ordering-v2]
+    paths: ['.github/workflows/chongpan-import-legacy-images.yml']
+  workflow_dispatch:
+jobs:
+  import-images:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chongpan-ordering-v2
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install image converter
+        run: python -m pip install --disable-pip-version-check pillow
+      - name: Copy original owner menu images to self-hosted WebP files
+        run: |
+          python - <<'PY'
+          from PIL import Image, ImageOps
+          from urllib.request import Request, urlopen
+          from io import BytesIO
+          from pathlib import Path
+          base='https://chongpan-members.oakenzebra4.chatgpt.site'
+          dest=Path('assets/products')
+          dest.mkdir(parents=True,exist_ok=True)
+          ids=list(range(55,63))+list(range(64,84))+list(range(84,91))
+          failures=[]
+          for n in ids:
+              path=dest/f'{n:02d}.webp'
+              if path.exists():
+                  print('Already exists:',path)
+                  continue
+              suffix=f'/menu/no-price-v3/{n}.png' if n<=83 else f'/menu/new-soda-v1/{n}.webp'
+              url=base+suffix
+              try:
+                  data=urlopen(Request(url,headers={'User-Agent':'Mozilla/5.0 (ChongPan owner image migration)'}),timeout=25).read()
+                  if not 0<len(data)<15_000_000:
+                      raise ValueError('File missing or out of size limit')
+                  img=Image.open(BytesIO(data))
+                  if img.format not in ('PNG','JPEG','WEBP'):
+                      raise ValueError('Not an expected image')
+                  img=ImageOps.exif_transpose(img)
+                  img.thumbnail((1600,1600),Image.Resampling.LANCZOS)
+                  img.convert('RGB').save(path,'WEBP',quality=83,method=6)
+                  print('Imported',n,img.size,path.stat().st_size)
+              except Exception as exc:
+                  failures.append((n,str(exc)))
+                  print('FAILED',n,str(exc))
+          if failures:
+              print('Failed IDs:',failures)
+              raise SystemExit('Some images could not be imported, successful files will be kept as workflow artifacts only')
+          print('All missing menu photos imported.')
+          PY
+      - name: Commit images in isolated branch
+        run: |
+          git config user.name "chongpan-image-import-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add assets/products/*.webp
+          if git diff --cached --quiet; then
+            echo "No new image files"
+          else
+            git commit -m "Import and optimize 35 original menu images into own hosting"
+            git push origin HEAD:chongpan-ordering-v2
+          fi
