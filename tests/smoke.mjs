@@ -29,6 +29,22 @@ function createD1(){
   async batch(steps){db.exec('BEGIN');try{const results=[];for(const s of steps)results.push(await s.run());db.exec('COMMIT');return results}catch(e){db.exec('ROLLBACK');throw e}}
  };
 }
+// The menu is gated on a verified LINE session before it is revealed to visitors.
+const html=readFileSync(new URL('../index.html',import.meta.url),'utf8');
+const appJS=readFileSync(new URL('../app.js',import.meta.url),'utf8');
+const css=readFileSync(new URL('../styles.css',import.meta.url),'utf8');
+assert.ok(html.indexOf('id="lineGate"')>=0);
+assert.ok(html.indexOf('id="lineGate"')<html.indexOf('id="shopShell" hidden'));
+assert.ok(html.includes('<body class="line-auth-pending">'));
+assert.ok(html.includes('id="lineGateRetry"')&&html.includes('id="shopShell" hidden'));
+assert.ok(css.includes('body.line-auth-pending #basketBar{display:none!important}'));
+assert.ok(css.includes('#shopShell[hidden]'));
+assert.ok(appJS.includes('await bootMenu();')&&appJS.includes('await loadMember();'));
+assert.ok(appJS.includes('if(state.member){')&&appJS.includes('showShopAfterLogin();'));
+assert.ok(appJS.includes('liff.login({redirectUri:location.origin+location.pathname})'));
+assert.ok(appJS.includes("await request('auth/line'"));
+assert.ok(appJS.includes("await authenticate(false)"));
+
 const db=createD1();
 const env={DB:db,SHOP_ENABLED:'false',LINE_CHANNEL_ID:'2011951537',SESSION_SECRET:'local-test-secret-which-is-never-deployed',OWNER_LINE_USER_ID:'U'+'a'.repeat(32)};
 async function call(path, method='GET', data=undefined,cookie='',origin='http://localhost:8788'){

@@ -30,7 +30,50 @@ function addItem(){const p=state.selectedProduct;if(!p)return;const item={id:p.i
 function paintBasket(){const count=state.basket.reduce((n,it)=>n+it.qty,0);show('basketBar',count>0);$('basketLabel').textContent=count+' รายการ';$('basketTotal').textContent=subTotal().toLocaleString('th-TH');$('cartSum').textContent=fmt(subTotal());$('cartItems').innerHTML=state.basket.map((it,i)=>`<div class="cartline"><div><strong>${escapeText(it.name)}</strong><br><small>${escapeText([it.sweetness,it.egg?({fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'})[it.egg]:'',it.note].filter(Boolean).join(' · '))}</small><div>${fmt(lineSubtotal(it))}</div></div><div class="cartbuttons"><button data-qty="${i}" data-step="-1" aria-label="ลดจำนวน">−</button>${it.qty}<button data-qty="${i}" data-step="1" aria-label="เพิ่มจำนวน">+</button></div></div>`).join('')||'<p class="empty">ตะกร้าว่าง</p>';for(const b of $('cartItems').querySelectorAll('[data-qty]'))b.addEventListener('click',()=>{const i=Number(b.dataset.qty);state.basket[i].qty+=Number(b.dataset.step);if(state.basket[i].qty<1)state.basket.splice(i,1);if(state.basket[i]?.qty>20)state.basket[i].qty=20;saveBasket();paintBasket()});$('placeOrder').disabled=!state.canOrder||!state.member||!count;$('checkoutHint').textContent=!state.canOrder?'ระบบทดลอง ยังไม่เปิดรับออเดอร์จริง':!state.member?'เข้าสู่ LINE ก่อนยืนยันออเดอร์':'ตรวจสอบราคาและรายละเอียดให้ถูกต้องก่อนสั่ง'}
 function setTab(tab){for(const t of ['menu','history','admin'])show(t+'Panel',t===tab);document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.tab===tab));if(tab==='history')loadHistory();if(tab==='admin')loadAdmin()}
 function paintMember(){const m=state.member;$('memberName').textContent=m?.name||'ยังไม่ได้เข้าสู่ระบบ';$('points').textContent=m?.points??'–';$('loginBtn').textContent=m?'บัญชี LINE ✓':'เข้าสู่ LINE';state.admin=!!m?.isOwner;show('adminTab',state.admin);paintBasket()}
-async function authenticate(){if(!state.liffId){toast('ยังไม่ได้ตั้งค่า LINE LIFF สำหรับเว็บใหม่');return}if(!window.liff){toast('โหลด LINE SDK ไม่สำเร็จ');return}try{await liff.init({liffId:state.liffId});if(!liff.isLoggedIn()){liff.login({redirectUri:location.origin+'/'});return}const idToken=liff.getIDToken();if(!idToken)throw Error('ไม่พบข้อมูล LINE Login');await request('auth/line',{method:'POST',body:JSON.stringify({idToken})});await loadMember();toast('เข้าสู่ LINE สำเร็จ')}catch(e){toast(e.message)}}
+const loginAttemptKey='chongpan-v2-line-login-attempt';
+let lineAuthBusy=false;
+function loginWasAttempted(){try{return sessionStorage.getItem(loginAttemptKey)==='1'}catch{return false}}
+function markLoginAttempt(){try{sessionStorage.setItem(loginAttemptKey,'1')}catch{}}
+function clearLoginAttempt(){try{sessionStorage.removeItem(loginAttemptKey)}catch{}}
+function gateStatus(message,retry=false){
+ $('lineGateStatus').textContent=message;
+ $('lineGateRetry').hidden=!retry;
+}
+function showShopAfterLogin(){
+ if(!state.member)return;
+ $('lineGate').hidden=true;
+ $('shopShell').hidden=false;
+ document.body.classList.remove('line-auth-pending');
+ paintBasket();
+}
+async function authenticate(userInitiated=false){
+ if(lineAuthBusy)return;
+ lineAuthBusy=true;
+ gateStatus('กำลังเชื่อมต่อบัญชี LINE…');
+ try{
+  if(!state.liffId)throw Error('ยังไม่พร้อมเชื่อมต่อ LINE กรุณาลองใหม่');
+  if(!window.liff)throw Error('ไม่สามารถโหลดระบบ LINE Login ได้ กรุณาลองใหม่');
+  await liff.init({liffId:state.liffId});
+  if(!liff.isLoggedIn()){
+   if(loginWasAttempted()&&!userInitiated)throw Error('ยังไม่ได้ยืนยันการเชื่อมต่อ LINE กรุณากดปุ่มด้านล่างเพื่อลองอีกครั้ง');
+   markLoginAttempt();
+   gateStatus('กำลังเปิดหน้าขออนุญาตเชื่อมต่อ LINE…');
+   liff.login({redirectUri:location.origin+location.pathname});
+   return;
+  }
+  const idToken=liff.getIDToken();
+  if(!idToken)throw Error('ไม่พบข้อมูลบัญชี LINE กรุณากดเชื่อมต่ออีกครั้ง');
+  await request('auth/line',{method:'POST',body:JSON.stringify({idToken})});
+  await loadMember();
+  if(!state.member)throw Error('เข้าสู่ระบบยังไม่สำเร็จ กรุณาลองใหม่');
+  clearLoginAttempt();
+  showShopAfterLogin();
+ }catch(e){
+  gateStatus((e?.message||'เชื่อมต่อบัญชี LINE ไม่สำเร็จ')+' · กรุณาลองใหม่',true);
+ }finally{
+  lineAuthBusy=false;
+ }
+}
 async function loadMember(){try{const m=await request('me');state.member=m.member}catch{state.member=null}paintMember()}
 function statusName(s){return ({pending:'รอร้านรับ',accepted:'ร้านรับแล้ว',preparing:'กำลังทำ',ready:'พร้อมรับ / ส่ง',completed:'ส่งมอบแล้ว',cancelled:'ยกเลิก'})[s]||s}
 function orderCard(o,admin=false){let items=Array.isArray(o.items)?o.items:[];return `<div class="ordercard"><div class="adminrow"><strong>ออเดอร์ #${escapeText(o.id.slice(0,8).toUpperCase())}</strong><span class="tag">${escapeText(statusName(o.status))}</span></div><p class="small">${new Date(o.created_at).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})}</p><p>${items.map(i=>escapeText(i.name)+' ×'+i.qty).join(' · ')}</p><p><strong>${fmt(o.total)}</strong> · ${o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน'}</p>${admin?`<p class="small">${escapeText(o.display_name||'')} ${escapeText(o.delivery_address||'')}</p><div class="inline">${['accepted','preparing','ready','completed','cancelled'].filter(s=>s!==o.status).map(s=>`<button class="secondary" data-status="${s}" data-order="${escapeText(o.id)}">${escapeText(statusName(s))}</button>`).join('')}</div>`:''}</div>`}
@@ -69,7 +112,8 @@ async function bootMenu(){try{const r=await request('menu');state.products=r.pro
    return {...it,name:p.name,price:p.price,egg:p.category==='กะเพรา'?it.egg:'',sweetness:p.drink?it.sweetness:''};
   }).filter(Boolean);saveBasket();
   state.liffId=r.liffId||'';state.canOrder=!!r.shopEnabled;show('legacyCheckout',!state.canOrder);$('statusBanner').className='notice '+(state.canOrder?'ok':'warn');$('statusBanner').textContent=state.canOrder?'พร้อมรับออเดอร์ผ่าน LINE':'ระบบใหม่อยู่ระหว่างทดสอบ · ยังไม่รับออเดอร์จริง · ราคาอ้างอิงจากข้อมูลเดิม';state.ready=true;paintCategories();paintCatalog();paintBasket()}catch(e){$('statusBanner').className='notice warn';$('statusBanner').textContent='เชื่อมต่อเมนูไม่สำเร็จ';$('catalog').innerHTML='<p class="empty">'+escapeText(e.message)+'</p>'}}
-$('search').addEventListener('input',paintCatalog);document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));$('loginBtn').addEventListener('click',authenticate);$('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>$('cartDialog').showModal());$('fulfillment').addEventListener('change',()=>show('addressLabel',$('fulfillment').value==='delivery'));$('placeOrder').addEventListener('click',placeOrder);$('refreshAdmin').addEventListener('click',loadAdmin);$('manageCatalog').addEventListener('click',()=>window.openChongpanCatalog?.());$('manageLegacy').addEventListener('click',manageLegacy);
+$('search').addEventListener('input',paintCatalog);document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));$('loginBtn').addEventListener('click',()=>authenticate(true));
+$('lineGateRetry').addEventListener('click',()=>authenticate(true));$('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>$('cartDialog').showModal());$('fulfillment').addEventListener('change',()=>show('addressLabel',$('fulfillment').value==='delivery'));$('placeOrder').addEventListener('click',placeOrder);$('refreshAdmin').addEventListener('click',loadAdmin);$('manageCatalog').addEventListener('click',()=>window.openChongpanCatalog?.());$('manageLegacy').addEventListener('click',manageLegacy);
 $('testLineAlert').addEventListener('click',async()=>{
  if(!confirm('ส่งข้อความทดสอบไปยัง LINE เจ้าของร้านตอนนี้? ไม่มีการสร้างออเดอร์หรือหักแต้ม'))return;
  const button=$('testLineAlert');button.disabled=true;
@@ -105,4 +149,18 @@ $('checkReadiness').addEventListener('click',async()=>{
    r.checks.map(x=>'<li>'+escapeText(x.label)+' — '+(x.ok?'พร้อม ✓':'ยังไม่พร้อม')+'</li>').join('')+'</ul><p class="caption">ต้องทดสอบ LINE Login และข้อความแจ้งออเดอร์ถึงมือถือเจ้าของร้านจริงก่อนเปิดรับออเดอร์</p>';
  }catch(e){el.textContent=e.message}
 });
-restoreBasket();paintBasket();Promise.all([bootMenu(),loadMember()]).then(async()=>{if(state.liffId&&window.liff&&new URL(location).searchParams.has('liff.state')){try{await authenticate()}catch{}}});
+restoreBasket();
+(async()=>{
+ await bootMenu();
+ if(!state.ready){
+  gateStatus('ไม่สามารถโหลดรายการสินค้าได้ กรุณาตรวจสอบอินเทอร์เน็ตแล้วลองใหม่',true);
+  return;
+ }
+ await loadMember();
+ if(state.member){
+  clearLoginAttempt();
+  showShopAfterLogin();
+  return;
+ }
+ await authenticate(false);
+})();
