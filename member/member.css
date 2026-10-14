@@ -33,3 +33,13 @@
 .member-help{font-size:13px;color:#646e60;line-height:1.8;margin-top:20px}
 .member-bottom{text-align:center;margin-top:25px}.member-bottom a{color:#596b35;font-weight:700}
 @media(max-width:520px){.loyalty-card{padding:20px;min-height:242px}.loyalty-cup{top:85px;right:13px;font-size:48px}.loyalty-balance>span:first-child{font-size:46px}}
+
+/* Keep member card/navigation within narrow LINE mobile viewports. */
+@media(max-width:619px){
+.member-main{padding-bottom:70px}
+.member-hero-link{white-space:normal;text-align:center;font-size:12px;padding:8px 10px;flex-shrink:0}
+.member-nav{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:8px}
+.member-nav a{font-size:12px;padding:9px 7px;text-align:center}
+.loyalty-card{padding:20px;min-width:0}
+.member-section-title{flex-wrap:wrap}
+}

@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="th">
 <head>
-  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#596b35"><meta name="description" content="ระบบสั่งอาหารและสะสมแต้มร้านชง&ปั่น CHONG & PAN">
   <title>ชง&ปั่น | สั่งอาหารผ่าน LINE</title><link rel="stylesheet" href="/styles.css"><script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script><script src="/app.js" defer></script>
 </head>
@@ -18,7 +18,7 @@
   </div>
 </section>
 <div class="shell" id="shopShell" hidden>
-<header class="hero"><div class="topbar"><div class="mark" aria-hidden="true">ช&ป</div><div class="brand"><strong>ชง&ปั่น</strong><small>CHONG & PAN • LINE ORDERING</small></div><a id="adminShortcut" href="/admin/" hidden class="ghost">หลังบ้านเจ้าของร้าน ↗</a><button id="loginBtn" class="ghost">เข้าสู่ LINE</button></div><div class="hero-message"><span class="eyebrow">FRESHLY MADE FOR YOU</span><h1>วันนี้รับอะไรดีครับ?</h1><p>เลือกเมนูโปรด สั่งง่าย ๆ ผ่าน LINE</p></div><div id="statusBanner" class="notice">กำลังตรวจสอบระบบ…</div><div id="legacyCheckout" class="legacy-checkout"><span>ระหว่างเปลี่ยนระบบ กรุณาสั่งซื้อผ่านระบบเดิม</span><a class="legacy-order-link" href="https://chongpan-members.oakenzebra4.chatgpt.site/order" target="_blank" rel="noopener noreferrer">สั่งซื้อผ่านระบบเดิม ↗</a></div></header>
+<header class="hero"><div class="topbar order-topbar"><div class="mark" aria-hidden="true">ช&ป</div><div class="brand"><strong>ชง&ปั่น</strong><small>CHONG & PAN • LINE ORDERING</small></div><div class="header-actions"><a id="adminShortcut" href="/admin/" hidden class="ghost">หลังบ้านเจ้าของร้าน ↗</a><button id="loginBtn" class="ghost">เข้าสู่ LINE</button></div></div><div class="hero-message"><span class="eyebrow">FRESHLY MADE FOR YOU</span><h1>วันนี้รับอะไรดีครับ?</h1><p>เลือกเมนูโปรด สั่งง่าย ๆ ผ่าน LINE</p></div><div id="statusBanner" class="notice">กำลังตรวจสอบระบบ…</div><div id="legacyCheckout" class="legacy-checkout"><span>ระหว่างเปลี่ยนระบบ กรุณาสั่งซื้อผ่านระบบเดิม</span><a class="legacy-order-link" href="https://chongpan-members.oakenzebra4.chatgpt.site/order" target="_blank" rel="noopener noreferrer">สั่งซื้อผ่านระบบเดิม ↗</a></div></header>
 <main>
 <section class="summary" aria-label="สถานะสมาชิก"><div><small>บัญชีสมาชิก</small><strong id="memberName">ยังไม่ได้เข้าสู่ระบบ</strong></div><div><small>แต้มสะสม</small><strong><span id="points">–</span> <span class="pts">แต้ม</span></strong><a class="summary-points-link" href="/member/">ดูบัตรสมาชิกและประวัติแต้ม →</a></div></section>
 <nav class="tabs" aria-label="เมนูหลัก"><button data-tab="menu" class="selected">เมนูอาหาร</button><a class="tab-link" href="/member/">บัตรสมาชิก / แต้มสะสม</a><button data-tab="history">ออเดอร์ของฉัน</button></nav>

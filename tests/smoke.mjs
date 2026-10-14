@@ -177,3 +177,11 @@ r=await call('health');assert.equal(r.data.ordersEnabled,false);
 r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
 globalThis.fetch=realFetch;
 console.log('PASS: health, 90 products reconciled to old order display, verification gate, closed checkout, origin blocking, LINE verification mock, signed cookie, total server-side 90 not 2, idempotency, owner/admin transitions, no double points, order notification fail-closed, catalog edit');
+
+// The storefront is narrow-mobile first, including the login header and every dialog.
+assert.ok(html.includes('class="topbar order-topbar"')&&html.includes('class="header-actions"'));
+assert.ok(html.includes('width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover'));
+assert.ok(css.includes('.order-topbar{display:grid;grid-template-columns:46px minmax(0,1fr)'));
+assert.ok(css.includes('.tabs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)'));
+assert.ok(css.includes('.search input{font-size:16px'));
+assert.ok(css.includes('dialog{padding:16px;width:calc(100vw - 24px)'));

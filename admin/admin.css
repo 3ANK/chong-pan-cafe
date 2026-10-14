@@ -17,3 +17,15 @@
 .admin-section form input{display:block;width:100%;max-width:480px;padding:12px;margin-top:6px;border:1px solid #d2d7c8;border-radius:9px}
 .admin-section button{cursor:pointer}.admin-order-details{line-height:1.65}.admin-order-details p{margin:7px 0}
 @media(max-width:520px){.admin-section{padding:15px}.admin-hero{padding:17px}.admin-actions button{flex:1 1 auto}}
+
+/* Owner dashboard also fits narrow phones. */
+@media(max-width:619px){
+.admin-wrap{padding:12px 10px 40px;max-width:100%;min-width:0}
+.admin-hero{padding:15px;gap:10px}
+.admin-title{min-width:0}.admin-title>div{min-width:0}
+.admin-title h1{font-size:21px;overflow-wrap:anywhere}
+.admin-back{font-size:12px}
+.admin-section{overflow-wrap:anywhere}
+.admin-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.admin-actions button{width:100%;white-space:normal;min-width:0}
+}
