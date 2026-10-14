@@ -96,3 +96,31 @@ No credentials, tokens, customer databases, or encrypted recipes are in this rep
 - Earn 1 point per full 25 THB **per completed order**; fractional remainders do not carry between orders. All data read from existing D1, never initialized to fictitious test balances.
 - Redemption is displayed as unavailable until reward catalogue/rules are confirmed; do not advertise unconfigured rewards or allow deductions.
 - Existing 11 legacy accounts and approved identity mapping are unchanged; old member balances not automatically imported to arbitrary LINE accounts.
+
+
+## Cutover checklist (2026-10-14, staging to live)
+
+Live preview: https://chongpan-ordering-v2.pages.dev/ and https://chongpan-ordering-v2.pages.dev/member/
+Main marketing website: https://ชงปั่น.com . Its NEW menu links go to Cloudflare while original LINE checkout stays unchanged until all steps below pass.
+
+### Actions only the shop's LINE admin can complete
+1. In LINE Developers Console open LINE Login channel **2011951537**, LIFF app **2011951537-7IBatvMp**.
+2. Set the LIFF **Endpoint URL** to **https://chongpan-ordering-v2.pages.dev/** (root); do not use /order as endpoint. The old LIFF deep link /order is handled by Pages _redirects and points to the new app.
+3. Open both https://liff.line.me/2011951537-7IBatvMp/order and https://chongpan-ordering-v2.pages.dev/member/ from the LINE mobile app, verify login and owner access.
+4. Ensure the LINE Official Account has Messaging API enabled and the owner is reachable as a friend. Generate a **Messaging API channel access token** for that OA (NOT a LINE Login ID token), then save it as an encrypted Pages Production secret named `LINE_MESSAGING_ACCESS_TOKEN`. Do not paste secrets into code or chat.
+5. Order notification must arrive at the owner LINE account **in an actual end-to-end pilot order** (not only an HTTP 200 result). No test order should be placed in production until checkout flags are explicitly enabled.
+
+### After the shop verifies menu pricing
+- Owner logs into LINE and opens **จัดการร้าน → จัดการเมนู** to verify prices item by item against current Loyverse receipts/catalog. Historical website prices were imported but still intentionally unverified.
+- Owner configures Pages Production variable `LIFF_ENDPOINT_CONFIRMED=true` **only after actual LINE Login test**. Add the Messaging API token secret.
+- Owner configures Pages Production variable `SHOP_ENABLED=true` and redeploys the Pages project. No orders are accepted until the additional D1 flag has been enabled.
+- Owner checks **จัดการร้าน → ตรวจความพร้อมเปิดร้าน**. If every checkbox except database flag passes, use **เปิด / ปิดรับออเดอร์** to enable the D1 flag. This final UI action is owner-only and still enforces all checks server-side.
+- Place a small real pilot order with a second LINE account; confirm the owner receives a LINE notification and sees the order in the admin panel; mark through accepted/ready/completed, and check 1 point per 25 THB for the member.
+- Only after pilot succeeds, replace the old order links on the Netlify marketing site with https://liff.line.me/2011951537-7IBatvMp/order (same LIFF link with updated endpoint); keep the original chatgpt.site direct URL in the rollback document.
+- If LINE push to owner fails, new checkout is automatically paused in D1. The first order remains recorded and the buyer is told to phone the restaurant for confirmation. Check the admin orders and alert outcomes before re-opening.
+- **Do not** change other Cloudflare/Netlify projects or any unrelated customer databases.
+
+### Rollback
+- Admin clicks "เปิด / ปิดรับออเดอร์" to close; or update D1 `shop_settings.shop_enabled` to `0` and Cloudflare `SHOP_ENABLED=false`.
+- Repoint LIFF Endpoint to the original chatgpt.site endpoint ONLY if that original account/app remains accessible and functioning.
+- The Netlify main website checkout links remained unchanged during phased cutover, so existing customer ordering remains available.
