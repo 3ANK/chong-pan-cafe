@@ -16,7 +16,14 @@ const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระ
 const validSweet=new Set(['','ปกติ','หวานน้อย','ไม่หวาน','ไม่เติมน้ำตาล','เติมหวานน้อย','เติมหวานปกติ']);
 const validStatus=new Set(['accepted','preparing','ready','completed','cancelled']);
 async function body(req){const raw=await req.text();if(raw.length>18000)throw new Error('คำขอใหญ่เกินกำหนด');try{return JSON.parse(raw)}catch{throw new Error('รูปแบบ JSON ไม่ถูกต้อง')}}
-async function getOrders(db,where='',args=[]){const q=`SELECT * FROM orders ${where} ORDER BY created_at DESC LIMIT 100`;const result=await db.prepare(q).bind(...args).all();const rows=result.results||[];if(!rows.length)return [];const ids=rows.map(x=>x.id);const binds=ids.map(()=>'?').join(',');const its=(await db.prepare(`SELECT * FROM order_items WHERE order_id IN (${binds})`).bind(...ids).all()).results||[];return rows.map(o=>({...o,items:its.filter(i=>i.order_id===o.id).map(i=>({id:i.catalog_id,name:i.name,qty:i.qty,price:i.unit_price,eggPrice:i.egg_price,sweetness:i.sweetness,egg:i.egg,eggQty:i.egg_qty,note:i.note}))}));}
+async function getOrders(db,where='',args=[]){const q=`SELECT * FROM orders ${where} ORDER BY created_at DESC LIMIT 100`;const result=await db.prepare(q).bind(...args).all();const rows=result.results||[];if(!rows.length)return [];const ids=rows.map(x=>x.id);const binds=ids.map(()=>'?').join(',');const [itemResult,pointsResult]=await Promise.all([
+ db.prepare(`SELECT * FROM order_items WHERE order_id IN (${binds})`).bind(...ids).all(),
+ db.prepare(`SELECT order_id,delta FROM points_ledger WHERE order_id IN (${binds})`).bind(...ids).all()
+]);
+const its=itemResult.results||[],grants=pointsResult.results||[];
+const awardedPoints=new Map(grants.map(x=>[x.order_id,Number(x.delta)]));
+return rows.map(o=>({...o,pointsAwarded:awardedPoints.has(o.id)?awardedPoints.get(o.id):null,
+ items:its.filter(i=>i.order_id===o.id).map(i=>({id:i.catalog_id,name:i.name,qty:i.qty,price:i.unit_price,eggPrice:i.egg_price,sweetness:i.sweetness,egg:i.egg,eggQty:i.egg_qty,note:i.note}))}));}
 
 const safeQrPath=s=>/^\/assets\/payment\/[A-Za-z0-9_.-]+\.(?:png|jpe?g|webp|svg)$/i.test(s);
 const safeOaId=s=>/^@[A-Za-z0-9._-]{3,40}$/.test(s);

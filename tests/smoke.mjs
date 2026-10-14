@@ -73,6 +73,15 @@ assert.ok(adminJS.includes("redirectUri:location.origin+'/admin/'+location.searc
 assert.ok(adminJS.includes("data-order-id="));
 assert.ok(adminJS.includes("card?.scrollIntoView({behavior:'smooth',block:'center'})"));
 assert.ok(adminJS.includes("s==='accepted'?'รับออเดอร์'"));
+assert.ok(adminJS.includes("data-complete-order"));
+assert.ok(adminJS.includes("Math.floor(Math.max(0,Number(o.total)||0)/25)"));
+assert.ok(adminJS.includes("ส่งมอบแล้ว · เพิ่ม +"));
+assert.ok(adminJS.includes("if(b.dataset.completeOrder){"));
+assert.ok(adminJS.includes("status:'completed'"));
+assert.ok(adminJS.includes("o.pointsAwarded"));
+const adminCSS=readFileSync(new URL('../admin/admin.css',import.meta.url),'utf8');
+assert.ok(adminCSS.includes('.loyalty-points{')&&adminCSS.includes('.award-points-button{'));
+assert.equal(Math.floor(539/25),21);
 assert.ok(appJS.includes("https://line.me/R/oaMessage/")&&appJS.includes('paymentMethod'));
 assert.ok(appJS.includes("const link='https://line.me/R/oaMessage/'+encodeURIComponent(cfg.oaId);"));
 assert.ok(!appJS.includes('encodeURIComponent(message)')&&!appJS.includes('แจ้งส่งสลิปชำระเงิน'));
@@ -151,6 +160,8 @@ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:2}],fulfil
 r=await call('orders','GET',undefined,cookie);assert.equal(r.data.orders.length,1);
 for(const status of ['accepted','preparing','ready','completed']){r=await call('admin/orders','PATCH',{id:orderId,status},cookie);assert.equal(r.status,200,JSON.stringify(r));}
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,3);
+r=await call('admin/orders','GET',undefined,cookie);
+assert.equal(r.data.orders.find(o=>o.id===orderId).pointsAwarded,3);
 r=await call('points','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.member.points,3);assert.ok(r.data.history.some(x=>x.kind==='order'&&x.delta===3));
 r=await call('admin/orders','PATCH',{id:orderId,status:'completed'},cookie);assert.equal(r.status,409);
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,3);
@@ -158,10 +169,13 @@ r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,3);
 r=await call('orders','POST',{paymentMethod:'qr',items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
 assert.equal(r.status,201);const qrOrderId=r.data.orderId;
 r=await call('orders','GET',undefined,cookie);assert.ok(r.data.orders.some(x=>x.id===qrOrderId&&x.payment_method==='qr'&&x.payment_status==='unpaid'));
+assert.equal(r.data.orders.find(x=>x.id===qrOrderId).pointsAwarded,null);
 for(const status of ['accepted','preparing','ready']){const x=await call('admin/orders','PATCH',{id:qrOrderId,status},cookie);assert.equal(x.status,200)}
 r=await call('admin/orders','PATCH',{id:qrOrderId,status:'completed'},cookie);assert.equal(r.status,409);
 r=await call('admin/orders/payment','PATCH',{id:qrOrderId,confirmed:true},cookie);assert.equal(r.status,200);
 r=await call('admin/orders','PATCH',{id:qrOrderId,status:'completed'},cookie);assert.equal(r.status,200);
+r=await call('admin/orders','GET',undefined,cookie);
+assert.equal(r.data.orders.find(x=>x.id===qrOrderId).pointsAwarded,Math.floor(45/25));
 // Import an example legacy account, restricted to owner; point awards remain after future order completion.
 db.raw.exec("INSERT INTO legacy_accounts(legacy_code,display_name,snapshot_points) VALUES('ABCDEF12','ลูกค้าทดสอบ',5)");
 r=await call('admin/legacy','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.legacy.length,1);
