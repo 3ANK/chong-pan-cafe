@@ -97,8 +97,7 @@ async function bootPayments(){
 function showQrPayment(orderId,total){
  const cfg=state.paymentConfig;if(!cfg.qrEnabled||!cfg.oaId||!cfg.qrImage){alert('ยังไม่สามารถเปิด QR ร้านได้ กรุณาติดต่อร้าน');return}
  const short=String(orderId).slice(0,8).toUpperCase();
- const message='แจ้งส่งสลิปชำระเงิน ชง&ปั่น ออเดอร์ #'+short+' ยอด '+total+' บาท (กรุณากดส่งข้อความนี้และแนบรูปสลิป)';
- const link='https://line.me/R/oaMessage/'+encodeURIComponent(cfg.oaId)+'/?'+encodeURIComponent(message);
+ const link='https://line.me/R/oaMessage/'+encodeURIComponent(cfg.oaId); // Open LINE OA chat only, without any pre-filled or copied text.
  $('paymentOrderRef').textContent='#'+short;
  $('paymentAmount').textContent=fmt(total);
  $('shopPaymentQr').src=cfg.qrImage;

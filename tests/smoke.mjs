@@ -51,6 +51,9 @@ assert.ok(html.includes('name="paymentMethod" value="qr" id="payQrOption" disabl
 assert.ok(adminHtml.includes('id="adminPrivate" hidden')&&adminHtml.includes('id="paymentSettingsForm"'));
 assert.ok(adminJS.includes("if(!next.member?.isOwner)")&&adminJS.includes("admin/orders/payment"));
 assert.ok(appJS.includes("https://line.me/R/oaMessage/")&&appJS.includes('paymentMethod'));
+assert.ok(appJS.includes("const link='https://line.me/R/oaMessage/'+encodeURIComponent(cfg.oaId);"));
+assert.ok(!appJS.includes('encodeURIComponent(message)')&&!appJS.includes('แจ้งส่งสลิปชำระเงิน'));
+assert.ok(html.includes('ไม่มีข้อความเตรียมไว้หรือคัดลอกให้อัตโนมัติ'));
 
 assert.ok(appJS.includes('liff.login({redirectUri:location.origin+location.pathname})'));
 assert.ok(appJS.includes("await request('auth/line'"));
