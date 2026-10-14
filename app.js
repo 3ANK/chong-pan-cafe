@@ -113,7 +113,23 @@ async function bootMenu(){try{const r=await request('menu');state.products=r.pro
   }).filter(Boolean);saveBasket();
   state.liffId=r.liffId||'';state.canOrder=!!r.shopEnabled;show('legacyCheckout',!state.canOrder);$('statusBanner').className='notice '+(state.canOrder?'ok':'warn');$('statusBanner').textContent=state.canOrder?'พร้อมรับออเดอร์ผ่าน LINE':'ระบบใหม่อยู่ระหว่างทดสอบ · ยังไม่รับออเดอร์จริง · ราคาอ้างอิงจากข้อมูลเดิม';state.ready=true;paintCategories();paintCatalog();paintBasket()}catch(e){$('statusBanner').className='notice warn';$('statusBanner').textContent='เชื่อมต่อเมนูไม่สำเร็จ';$('catalog').innerHTML='<p class="empty">'+escapeText(e.message)+'</p>'}}
 $('search').addEventListener('input',paintCatalog);document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));$('loginBtn').addEventListener('click',()=>authenticate(true));
-$('lineGateRetry').addEventListener('click',()=>authenticate(true));$('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>$('cartDialog').showModal());$('fulfillment').addEventListener('change',()=>show('addressLabel',$('fulfillment').value==='delivery'));$('placeOrder').addEventListener('click',placeOrder);$('refreshAdmin').addEventListener('click',loadAdmin);$('manageCatalog').addEventListener('click',()=>window.openChongpanCatalog?.());$('manageLegacy').addEventListener('click',manageLegacy);
+$('lineGateRetry').addEventListener('click',async()=>{
+ if(!state.ready){
+  gateStatus('กำลังโหลดระบบสั่งซื้ออีกครั้ง…');
+  await bootMenu();
+  if(!state.ready){
+   gateStatus('เชื่อมต่อร้านไม่สำเร็จ กรุณาตรวจอินเทอร์เน็ตแล้วกดลองใหม่',true);
+   return;
+  }
+ }
+ await loadMember();
+ if(state.member){
+  clearLoginAttempt();
+  showShopAfterLogin();
+  return;
+ }
+ await authenticate(true);
+});$('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>$('cartDialog').showModal());$('fulfillment').addEventListener('change',()=>show('addressLabel',$('fulfillment').value==='delivery'));$('placeOrder').addEventListener('click',placeOrder);$('refreshAdmin').addEventListener('click',loadAdmin);$('manageCatalog').addEventListener('click',()=>window.openChongpanCatalog?.());$('manageLegacy').addEventListener('click',manageLegacy);
 $('testLineAlert').addEventListener('click',async()=>{
  if(!confirm('ส่งข้อความทดสอบไปยัง LINE เจ้าของร้านตอนนี้? ไม่มีการสร้างออเดอร์หรือหักแต้ม'))return;
  const button=$('testLineAlert');button.disabled=true;
