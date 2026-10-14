@@ -19,6 +19,8 @@ async function request(path,opts={}){
  }catch(e){if(e?.name==='AbortError')throw Error('การเชื่อมต่อช้าเกินไป กรุณาลองอีกครั้ง');throw e}
  finally{clearTimeout(timeout)}
 }
+const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระเทียม']);
+const supportsEgg=p=>!!p&&eggEligibleCategories.has(p.category);
 function keyOf(item){return JSON.stringify([item.id,item.sweetness,item.egg,item.egg?item.eggQty??1:0,item.note])}
 function extra(item){return (({fried:10,omelet:10,creamy:20})[item.egg]||0)*(item.egg?(item.eggQty??1):0)}
 function breadPair(it){
@@ -93,7 +95,7 @@ let optionEggQuantity=1;
 function selectedOptionItem(){
  const p=state.selectedProduct;
  if(!p)return null;
- return {id:p.id,name:p.name,price:p.price,qty:optionQuantity,sweetness:p.drink?$('sweetness').value:'',egg:p.category==='กะเพรา'?$('egg').value:'',eggQty:p.category==='กะเพรา'&&$('egg').value?optionEggQuantity:0,note:$('itemNote').value.trim()};
+ return {id:p.id,name:p.name,price:p.price,qty:optionQuantity,sweetness:p.drink?$('sweetness').value:'',egg:supportsEgg(p)?$('egg').value:'',eggQty:supportsEgg(p)&&$('egg').value?optionEggQuantity:0,note:$('itemNote').value.trim()};
 }
 function paintOptionQuantity(){
  const draft=selectedOptionItem();
@@ -123,7 +125,7 @@ function openOption(id){
  state.selectedProduct=p;
  $('optionTitle').textContent=p.name+' · '+fmt(p.price)+(p.id==='30'&&p.price===15?' · 2 ชิ้น 25 บาท':(p.id==='31'||p.id==='32')&&p.price===20?' · 2 ชิ้น 35 บาท':'');
  show('sweetnessGroup',!!p.drink);
- show('eggGroup',p.category==='กะเพรา');
+ show('eggGroup',supportsEgg(p));
  $('itemNote').value='';
  $('sweetness').value='ปกติ';
  $('egg').value='';
@@ -267,7 +269,7 @@ async function bootMenu(){try{const r=await request('menu');state.products=r.pro
   state.basket=state.basket.map(it=>{
    const p=current.get(it.id);
    if(!p||!p.available||p.price<=0)return null;
-   return {...it,name:p.name,price:p.price,egg:p.category==='กะเพรา'?it.egg:'',sweetness:p.drink?it.sweetness:''};
+   return {...it,name:p.name,price:p.price,egg:supportsEgg(p)?it.egg:'',sweetness:p.drink?it.sweetness:''};
   }).filter(Boolean);saveBasket();
   state.liffId=r.liffId||'';state.canOrder=!!r.shopEnabled;show('legacyCheckout',!state.canOrder);$('statusBanner').className='notice '+(state.canOrder?'ok':'warn');$('statusBanner').textContent=state.canOrder?'พร้อมรับออเดอร์ผ่าน LINE':'ระบบใหม่อยู่ระหว่างทดสอบ · ยังไม่รับออเดอร์จริง · ราคาอ้างอิงจากข้อมูลเดิม';state.ready=true;paintMenuGroupTabs();paintCategories();paintCatalog();paintBasket()}catch(e){$('statusBanner').className='notice warn';$('statusBanner').textContent='เชื่อมต่อเมนูไม่สำเร็จ';$('catalog').innerHTML='<p class="empty">'+escapeText(e.message)+'</p>'}}
 $('search').addEventListener('input',()=>{state.selectedCategory='ทั้งหมด';paintMenuGroupTabs();paintCategories();paintCatalog()});

@@ -12,6 +12,7 @@ async function newCookie(env,data){const payload=b64(new TextEncoder().encode(JS
 const owner=(s,env)=>!!s?.sub&&!!env.OWNER_LINE_USER_ID&&s.sub===env.OWNER_LINE_USER_ID;
 function eggPrice(s){return({fried:10,omelet:10,creamy:20})[s]??null}
 const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'};
+const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระเทียม']);
 const validSweet=new Set(['','ปกติ','หวานน้อย','ไม่หวาน','ไม่เติมน้ำตาล','เติมหวานน้อย','เติมหวานปกติ']);
 const validStatus=new Set(['accepted','preparing','ready','completed','cancelled']);
 async function body(req){const raw=await req.text();if(raw.length>18000)throw new Error('คำขอใหญ่เกินกำหนด');try{return JSON.parse(raw)}catch{throw new Error('รูปแบบ JSON ไม่ถูกต้อง')}}
@@ -100,7 +101,7 @@ async function createOrder(req,env,db,s){
  if(!config.shopEnabled)return fail('ร้านยังไม่เปิดรับออเดอร์ผ่านระบบใหม่',503);
  const paymentMethod=data.paymentMethod===undefined?'cash':data.paymentMethod;const paymentSettings=await paymentConfig(db,env);if(!['cash','qr'].includes(paymentMethod))return fail('กรุณาเลือกชำระเงินสดหรือสแกนจ่าย');if(paymentMethod==='qr'&&!paymentSettings.qrEnabled)return fail('ยังไม่เปิดสแกนจ่าย กรุณาเลือกเงินสด',409);if(!Array.isArray(data.items)||!data.items.length||data.items.length>35)return fail('จำนวนรายการไม่ถูกต้อง');if(!['pickup','delivery'].includes(data.fulfillment))return fail('วิธีรับอาหารไม่ถูกต้อง');const address=safe(data.deliveryAddress,500);if(data.fulfillment==='delivery'&&!address)return fail('โปรดระบุที่อยู่จัดส่ง');const stock=new Map(config.products.map(p=>[p.id,p]));const validated=[];let total=0;for(const raw of data.items){const p=stock.get(String(raw?.id));const qty=Number(raw?.qty);if(!p||!p.available||p.price<=0||!Number.isInteger(qty)||qty<1||qty>20)return fail('เมนูหรือจำนวนสินค้าไม่ถูกต้อง');const sweetness=safe(raw.sweetness,40);const egg=safe(raw.egg,20);if(!validSweet.has(sweetness)||(sweetness&&!p.drink))return fail('ตัวเลือกความหวานไม่ถูกต้อง');const baseEggPrice=egg?eggPrice(egg):0;
  const eggQty=raw.eggQty===undefined?(egg?1:0):raw.eggQty;
- if(baseEggPrice===null||(egg&&p.category!=='กะเพรา')||!Number.isInteger(eggQty)||eggQty<0||eggQty>5||(egg&&eggQty===0)||(!egg&&eggQty!==0))return fail('ตัวเลือกหรือจำนวนไข่ไม่ถูกต้อง');
+ if(baseEggPrice===null||(egg&&!eggEligibleCategories.has(p.category))||!Number.isInteger(eggQty)||eggQty<0||eggQty>5||(egg&&eggQty===0)||(!egg&&eggQty!==0))return fail('ตัวเลือกหรือจำนวนไข่ไม่ถูกต้อง');
  const extra=baseEggPrice*eggQty;
  const item={id:p.id,name:p.name,qty,price:p.price,egg,eggQty,sweetness,note:safe(raw.note,140),extra};const pair=extra===0?(p.id==='30'&&p.price===15?25:(p.id==='31'||p.id==='32')&&p.price===20?35:null):null;
  total+=pair===null?(p.price+extra)*qty:Math.floor(qty/2)*pair+(qty%2)*p.price;

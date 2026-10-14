@@ -46,13 +46,16 @@ assert.ok(css.includes('#shopShell[hidden]'));
 assert.ok(css.includes('[hidden]{display:none!important}'));
 assert.ok(html.includes('<label id="eggGroup" hidden>'));
 assert.ok(appJS.includes("show('sweetnessGroup',!!p.drink)"));
-assert.ok(appJS.includes("show('eggGroup',p.category==='กะเพรา')"));
+assert.ok(appJS.includes("show('eggGroup',supportsEgg(p))"));
+assert.ok(appJS.includes("egg:supportsEgg(p)?$('egg').value:''"));
+assert.ok(appJS.includes("egg:supportsEgg(p)?it.egg:''"));
+assert.ok(appJS.includes("const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระเทียม'])"));
 assert.ok(html.includes('id="eggQuantityGroup"')&&html.includes('id="increaseEggQty"'));
 assert.ok(appJS.includes('function setOptionEggQuantity(next)'));
 assert.ok(appJS.includes('eggQty:egg?(eggQty??1):0'));
 assert.ok(css.includes('.egg-quantity-group[hidden]'));
 
-assert.ok(appJS.includes("egg:p.category==='กะเพรา'?$('egg').value:''"));
+assert.ok(appJS.includes("egg:supportsEgg(p)?$('egg').value:''"));
 
 assert.ok(appJS.includes('await Promise.all([bootMenu(),bootPayments()]);')&&appJS.includes('await loadMember();'));
 assert.ok(appJS.includes('if(state.member){')&&appJS.includes('showShopAfterLogin();'));
@@ -199,6 +202,20 @@ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfi
  r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:1,egg:'fried'}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
  assert.equal(r.status,201);assert.equal(r.data.total,59);
  assert.ok(lastOwnerOrderNotification.includes('1× กะเพราหมู +ไข่ดาว 1 ฟอง/จาน'));
+ // Garlic rice dishes can choose fried egg, omelet or creamy egg with per-plate quantity.
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'55',qty:2,egg:'fried',eggQty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+ assert.equal(r.status,201);assert.equal(r.data.total,138);
+ assert.ok(lastOwnerOrderNotification.includes('2× ข้าวหมูกระเทียม +ไข่ดาว 2 ฟอง/จาน (+20 บาท/จาน)'));
+ const garlicOrderId=r.data.orderId;
+ r=await call('orders','GET',undefined,cookie);
+ const garlicItem=r.data.orders.find(o=>o.id===garlicOrderId)?.items?.[0];
+ assert.equal(garlicItem.egg,'fried');assert.equal(garlicItem.eggQty,2);assert.equal(garlicItem.eggPrice,20);
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'56',qty:1,egg:'omelet',eggQty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+ assert.equal(r.status,201);assert.equal(r.data.total,59);
+ assert.ok(lastOwnerOrderNotification.includes('1× ข้าวไก่กระเทียม +ไข่เจียว 1 ฟอง/จาน'));
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'55',qty:1,egg:'creamy',eggQty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+ assert.equal(r.status,201);assert.equal(r.data.total,69);
+ assert.ok(lastOwnerOrderNotification.includes('1× ข้าวหมูกระเทียม +ไข่ข้น 1 ฟอง/จาน'));
  for(const badEggQty of [0,6,-1,1.5,'2']){
   r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:1,egg:'fried',eggQty:badEggQty}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
   assert.equal(r.status,400);
