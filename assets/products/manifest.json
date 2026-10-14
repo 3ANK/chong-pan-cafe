@@ -1,0 +1,500 @@
+[
+  {
+    "id": "1",
+    "name": "เอสเพรสโซ",
+    "category": "กาแฟ",
+    "price": 35,
+    "emoji": "☕",
+    "drink": 1,
+    "image": "/assets/products/01.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "2",
+    "name": "อเมริกาโน",
+    "category": "กาแฟ",
+    "price": 35,
+    "emoji": "☕",
+    "drink": 1,
+    "image": "/assets/products/02.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "3",
+    "name": "คาปูชิโน",
+    "category": "กาแฟ",
+    "price": 35,
+    "emoji": "☕",
+    "drink": 1,
+    "image": "/assets/products/03.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "4",
+    "name": "ลาเต้",
+    "category": "กาแฟ",
+    "price": 35,
+    "emoji": "☕",
+    "drink": 1,
+    "image": "/assets/products/04.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "5",
+    "name": "อเมริกาโนน้ำส้ม",
+    "category": "กาแฟ",
+    "price": 40,
+    "emoji": "☕",
+    "drink": 1,
+    "image": "/assets/products/05.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "6",
+    "name": "อเมริกาโนน้ำผึ้ง",
+    "category": "กาแฟ",
+    "price": 40,
+    "emoji": "☕",
+    "drink": 1,
+    "image": "/assets/products/06.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "7",
+    "name": "กาแฟโตนด",
+    "category": "กาแฟ",
+    "price": 45,
+    "emoji": "☕",
+    "drink": 1,
+    "image": "/assets/products/07.webp",
+    "source": "existing-d1"
+  },
+  {
+    "id": "8",
+    "name": "ชาไทยเย็น",
+    "category": "ชาและนม",
+    "price": 25,
+    "emoji": "🧋",
+    "drink": 1,
+    "image": "/assets/products/08.webp",
+    "source": "existing-d1"
+  },
+  {
+    "id": "9",
+    "name": "ชาเขียว",
+    "category": "ชาและนม",
+    "price": 25,
+    "emoji": "🧋",
+    "drink": 1,
+    "image": "/assets/products/09.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "10",
+    "name": "ชามะนาว",
+    "category": "ชาและนม",
+    "price": 25,
+    "emoji": "🧋",
+    "drink": 1,
+    "image": "/assets/products/10.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "11",
+    "name": "ชาดำเย็น",
+    "category": "ชาและนม",
+    "price": 25,
+    "emoji": "🧋",
+    "drink": 1,
+    "image": "/assets/products/11.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "12",
+    "name": "นมเย็น",
+    "category": "ชาและนม",
+    "price": 25,
+    "emoji": "🧋",
+    "drink": 1,
+    "image": "/assets/products/12.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "13",
+    "name": "เนสกาแฟ",
+    "category": "ชาและนม",
+    "price": 25,
+    "emoji": "🧋",
+    "drink": 1,
+    "image": "/assets/products/13.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "14",
+    "name": "โอเลี้ยง",
+    "category": "ชาและนม",
+    "price": 25,
+    "emoji": "🧋",
+    "drink": 1,
+    "image": "/assets/products/14.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "15",
+    "name": "โอเลี้ยงยกล้อ",
+    "category": "ชาและนม",
+    "price": 25,
+    "emoji": "🧋",
+    "drink": 1,
+    "image": "/assets/products/15.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "16",
+    "name": "เพียวมัทฉะ",
+    "category": "มัทฉะ",
+    "price": 40,
+    "emoji": "🍵",
+    "drink": 1,
+    "image": "/assets/products/16.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "17",
+    "name": "มัทฉะน้ำมะพร้าว",
+    "category": "มัทฉะ",
+    "price": 50,
+    "emoji": "🍵",
+    "drink": 1,
+    "image": "/assets/products/17.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "18",
+    "name": "มัทฉะน้ำส้ม",
+    "category": "มัทฉะ",
+    "price": 50,
+    "emoji": "🍵",
+    "drink": 1,
+    "image": "/assets/products/18.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "19",
+    "name": "มัทฉะนมสดสตรอว์เบอร์รี",
+    "category": "มัทฉะ",
+    "price": 50,
+    "emoji": "🍵",
+    "drink": 1,
+    "image": "/assets/products/19.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "20",
+    "name": "มัทฉะโกโก้",
+    "category": "มัทฉะ",
+    "price": 50,
+    "emoji": "🍵",
+    "drink": 1,
+    "image": "/assets/products/20.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "21",
+    "name": "มัทฉะเอสเปรสโซ",
+    "category": "มัทฉะ",
+    "price": 50,
+    "emoji": "🍵",
+    "drink": 1,
+    "image": "/assets/products/21.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "22",
+    "name": "แตงโมปั่น",
+    "category": "ผลไม้สดปั่น",
+    "price": 30,
+    "emoji": "🍉",
+    "drink": 1,
+    "image": "/assets/products/22.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "23",
+    "name": "ส้มปั่น",
+    "category": "ผลไม้สดปั่น",
+    "price": 30,
+    "emoji": "🍉",
+    "drink": 1,
+    "image": "/assets/products/23.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "24",
+    "name": "สตรอว์เบอร์รีปั่น",
+    "category": "ผลไม้สดปั่น",
+    "price": 30,
+    "emoji": "🍉",
+    "drink": 1,
+    "image": "/assets/products/24.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "25",
+    "name": "สับปะรดปั่น",
+    "category": "ผลไม้สดปั่น",
+    "price": 30,
+    "emoji": "🍉",
+    "drink": 1,
+    "image": "/assets/products/25.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "26",
+    "name": "แอปเปิ้ลเขียวปั่น",
+    "category": "ผลไม้สดปั่น",
+    "price": 30,
+    "emoji": "🍉",
+    "drink": 1,
+    "image": "/assets/products/26.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "27",
+    "name": "มะนาวปั่น",
+    "category": "ผลไม้สดปั่น",
+    "price": 30,
+    "emoji": "🍉",
+    "drink": 1,
+    "image": "/assets/products/27.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "28",
+    "name": "มะพร้าวนมสด",
+    "category": "ผลไม้สดปั่น",
+    "price": 40,
+    "emoji": "🍉",
+    "drink": 1,
+    "image": "/assets/products/28.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "29",
+    "name": "อะโวคาโดนมสด",
+    "category": "ผลไม้สดปั่น",
+    "price": 40,
+    "emoji": "🍉",
+    "drink": 1,
+    "image": "/assets/products/29.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "30",
+    "name": "ปังเนยนม",
+    "category": "ขนมปัง",
+    "price": 15,
+    "emoji": "🍞",
+    "drink": 0,
+    "image": "/assets/products/30.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "31",
+    "name": "ปังสังขยาชาไทย",
+    "category": "ขนมปัง",
+    "price": 20,
+    "emoji": "🍞",
+    "drink": 0,
+    "image": "/assets/products/31.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "32",
+    "name": "ปังสังขยาใบเตย",
+    "category": "ขนมปัง",
+    "price": 20,
+    "emoji": "🍞",
+    "drink": 0,
+    "image": "/assets/products/32.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "33",
+    "name": "กะเพราหมู",
+    "category": "กะเพรา",
+    "price": 49,
+    "emoji": "🍛",
+    "drink": 0,
+    "image": "/assets/products/33.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "34",
+    "name": "กะเพราไก่",
+    "category": "กะเพรา",
+    "price": 49,
+    "emoji": "🍛",
+    "drink": 0,
+    "image": "/assets/products/34.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "35",
+    "name": "กะเพราหมูกรอบ",
+    "category": "กะเพรา",
+    "price": 69,
+    "emoji": "🍛",
+    "drink": 0,
+    "image": "/assets/products/35.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "36",
+    "name": "กะเพรารวมมิตรทะเล",
+    "category": "กะเพรา",
+    "price": 69,
+    "emoji": "🍛",
+    "drink": 0,
+    "image": "/assets/products/36.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "37",
+    "name": "กะเพราหมูสับไข่เยี่ยวม้า",
+    "category": "กะเพรา",
+    "price": 69,
+    "emoji": "🍛",
+    "drink": 0,
+    "image": "/assets/products/37.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "38",
+    "name": "กะเพราปลาหมึก",
+    "category": "กะเพรา",
+    "price": 69,
+    "emoji": "🍛",
+    "drink": 0,
+    "image": "/assets/products/38.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "39",
+    "name": "ตำไทย",
+    "category": "ส้มตำ",
+    "price": 45,
+    "emoji": "🥗",
+    "drink": 0,
+    "image": "/assets/products/39.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "40",
+    "name": "ตำปู",
+    "category": "ส้มตำ",
+    "price": 45,
+    "emoji": "🥗",
+    "drink": 0,
+    "image": "/assets/products/40.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "41",
+    "name": "ตำปูปลาร้า",
+    "category": "ส้มตำ",
+    "price": 45,
+    "emoji": "🥗",
+    "drink": 0,
+    "image": "/assets/products/41.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "42",
+    "name": "ตำไทยไข่เค็ม",
+    "category": "ส้มตำ",
+    "price": 60,
+    "emoji": "🥗",
+    "drink": 0,
+    "image": "/assets/products/42.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "43",
+    "name": "ข้าวเหนียว",
+    "category": "ส้มตำ",
+    "price": 10,
+    "emoji": "🍚",
+    "drink": 0,
+    "image": "/assets/products/43.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "44",
+    "name": "สปาเก็ตตี้คาโบนาร่า",
+    "category": "สปาเก็ตตี้",
+    "price": 69,
+    "emoji": "🍝",
+    "drink": 0,
+    "image": "/assets/products/44.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "45",
+    "name": "สปาเก็ตตี้ผัดขี้เมา",
+    "category": "สปาเก็ตตี้",
+    "price": 69,
+    "emoji": "🍝",
+    "drink": 0,
+    "image": "/assets/products/45.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "46",
+    "name": "สปาเก็ตตี้ซอสมะเขือเทศหมูสับ",
+    "category": "สปาเก็ตตี้",
+    "price": 59,
+    "emoji": "🍝",
+    "drink": 0,
+    "image": "/assets/products/46.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "47",
+    "name": "สปาเก็ตตี้เบคอนพริกแห้ง",
+    "category": "สปาเก็ตตี้",
+    "price": 69,
+    "emoji": "🍝",
+    "drink": 0,
+    "image": "/assets/products/47.webp",
+    "source": "chong-pan-cafe-main-2026-10-12"
+  },
+  {
+    "id": "48",
+    "name": "มัทฉะโตนด",
+    "category": "มัทฉะ",
+    "price": 45,
+    "emoji": "🍵",
+    "drink": 1,
+    "image": "/assets/products/48.webp",
+    "source": "existing-d1"
+  },
+  {
+    "id": "49",
+    "name": "ชาไทยโตนด",
+    "category": "ชาและนม",
+    "price": 45,
+    "emoji": "🧋",
+    "drink": 1,
+    "image": "/assets/products/49.webp",
+    "source": "existing-d1"
+  },
+  {
+    "id": "50",
+    "name": "ชาเขียวโตนด",
+    "category": "ชาและนม",
+    "price": 45,
+    "emoji": "🧋",
+    "drink": 1,
+    "image": "/assets/products/50.webp",
+    "source": "existing-d1"
