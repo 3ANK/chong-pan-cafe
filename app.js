@@ -70,6 +70,24 @@ async function bootMenu(){try{const r=await request('menu');state.products=r.pro
   }).filter(Boolean);saveBasket();
   state.liffId=r.liffId||'';state.canOrder=!!r.shopEnabled;show('legacyCheckout',!state.canOrder);$('statusBanner').className='notice '+(state.canOrder?'ok':'warn');$('statusBanner').textContent=state.canOrder?'พร้อมรับออเดอร์ผ่าน LINE':'ระบบใหม่อยู่ระหว่างทดสอบ · ยังไม่รับออเดอร์จริง · ราคาอ้างอิงจากข้อมูลเดิม';state.ready=true;paintCategories();paintCatalog();paintBasket()}catch(e){$('statusBanner').className='notice warn';$('statusBanner').textContent='เชื่อมต่อเมนูไม่สำเร็จ';$('catalog').innerHTML='<p class="empty">'+escapeText(e.message)+'</p>'}}
 $('search').addEventListener('input',paintCatalog);document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));$('loginBtn').addEventListener('click',authenticate);$('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>$('cartDialog').showModal());$('fulfillment').addEventListener('change',()=>show('addressLabel',$('fulfillment').value==='delivery'));$('placeOrder').addEventListener('click',placeOrder);$('refreshAdmin').addEventListener('click',loadAdmin);$('manageCatalog').addEventListener('click',()=>window.openChongpanCatalog?.());$('manageLegacy').addEventListener('click',manageLegacy);
+$('toggleShop').addEventListener('click',async()=>{
+ try{
+  const current=await request('admin/readiness');
+  const live=current.checks.find(x=>x.id==='shop_database')?.ok;
+  if(live){
+   if(!confirm('ปิดรับออเดอร์ระบบใหม่ทันที? ออเดอร์เดิมยังอยู่ในระบบ'))return;
+   await request('admin/shop',{method:'POST',body:JSON.stringify({enabled:false})});
+   toast('ปิดรับออเดอร์ระบบใหม่แล้ว');
+  }else{
+   const blockers=current.checks.filter(x=>x.id!=='shop_database'&&!x.ok);
+   if(blockers.length){toast('ยังเปิดร้านไม่ได้ กรุณาตรวจความพร้อมก่อน');$('checkReadiness').click();return}
+   if(!confirm('ยืนยันว่าได้ทดสอบ LINE Login, การแจ้งออเดอร์ และราคาเมนูจริงครบแล้ว? เปิดรับออเดอร์ใหม่ทันที'))return;
+   await request('admin/shop',{method:'POST',body:JSON.stringify({enabled:true,ownerConfirmed:true})});
+   toast('เปิดรับออเดอร์ระบบใหม่เรียบร้อย');
+  }
+  await bootMenu();$('checkReadiness').click();
+ }catch(e){toast(e.message)}
+});
 $('checkReadiness').addEventListener('click',async()=>{
  const el=$('readinessReport');el.hidden=false;el.textContent='กำลังตรวจสอบความพร้อม…';
  try{
