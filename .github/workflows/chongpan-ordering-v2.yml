@@ -1,0 +1,31 @@
+name: ChongPan ordering v2 tests
+on:
+  push:
+    branches:
+      - chongpan-ordering-v2
+    paths:
+      - 'app.js'
+      - 'catalog-admin.js'
+      - 'functions/**'
+      - 'migrations/**'
+      - 'tests/**'
+      - '.github/workflows/chongpan-ordering-v2.yml'
+  workflow_dispatch:
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Check JavaScript syntax
+        run: |
+          node --check app.js
+          node --check catalog-admin.js
+          node --check 'functions/api/[[path]].js'
+          node --check tests/smoke.mjs
+      - name: Run ordering and points smoke tests
+        run: node --disable-warning=ExperimentalWarning tests/smoke.mjs
