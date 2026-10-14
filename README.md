@@ -89,3 +89,10 @@ No credentials, tokens, customer databases, or encrypted recipes are in this rep
 - GitHub Actions securely copied and optimized missing 36 original menu images to `assets/products/55.webp` through `90.webp` (including 63). Combined with owner ZIP for 1–54, **90/90** product photos are now self-hosted.
 - Migration `008_selfhosted_menu_images.sql` updates the Cloudflare D1 image paths only after files exist in Cloudflare Pages.
 - `assets/products/manifest.json` is a portable source-labeled snapshot of the 90 products; these historical reference prices are NOT auto-verified current prices.
+
+### Member card and loyalty points page
+- Dedicated public page `/member/` now shows a styled loyalty card, member's real D1 balance, earning rule, and personalized order/legacy point transactions after verified LINE authentication.
+- `GET /api/loyalty/info` is public and exposes only LIFF ID and non-sensitive rewards-disabled policy. `GET /api/points` always requires signed session and only reads member's own point ledgers. No account lookup using client-supplied IDs.
+- Earn 1 point per full 25 THB **per completed order**; fractional remainders do not carry between orders. All data read from existing D1, never initialized to fictitious test balances.
+- Redemption is displayed as unavailable until reward catalogue/rules are confirmed; do not advertise unconfigured rewards or allow deductions.
+- Existing 11 legacy accounts and approved identity mapping are unchanged; old member balances not automatically imported to arbitrary LINE accounts.

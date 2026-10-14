@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#596b35">
+<meta name="description" content="บัตรสมาชิกชง&ปั่น ดูแต้มสะสมและประวัติแต้มของคุณ">
+<title>บัตรสมาชิกและแต้มสะสม | ชง&ปั่น</title>
+<link rel="stylesheet" href="/styles.css">
+<link rel="stylesheet" href="/member/member.css">
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
+<script src="/member/member.js" defer></script>
+</head>
+<body>
+<div class="shell">
+<header class="hero">
+ <div class="topbar">
+  <div class="mark" aria-hidden="true">ช&ป</div>
+  <div class="brand"><strong>ชง&ปั่น</strong><small>CHONG & PAN • MEMBER CARD</small></div>
+  <a class="member-hero-link" href="/">ดูเมนู</a>
+ </div>
+ <div class="hero-message"><span class="eyebrow">CHONG & PAN LOYALTY</span><h1>บัตรสมาชิกของฉัน</h1><p>ดูยอดแต้มและประวัติสะสมแต้มผ่านบัญชี LINE ของคุณ</p></div>
+</header>
+<main class="member-main">
+ <nav class="member-nav" aria-label="เมนูสมาชิก">
+  <a href="/">เมนูอาหาร</a><a href="/member/" aria-current="page">บัตรสมาชิก / แต้มสะสม</a>
+ </nav>
+ <section id="memberStatus" class="member-status" role="status" aria-live="polite">กำลังตรวจสอบบัญชี LINE…</section>
+ <section id="loginArea" class="member-login" hidden>
+  <span class="member-symbol" aria-hidden="true">🧋</span>
+  <h2>เข้าสู่ระบบเพื่อดูแต้ม</h2>
+  <p>ยอดแต้มเป็นข้อมูลส่วนตัวของสมาชิก กรุณาเข้าสู่บัญชี LINE ที่ใช้สะสมแต้ม</p>
+  <button id="memberLogin" class="primary" type="button">เข้าสู่ระบบด้วย LINE</button>
+ </section>
+ <div id="memberContents" hidden>
+  <section class="loyalty-card" aria-label="บัตรสมาชิก">
+   <div class="loyalty-head"><span>CHONG & PAN</span><span>MEMBER</span></div>
+   <div class="loyalty-cup" aria-hidden="true">🥤</div>
+   <div class="loyalty-name" id="loyaltyName">สมาชิกชง&ปั่น</div>
+   <div class="loyalty-balance"><span id="loyaltyPoints">–</span><span>แต้มสะสม</span></div>
+   <div class="loyalty-footer">แสดงแต้มตามบัญชี LINE ที่เข้าสู่ระบบ</div>
+  </section>
+  <section class="member-rule">
+   <h2>วิธีสะสมแต้ม</h2>
+   <p><strong>ทุกยอดซื้อครบ 25 บาท ได้ 1 แต้ม</strong> คิดเป็นจำนวนเต็มต่อหนึ่งออเดอร์ ไม่มีการทบเศษยอดซื้อข้ามออเดอร์</p>
+   <p>แต้มจะเพิ่มเมื่อร้านเปลี่ยนสถานะออเดอร์เป็น <strong>ส่งมอบแล้ว</strong> เท่านั้น</p>
+  </section>
+  <section class="member-activity" aria-label="ประวัติแต้มสะสม">
+   <div class="member-section-title"><h2>ประวัติแต้ม</h2><button class="secondary" id="refreshPoints" type="button">อัปเดตยอด</button></div>
+   <div id="pointsHistory" class="member-history" aria-live="polite"></div>
+  </section>
+  <section class="member-reward-note">
+   <h2>แลกของรางวัล</h2>
+   <p>ระบบแลกแต้มบนเว็บไซต์ใหม่ยังไม่เปิดใช้งาน แต้มสะสมของคุณยังคงแสดงและเก็บตามยอดที่ยืนยันแล้ว โปรดสอบถามร้านเรื่องสิทธิ์แลกแต้ม</p>
+  </section>
+  <p class="member-help">มีแต้มในระบบเดิมแต่ยังไม่ขึ้น? แจ้งร้านเพื่อตรวจสอบและจับคู่กับบัญชี LINE เดิมก่อนโอนแต้ม โดยไม่ต้องส่งรหัสผ่านให้ร้าน</p>
+ </div>
+ <p class="member-bottom"><a href="/">← กลับหน้าเมนูร้านชง&ปั่น</a></p>
+</main>
+</div>
+</body></html>

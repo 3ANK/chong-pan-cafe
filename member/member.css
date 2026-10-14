@@ -1,0 +1,35 @@
+[hidden]{display:none!important}
+.member-main{padding-bottom:72px}
+.member-hero-link{color:white;text-decoration:none;border:1px solid #ffffff80;border-radius:999px;padding:9px 16px;font-weight:700;white-space:nowrap;font-size:14px}
+.member-nav{display:flex;gap:8px;margin:0 0 19px;flex-wrap:wrap}
+.member-nav a{display:inline-block;padding:9px 15px;text-decoration:none;border-radius:12px;color:#596b35;background:#f0f2e9;font-size:14px;font-weight:700}
+.member-nav a[aria-current="page"]{background:#596b35;color:white}
+.member-status{font-size:13px;padding:11px 14px;border-radius:12px;background:#f1f1e9;margin:0 0 16px}
+.member-status.ok{background:#eaf3e2;color:#36572e}.member-status.warning{background:#fff0d6;color:#81531e}
+.member-login{text-align:center;padding:34px 24px;border:1px solid #e8e9e0;border-radius:21px;background:white}
+.member-login h2{margin-top:6px}.member-login p{color:#6e756a;max-width:380px;margin:10px auto 23px}
+.member-symbol{font-size:50px}
+.loyalty-card{position:relative;overflow:hidden;border-radius:23px;padding:25px;background:linear-gradient(133deg,#263f2f,#596b35 70%,#889e58);color:#fff;min-height:260px;box-shadow:0 12px 30px #2d472b28}
+.loyalty-card:before{content:"";position:absolute;right:-50px;bottom:-95px;width:260px;height:260px;border-radius:50%;border:45px solid #ffffff12}
+.loyalty-head{display:flex;justify-content:space-between;font-size:12px;letter-spacing:1.5px;font-weight:800;position:relative}
+.loyalty-cup{position:absolute;right:23px;top:79px;font-size:64px;opacity:.9}
+.loyalty-name{font-size:19px;font-weight:800;max-width:80%;margin-top:48px;overflow-wrap:anywhere;position:relative}
+.loyalty-balance{display:flex;align-items:baseline;gap:12px;position:relative}
+.loyalty-balance>span:first-child{font-size:54px;line-height:1.25;font-weight:850}
+.loyalty-balance>span:last-child{font-weight:700}
+.loyalty-footer{font-size:11px;opacity:.82;position:relative;margin-top:10px}
+.member-rule,.member-activity,.member-reward-note{background:white;border:1px solid #e5e8df;border-radius:18px;padding:20px;margin-top:18px}
+.member-rule h2,.member-activity h2,.member-reward-note h2{margin-top:0}
+.member-rule p,.member-reward-note p{margin:10px 0;color:#43503e;font-size:14px;line-height:1.75}
+.member-section-title{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.member-section-title button{font-size:12px}
+.member-entry{display:flex;justify-content:space-between;align-items:center;gap:15px;border-bottom:1px solid #eceee8;padding:13px 0}
+.member-entry:last-child{border:0}
+.member-entry strong{font-size:14px}
+.member-entry p{color:#778076;font-size:12px;margin:2px 0 0}
+.member-delta{white-space:nowrap;font-weight:800;font-size:18px;color:#476b30}
+.member-delta.negative{color:#a74e42}
+.member-empty{padding:24px 10px;text-align:center;color:#697666;font-size:14px}
+.member-help{font-size:13px;color:#646e60;line-height:1.8;margin-top:20px}
+.member-bottom{text-align:center;margin-top:25px}.member-bottom a{color:#596b35;font-weight:700}
+@media(max-width:520px){.loyalty-card{padding:20px;min-height:242px}.loyalty-cup{top:85px;right:13px;font-size:48px}.loyalty-balance>span:first-child{font-size:46px}}

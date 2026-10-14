@@ -38,6 +38,8 @@ async function call(path, method='GET', data=undefined,cookie='',origin='http://
 let r=await call('health'); assert.equal(r.status,200);assert.equal(r.data.ordersEnabled,false);
 r=await call('menu');assert.equal(r.data.products.length,90);assert.equal(r.data.shopEnabled,false);assert.equal(r.data.products.find(x=>x.id==='7').price,40);assert.equal(r.data.products.find(x=>x.id==='84').price,40);assert.equal(r.data.products.find(x=>x.id==='64').price,40);assert.equal(r.data.products.find(x=>x.id==='69').price,50);assert.ok(r.data.products.every(p=>p.image.startsWith('/assets/products/')&&p.image.endsWith('.webp')));
 r=await call('me');assert.equal(r.data.member,null);
+r=await call('loyalty/info');assert.equal(r.status,200);assert.equal(r.data.policy.bahtPerPoint,25);assert.equal(r.data.rewardsEnabled,false);
+r=await call('points');assert.equal(r.status,401);
 r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()});assert.equal(r.status,401);
 r=await call('orders','POST',{items:[]},'', 'https://evil.invalid');assert.equal(r.status,403);
 const realFetch=globalThis.fetch;
@@ -47,6 +49,7 @@ globalThis.fetch=async (url)=>{
 };
 r=await call('auth/line','POST',{idToken:'fake-test-token'});assert.equal(r.status,200);assert.ok(r.cookie?.includes('HttpOnly'));const cookie=r.cookie.split(';')[0];
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.isOwner,true);
+r=await call('points','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.member.points,0);assert.deepEqual(r.data.history,[]);
 r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
 // Only test mode: explicitly switch on both the environment flag and DB flag.
 env.SHOP_ENABLED='true'; db.raw.exec("UPDATE shop_settings SET value='1' WHERE key='shop_enabled'");
@@ -61,6 +64,7 @@ r=await call('orders','POST',{items:[{id:'7',qty:2}],fulfillment:'pickup',reques
 r=await call('orders','GET',undefined,cookie);assert.equal(r.data.orders.length,1);
 for(const status of ['accepted','preparing','ready','completed']){r=await call('admin/orders','PATCH',{id:orderId,status},cookie);assert.equal(r.status,200,JSON.stringify(r));}
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,3);
+r=await call('points','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.member.points,3);assert.ok(r.data.history.some(x=>x.kind==='order'&&x.delta===3));
 r=await call('admin/orders','PATCH',{id:orderId,status:'completed'},cookie);assert.equal(r.status,409);
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,3);
 // Import an example legacy account, restricted to owner; point awards remain after future order completion.
@@ -69,6 +73,7 @@ r=await call('admin/legacy','GET',undefined,cookie);assert.equal(r.status,200);a
 r=await call('admin/legacy/assign','POST',{legacyCode:'ABCDEF12',lineUserId:env.OWNER_LINE_USER_ID,ownerVerified:false},cookie);assert.equal(r.status,400);
 r=await call('admin/legacy/assign','POST',{legacyCode:'ABCDEF12',lineUserId:env.OWNER_LINE_USER_ID,ownerVerified:true},cookie);assert.equal(r.status,200);assert.equal(r.data.pointsTransferred,5);
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,8);
+r=await call('points','GET',undefined,cookie);assert.equal(r.data.member.points,8);assert.ok(r.data.history.some(x=>x.kind==='legacy'&&x.delta===5));assert.equal(r.data.history.length,2);
 r=await call('admin/legacy/assign','POST',{legacyCode:'ABCDEF12',lineUserId:env.OWNER_LINE_USER_ID,ownerVerified:true},cookie);assert.equal(r.status,409);
 const req2=crypto.randomUUID();
 r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:req2},cookie);assert.equal(r.status,201);
