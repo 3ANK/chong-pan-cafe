@@ -14,6 +14,7 @@ function createD1(){
  db.exec(readFileSync(new URL('../migrations/005_catalog_drafts_and_reviews.sql',import.meta.url),'utf8')); // idempotence
  db.exec(readFileSync(new URL('../migrations/006_owner_prices.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/007_old_order_menu_reconciliation.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/008_selfhosted_menu_images.sql',import.meta.url),'utf8'));
  return {
   raw:db,
   prepare(sql){const stmt=db.prepare(sql);let args=[];return {
@@ -35,7 +36,7 @@ async function call(path, method='GET', data=undefined,cookie='',origin='http://
  return {status:res.status,data:await res.json(),cookie:res.headers.get('set-cookie')};
 }
 let r=await call('health'); assert.equal(r.status,200);assert.equal(r.data.ordersEnabled,false);
-r=await call('menu');assert.equal(r.data.products.length,90);assert.equal(r.data.shopEnabled,false);assert.equal(r.data.products.find(x=>x.id==='7').price,40);assert.equal(r.data.products.find(x=>x.id==='84').price,40);assert.equal(r.data.products.find(x=>x.id==='64').price,40);assert.equal(r.data.products.find(x=>x.id==='69').price,50);
+r=await call('menu');assert.equal(r.data.products.length,90);assert.equal(r.data.shopEnabled,false);assert.equal(r.data.products.find(x=>x.id==='7').price,40);assert.equal(r.data.products.find(x=>x.id==='84').price,40);assert.equal(r.data.products.find(x=>x.id==='64').price,40);assert.equal(r.data.products.find(x=>x.id==='69').price,50);assert.ok(r.data.products.every(p=>p.image.startsWith('/assets/products/')&&p.image.endsWith('.webp')));
 r=await call('me');assert.equal(r.data.member,null);
 r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()});assert.equal(r.status,401);
 r=await call('orders','POST',{items:[]},'', 'https://evil.invalid');assert.equal(r.status,403);

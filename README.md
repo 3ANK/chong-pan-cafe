@@ -84,3 +84,8 @@ No credentials, tokens, customer databases, or encrypted recipes are in this rep
 - Corrected old-page mismatches: **โกโก้เย็น 40** and **โกโก้ปั่น 50**; aligned descriptive menu names to the old site. **กาแฟโตนด 40** remains based on owner's earlier instruction, although original order page still shows 45.
 - Extra 2-slice bread discount: ปังสังขยาชาไทย / ปังสังขยาใบเตย 2 for 35 THB, alongside ปังเนยนม 2 for 25 THB. Checkout computes promotion server side.
 - The 28 still-unpictured products need lasting licensed photos uploaded to the new site. Do not hotlink the old chatgpt.site assets because the legacy account may disappear.
+
+### 2026-10-14 — Fully self-hosted product photographs
+- GitHub Actions securely copied and optimized missing 36 original menu images to `assets/products/55.webp` through `90.webp` (including 63). Combined with owner ZIP for 1–54, **90/90** product photos are now self-hosted.
+- Migration `008_selfhosted_menu_images.sql` updates the Cloudflare D1 image paths only after files exist in Cloudflare Pages.
+- `assets/products/manifest.json` is a portable source-labeled snapshot of the 90 products; these historical reference prices are NOT auto-verified current prices.
