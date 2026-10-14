@@ -247,6 +247,6 @@ assert.ok(appJS.includes("$('increaseOptionQty').disabled=optionQuantity>=20"));
 assert.ok(appJS.includes("const sum=fmt(lineSubtotal(draft));"));
 assert.ok(appJS.includes('qty:optionQuantity')&&appJS.includes('other.qty+=item.qty'));
 assert.ok(appJS.includes('if(other.qty+item.qty>20)return toast('));
-assert.ok(appJS.includes("$('egg').addEventListener('change',paintOptionQuantity)"));
+assert.ok(appJS.includes("$('egg').addEventListener('change',()=>setOptionEggQuantity(1))"));
 assert.ok(css.includes('.option-quantity-controls{display:flex'));
 // Verify single item and discounted pair calculations are still server-authoritative.
