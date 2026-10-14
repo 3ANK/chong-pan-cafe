@@ -57,3 +57,13 @@ node --check 'functions/api/[[path]].js'
 ```
 
 No credentials, tokens, customer databases, or encrypted recipes are in this repository.
+
+## 2026-10-14 — Migration staging (old loyalty points)
+
+- Existing LIFF on the original LINE Login Channel may be reused **after changing the LIFF Endpoint in LINE Developers to https://chongpan-ordering-v2.pages.dev**. Changing Cloudflare's `LIFF_ID` alone is not enough; this LINE Console operation has NOT been completed by the assistant.
+- Production Cloudflare environment stores `LINE_CHANNEL_ID`, `LIFF_ID`, a random `SESSION_SECRET`, `OWNER_LINE_USER_ID` and `SHOP_ENABLED=false`; do not copy secrets to source control.
+- Migration `003_legacy_points.sql` creates `legacy_accounts` and `points_adjustments` with unique idempotency keys. It was applied to the **new** database, not the dormitory database.
+- Owner-provided screenshot balances for 11 accounts / 49 points were inserted directly into private D1 (without personal data in this repository), marked **pending identity matching**. No real account received legacy points yet.
+- After customers have logged into the NEW LINE site, only authenticated owner can go to **จัดการร้าน → ย้ายแต้มสมาชิกเก่า** and manually match their verified identity; a migration can be applied once and will remain included in points after future orders are completed.
+- Check disputed names or changed balances with owner; eight-character legacy codes are NOT verified full LINE IDs and cannot be used as automatic login evidence.
+- Current menu remains an incomplete 38-item historical seed. Checkout remains **OFF** pending current catalog and end-to-end test. Do not change actual customer ordering links or flip `SHOP_ENABLED` until this is done.

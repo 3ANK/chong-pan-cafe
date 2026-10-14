@@ -8,6 +8,7 @@ function createD1(){
  const db=new DatabaseSync(':memory:');
  db.exec(readFileSync(new URL('../migrations/001_schema.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/002_seed_recovered_catalog.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/003_legacy_points.sql',import.meta.url),'utf8'));
  return {
   raw:db,
   prepare(sql){const stmt=db.prepare(sql);let args=[];return {
@@ -20,7 +21,7 @@ function createD1(){
  };
 }
 const db=createD1();
-const env={DB:db,SHOP_ENABLED:'false',LINE_CHANNEL_ID:'2011951537',SESSION_SECRET:'local-test-secret-which-is-never-deployed',OWNER_LINE_USER_ID:'Utestowner'};
+const env={DB:db,SHOP_ENABLED:'false',LINE_CHANNEL_ID:'2011951537',SESSION_SECRET:'local-test-secret-which-is-never-deployed',OWNER_LINE_USER_ID:'U'+'a'.repeat(32)};
 async function call(path, method='GET', data=undefined,cookie='',origin='http://localhost:8788'){
  const init={method,headers:{Origin:origin,...(cookie?{Cookie:cookie}:{})}};
  if(data!==undefined){init.body=JSON.stringify(data);init.headers['Content-Type']='application/json'}
@@ -35,7 +36,7 @@ r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',reques
 r=await call('orders','POST',{items:[]},'', 'https://evil.invalid');assert.equal(r.status,403);
 const realFetch=globalThis.fetch;
 globalThis.fetch=async (url)=>{
- if(String(url)==='https://api.line.me/oauth2/v2.1/verify')return new Response(JSON.stringify({aud:'2011951537',sub:'Utestowner',name:'ทดสอบ',exp:Math.floor(Date.now()/1000)+600}),{status:200});
+ if(String(url)==='https://api.line.me/oauth2/v2.1/verify')return new Response(JSON.stringify({aud:'2011951537',sub:'U'+'a'.repeat(32),name:'ทดสอบ',exp:Math.floor(Date.now()/1000)+600}),{status:200});
  throw new Error('Unexpected external request in test: '+url)
 };
 r=await call('auth/line','POST',{idToken:'fake-test-token'});assert.equal(r.status,200);assert.ok(r.cookie?.includes('HttpOnly'));const cookie=r.cookie.split(';')[0];
@@ -51,6 +52,17 @@ for(const status of ['accepted','preparing','ready','completed']){r=await call('
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,3);
 r=await call('admin/orders','PATCH',{id:orderId,status:'completed'},cookie);assert.equal(r.status,409);
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,3);
+// Import an example legacy account, restricted to owner; point awards remain after future order completion.
+db.raw.exec("INSERT INTO legacy_accounts(legacy_code,display_name,snapshot_points) VALUES('ABCDEF12','ลูกค้าทดสอบ',5)");
+r=await call('admin/legacy','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.legacy.length,1);
+r=await call('admin/legacy/assign','POST',{legacyCode:'ABCDEF12',lineUserId:env.OWNER_LINE_USER_ID,ownerVerified:false},cookie);assert.equal(r.status,400);
+r=await call('admin/legacy/assign','POST',{legacyCode:'ABCDEF12',lineUserId:env.OWNER_LINE_USER_ID,ownerVerified:true},cookie);assert.equal(r.status,200);assert.equal(r.data.pointsTransferred,5);
+r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,8);
+r=await call('admin/legacy/assign','POST',{legacyCode:'ABCDEF12',lineUserId:env.OWNER_LINE_USER_ID,ownerVerified:true},cookie);assert.equal(r.status,409);
+const req2=crypto.randomUUID();
+r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:req2},cookie);assert.equal(r.status,201);
+for(const status of ['accepted','ready','completed']) {const x=await call('admin/orders','PATCH',{id:r.data.orderId,status},cookie);assert.equal(x.status,200)}
+r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,9);
 r=await call('admin/menu','PATCH',{id:'7',price:50,available:false},cookie);assert.equal(r.status,200);
 r=await call('menu');assert.equal(r.data.products.find(x=>x.id==='7').available,false);
 globalThis.fetch=realFetch;
