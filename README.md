@@ -136,3 +136,10 @@ Main marketing website: https://ชงปั่น.com . Its NEW menu links go t
 - Cloudflare Pages Production `LIFF_ID` changed from legacy `2011951537-7IBatvMp` to new ID `2011951537-WTU4Xt2Q`. Other env variables (including secret bindings) and D1 binding were preserved. Old LIFF remains unchanged on LINE Developers.
 - New entry link for the ordering page: `https://liff.line.me/2011951537-WTU4Xt2Q/order`. Points entry: `https://chongpan-ordering-v2.pages.dev/member/`.
 - Checkout remains safely OFF until actual LINE Login, shop notification, owner price verification and pilot order tests pass. Do not update the existing legacy LIFF app endpoint or redirect marketing site checkout buttons yet.
+
+### Owner-confirmed Loyverse price reconciliation (2026-10-15)
+- User uploaded current Loyverse Item List CSV: 104 saleable rows, all with explicit numeric prices.
+- Matched all 90 existing website menu IDs unambiguously; 87 directly by exact Name and three bread entries via their labelled single-slice variants. The 14 additional Loyverse rows are NOT automatically inserted (three are 2-slice bundle SKUs already supported by order promotion calculations; 11 additional ice cream products require separate menu/photo approval).
+- Exactly one mismatch was found: catalog ID 7 กาแฟโตนด old web 40 THB vs Loyverse 45 THB; owner explicitly confirmed **45 THB** on 2026-10-15.
+- Apply `migrations/010_loyverse_confirmed_prices.sql` to `chongpan-orders-v2` only; it sets ID 7 to 45 and marks verified only those catalog IDs whose name, price, and saleability exactly match the 90-row Loyverse reconciliation. No bulk-unverified blanket approval.
+- Safety: No shop flag is toggled; actual checkout remains disabled pending live pilot and owner's explicit start, and points/member data are unchanged.
