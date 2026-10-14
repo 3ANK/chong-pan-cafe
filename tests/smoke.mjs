@@ -193,3 +193,16 @@ assert.ok(css.includes('.order-topbar{display:grid;grid-template-columns:46px mi
 assert.ok(css.includes('.tabs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)'));
 assert.ok(css.includes('.search input{font-size:16px'));
 assert.ok(css.includes('dialog{padding:16px;width:calc(100vw - 24px)'));
+
+
+// Every menu option dialog allows 1-20 items; the price preview uses the exact cart pricing function.
+assert.ok(html.includes('id="optionQuantityGroup"')&&html.includes('id="decreaseOptionQty"')&&html.includes('id="increaseOptionQty"'));
+assert.ok(html.includes('id="optionQuantity" aria-live="polite"'));
+assert.ok(appJS.includes('function setOptionQuantity(next)')&&appJS.includes('setOptionQuantity(1);'));
+assert.ok(appJS.includes("$('increaseOptionQty').disabled=optionQuantity>=20"));
+assert.ok(appJS.includes("const sum=fmt(lineSubtotal(draft));"));
+assert.ok(appJS.includes('qty:optionQuantity')&&appJS.includes('other.qty+=item.qty'));
+assert.ok(appJS.includes('if(other.qty+item.qty>20)return toast('));
+assert.ok(appJS.includes("$('egg').addEventListener('change',paintOptionQuantity)"));
+assert.ok(css.includes('.option-quantity-controls{display:flex'));
+// Verify single item and discounted pair calculations are still server-authoritative.

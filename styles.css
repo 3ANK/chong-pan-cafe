@@ -138,3 +138,15 @@ dialog{max-width:calc(100vw - 20px);max-width:calc(100dvw - 20px)}
  .summary{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:5px}
  .categories{margin-left:-10px;margin-right:-10px;padding-left:10px;padding-right:10px}
 }
+
+/* Quantity selector available for every dish and drink in the option modal. */
+.option-quantity-group{margin-top:16px;padding:13px 14px;border-radius:16px;background:#f6f8f2;border:1px solid #d8e1c8;min-width:0}
+.option-quantity-title{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.option-quantity-title strong{font-size:15px}
+#optionQuantityPrice{font-weight:800;color:var(--green);font-size:17px}
+.option-quantity-controls{display:flex;align-items:center;gap:14px;margin-top:13px;flex-wrap:wrap}
+.option-step{min-width:48px;min-height:48px;display:inline-grid;place-items:center;border-radius:13px;border:1px solid #cbd8bb;background:#fff;color:var(--green);font-size:28px;font-weight:800;line-height:1}
+.option-step:disabled{opacity:.4}
+#optionQuantity{font-size:23px;font-weight:850;min-width:28px;text-align:center;font-variant-numeric:tabular-nums}
+.option-quantity-caption{font-size:11px;color:var(--muted);margin-left:auto}
+@media(max-width:375px){.option-quantity-controls{gap:11px}.option-quantity-caption{flex:1 0 100%;margin-left:0;text-align:center}}

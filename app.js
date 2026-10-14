@@ -25,8 +25,54 @@ function restoreBasket(){try{const v=JSON.parse(localStorage.getItem('chongpan-v
 function menuGroups(){const q=$('search').value.trim().toLowerCase();const valid=state.products.filter(p=>(state.selectedCategory==='ทั้งหมด'||p.category===state.selectedCategory)&&(!q||p.name.toLowerCase().includes(q)));const groups={};for(const p of valid)(groups[p.category]||=[]).push(p);return groups}
 function paintCategories(){const cs=['ทั้งหมด',...new Set(state.products.map(p=>p.category))];$('categories').innerHTML=cs.map(c=>`<button data-cat="${escapeText(c)}" class="${c===state.selectedCategory?'selected':''}">${escapeText(c)}</button>`).join('');$('categories').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{state.selectedCategory=b.dataset.cat;paintCategories();paintCatalog()}))}
 function paintCatalog(){const g=menuGroups();const html=Object.entries(g).map(([cat,products])=>`<div class="sectiontitle"><h2>${escapeText(cat)}</h2><small>${products.length} รายการ</small></div>${products.map(p=>`<article class="item"><div class="productart">${p.image?`<img loading="lazy" src="${escapeText(p.image)}" alt="${escapeText(p.name)}">`:escapeText(p.emoji||'🥤')}</div><div class="itembody"><div class="itemtitle">${escapeText(p.name)}</div><div class="price">${p.price>0?fmt(p.price):'รอยืนยันราคา'}</div><div class="small">${p.price<=0?'รอกำหนดราคา':!p.available?'ยังไม่เปิดขาย':'เลือกตัวเลือกได้'}${p.id==='30'&&p.price===15?' · 2 ชิ้น 25 บาท':(p.id==='31'||p.id==='32')&&p.price===20?' · 2 ชิ้น 35 บาท':''}</div></div><button class="add" data-add="${escapeText(p.id)}" ${!p.available||p.price<=0?'disabled':''}>เพิ่ม +</button></article>`).join('')}`).join('');$('catalog').innerHTML=html||'<p class="empty">ไม่พบเมนูที่ค้นหา</p>';$('catalog').querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>openOption(b.dataset.add)))}
-function openOption(id){const p=state.products.find(p=>p.id===id);if(!p||!p.available||p.price<=0)return;state.selectedProduct=p;$('optionTitle').textContent=p.name+' · '+fmt(p.price)+(p.id==='30'&&p.price===15?' · 2 ชิ้น 25 บาท':(p.id==='31'||p.id==='32')&&p.price===20?' · 2 ชิ้น 35 บาท':'');show('sweetnessGroup',!!p.drink);show('eggGroup',p.category==='กะเพรา');$('itemNote').value='';$('sweetness').value='ปกติ';$('egg').value='';$('optionDialog').showModal()}
-function addItem(){const p=state.selectedProduct;if(!p)return;const item={id:p.id,name:p.name,price:p.price,qty:1,sweetness:p.drink?$('sweetness').value:'',egg:p.category==='กะเพรา'?$('egg').value:'',note:$('itemNote').value.trim()};const other=state.basket.find(x=>keyOf(x)===keyOf(item));if(other)other.qty=Math.min(other.qty+1,20);else state.basket.push(item);saveBasket();paintBasket();$('optionDialog').close();toast('เพิ่ม '+p.name+' ลงตะกร้าแล้ว')}
+let optionQuantity=1;
+function selectedOptionItem(){
+ const p=state.selectedProduct;
+ if(!p)return null;
+ return {id:p.id,name:p.name,price:p.price,qty:optionQuantity,sweetness:p.drink?$('sweetness').value:'',egg:p.category==='กะเพรา'?$('egg').value:'',note:$('itemNote').value.trim()};
+}
+function paintOptionQuantity(){
+ const draft=selectedOptionItem();
+ if(!draft)return;
+ $('optionQuantity').textContent=String(optionQuantity);
+ $('decreaseOptionQty').disabled=optionQuantity<=1;
+ $('increaseOptionQty').disabled=optionQuantity>=20;
+ const sum=fmt(lineSubtotal(draft));
+ $('optionQuantityPrice').textContent='รวม '+sum;
+ $('addSelectedItem').textContent='ใส่ตะกร้า '+optionQuantity+' รายการ · '+sum;
+}
+function setOptionQuantity(next){
+ optionQuantity=Math.max(1,Math.min(20,Math.trunc(Number(next)||1)));
+ paintOptionQuantity();
+}
+function openOption(id){
+ const p=state.products.find(p=>p.id===id);
+ if(!p||!p.available||p.price<=0)return;
+ state.selectedProduct=p;
+ $('optionTitle').textContent=p.name+' · '+fmt(p.price)+(p.id==='30'&&p.price===15?' · 2 ชิ้น 25 บาท':(p.id==='31'||p.id==='32')&&p.price===20?' · 2 ชิ้น 35 บาท':'');
+ show('sweetnessGroup',!!p.drink);
+ show('eggGroup',p.category==='กะเพรา');
+ $('itemNote').value='';
+ $('sweetness').value='ปกติ';
+ $('egg').value='';
+ setOptionQuantity(1);
+ $('optionDialog').showModal();
+}
+function addItem(){
+ const item=selectedOptionItem();
+ if(!item||!Number.isInteger(item.qty)||item.qty<1||item.qty>20)return;
+ const other=state.basket.find(x=>keyOf(x)===keyOf(item));
+ if(other){
+  if(other.qty+item.qty>20)return toast('จำนวนเมนูที่มีตัวเลือกเหมือนกันรวมได้สูงสุด 20 รายการ กรุณาลดจำนวนก่อน');
+  other.qty+=item.qty;
+ }else{
+  state.basket.push(item);
+ }
+ saveBasket();
+ paintBasket();
+ $('optionDialog').close();
+ toast('เพิ่ม '+item.name+' '+item.qty+' รายการลงตะกร้าแล้ว');
+}
 function paintBasket(){const count=state.basket.reduce((n,it)=>n+it.qty,0);show('basketBar',count>0);$('basketLabel').textContent=count+' รายการ';$('basketTotal').textContent=subTotal().toLocaleString('th-TH');$('cartSum').textContent=fmt(subTotal());$('cartItems').innerHTML=state.basket.map((it,i)=>`<div class="cartline"><div><strong>${escapeText(it.name)}</strong><br><small>${escapeText([it.sweetness,it.egg?({fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'})[it.egg]:'',it.note].filter(Boolean).join(' · '))}</small><div>${fmt(lineSubtotal(it))}</div></div><div class="cartbuttons"><button data-qty="${i}" data-step="-1" aria-label="ลดจำนวน">−</button>${it.qty}<button data-qty="${i}" data-step="1" aria-label="เพิ่มจำนวน">+</button></div></div>`).join('')||'<p class="empty">ตะกร้าว่าง</p>';for(const b of $('cartItems').querySelectorAll('[data-qty]'))b.addEventListener('click',()=>{const i=Number(b.dataset.qty);state.basket[i].qty+=Number(b.dataset.step);if(state.basket[i].qty<1)state.basket.splice(i,1);if(state.basket[i]?.qty>20)state.basket[i].qty=20;saveBasket();paintBasket()});$('placeOrder').disabled=!state.canOrder||!state.member||!count;$('checkoutHint').textContent=!state.canOrder?'ระบบทดลอง ยังไม่เปิดรับออเดอร์จริง':!state.member?'เข้าสู่ LINE ก่อนยืนยันออเดอร์':'ตรวจสอบราคาและรายละเอียดให้ถูกต้องก่อนสั่ง'}
 function setTab(tab){for(const t of ['menu','history'])show(t+'Panel',t===tab);document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.tab===tab));if(tab==='history')loadHistory()}
 function paintMember(){const m=state.member;$('memberName').textContent=m?.name||'ยังไม่ได้เข้าสู่ระบบ';$('points').textContent=m?.points??'–';$('loginBtn').textContent=m?'บัญชี LINE ✓':'เข้าสู่ LINE';state.admin=!!m?.isOwner;show('adminShortcut',state.admin);paintBasket()}
@@ -153,7 +199,10 @@ $('lineGateRetry').addEventListener('click',async()=>{
   return;
  }
  await authenticate(true);
-});$('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>$('cartDialog').showModal());$('fulfillment').addEventListener('change',()=>show('addressLabel',$('fulfillment').value==='delivery'));$('placeOrder').addEventListener('click',placeOrder);$('closePaymentDialog').addEventListener('click',()=>$('paymentDialog').close());
+});$('decreaseOptionQty').addEventListener('click',()=>setOptionQuantity(optionQuantity-1));
+$('increaseOptionQty').addEventListener('click',()=>setOptionQuantity(optionQuantity+1));
+$('egg').addEventListener('change',paintOptionQuantity);
+$('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>$('cartDialog').showModal());$('fulfillment').addEventListener('change',()=>show('addressLabel',$('fulfillment').value==='delivery'));$('placeOrder').addEventListener('click',placeOrder);$('closePaymentDialog').addEventListener('click',()=>$('paymentDialog').close());
 $('donePaymentDialog').addEventListener('click',()=>$('paymentDialog').close());
 restoreBasket();
 (async()=>{
