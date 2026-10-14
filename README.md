@@ -129,3 +129,10 @@ Main marketing website: https://ชงปั่น.com . Its NEW menu links go t
 - Admin clicks "เปิด / ปิดรับออเดอร์" to close; or update D1 `shop_settings.shop_enabled` to `0` and Cloudflare `SHOP_ENABLED=false`.
 - Repoint LIFF Endpoint to the original chatgpt.site endpoint ONLY if that original account/app remains accessible and functioning.
 - The Netlify main website checkout links remained unchanged during phased cutover, so existing customer ordering remains available.
+
+
+### LIFF cutover progress, 2026-10-15
+- Shop owner created second LIFF app "ชงปั่น ระบบใหม่" in the SAME LINE Login channel 2011951537; its LIFF ID is `2011951537-WTU4Xt2Q`, size Full. New app Endpoint was instructed to be `https://chongpan-ordering-v2.pages.dev/`; needs independent verification with LINE app.
+- Cloudflare Pages Production `LIFF_ID` changed from legacy `2011951537-7IBatvMp` to new ID `2011951537-WTU4Xt2Q`. Other env variables (including secret bindings) and D1 binding were preserved. Old LIFF remains unchanged on LINE Developers.
+- New entry link for the ordering page: `https://liff.line.me/2011951537-WTU4Xt2Q/order`. Points entry: `https://chongpan-ordering-v2.pages.dev/member/`.
+- Checkout remains safely OFF until actual LINE Login, shop notification, owner price verification and pilot order tests pass. Do not update the existing legacy LIFF app endpoint or redirect marketing site checkout buttons yet.
