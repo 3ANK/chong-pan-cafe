@@ -15,6 +15,7 @@ function createD1(){
  db.exec(readFileSync(new URL('../migrations/006_owner_prices.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/007_old_order_menu_reconciliation.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/008_selfhosted_menu_images.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/009_order_notifications.sql',import.meta.url),'utf8'));
  return {
   raw:db,
   prepare(sql){const stmt=db.prepare(sql);let args=[];return {
@@ -40,15 +41,19 @@ r=await call('menu');assert.equal(r.data.products.length,90);assert.equal(r.data
 r=await call('me');assert.equal(r.data.member,null);
 r=await call('loyalty/info');assert.equal(r.status,200);assert.equal(r.data.policy.bahtPerPoint,25);assert.equal(r.data.rewardsEnabled,false);
 r=await call('points');assert.equal(r.status,401);
+r=await call('admin/readiness');assert.equal(r.status,403);
 r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()});assert.equal(r.status,401);
 r=await call('orders','POST',{items:[]},'', 'https://evil.invalid');assert.equal(r.status,403);
 const realFetch=globalThis.fetch;
 globalThis.fetch=async (url)=>{
  if(String(url)==='https://api.line.me/oauth2/v2.1/verify')return new Response(JSON.stringify({aud:'2011951537',sub:'U'+'a'.repeat(32),name:'ทดสอบ',exp:Math.floor(Date.now()/1000)+600}),{status:200});
+ if(String(url)==='https://api.line.me/v2/bot/message/push')return new Response('',{status:200});
  throw new Error('Unexpected external request in test: '+url)
 };
 r=await call('auth/line','POST',{idToken:'fake-test-token'});assert.equal(r.status,200);assert.ok(r.cookie?.includes('HttpOnly'));const cookie=r.cookie.split(';')[0];
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.isOwner,true);
+r=await call('admin/readiness','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.catalog.total,90);assert.equal(r.data.catalog.unverified,90);assert.equal(r.data.ordersEnabled,false);
+assert.ok(r.data.checks.some(c=>c.id==='alert_token'&&!c.ok));
 r=await call('points','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.member.points,0);assert.deepEqual(r.data.history,[]);
 r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
 // Only test mode: explicitly switch on both the environment flag and DB flag.
@@ -56,10 +61,13 @@ env.SHOP_ENABLED='true'; db.raw.exec("UPDATE shop_settings SET value='1' WHERE k
 r=await call('health');assert.equal(r.data.ordersEnabled,false); // cannot go live with unverified prices
 // Only the test suite can simulate the owner having verified all sellable prices.
 db.raw.exec("UPDATE catalog_price_reviews SET verified=1 WHERE product_id IN (SELECT id FROM catalog WHERE available=1)");
+r=await call('health');assert.equal(r.data.ordersEnabled,false); // Another gate: LINE must be configured.
+env.LINE_MESSAGING_ACCESS_TOKEN='fake-test-token';env.LIFF_ID='2011951537-7IBatvMp';env.LIFF_ENDPOINT_CONFIRMED='true';
 r=await call('health');assert.equal(r.data.ordersEnabled,true);
+r=await call('admin/readiness','GET',undefined,cookie);assert.equal(r.data.checks.every(c=>c.ok),true);
 r=await call('orders','POST',{items:[{id:'not-in-menu',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,400);
 const requestKey=crypto.randomUUID();
-r=await call('orders','POST',{items:[{id:'7',qty:2,price:1,sweetness:'ปกติ'}],fulfillment:'pickup',requestKey},cookie);assert.equal(r.status,201);assert.equal(r.data.total,80);const orderId=r.data.orderId;
+r=await call('orders','POST',{items:[{id:'7',qty:2,price:1,sweetness:'ปกติ'}],fulfillment:'pickup',requestKey},cookie);assert.equal(r.status,201);assert.equal(r.data.total,80);assert.equal(r.data.ownerAlertOk,true);const orderId=r.data.orderId;
 r=await call('orders','POST',{items:[{id:'7',qty:2}],fulfillment:'pickup',requestKey},cookie);assert.equal(r.status,200);assert.equal(r.data.reused,true);
 r=await call('orders','GET',undefined,cookie);assert.equal(r.data.orders.length,1);
 for(const status of ['accepted','preparing','ready','completed']){r=await call('admin/orders','PATCH',{id:orderId,status},cookie);assert.equal(r.status,200,JSON.stringify(r));}
@@ -94,5 +102,16 @@ r=await call('admin/menu','POST',{name:'เมนูทดสอบ',category:'�
 r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.data.products.length,91);
 r=await call('admin/menu','GET');assert.equal(r.status,403);
 r=await call('menu');assert.equal(r.data.products.find(x=>x.id==='7').available,false);
+let attemptedPush=false;
+globalThis.fetch=async url=>{
+ if(String(url)==='https://api.line.me/v2/bot/message/push'){attemptedPush=true;return new Response('LINE temporarily unavailable',{status:503})}
+ throw Error('Unexpected external URL');
+};
+r=await call('orders','POST',{items:[{id:'30',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+assert.equal(r.status,201);assert.equal(attemptedPush,true);assert.equal(r.data.ownerAlertOk,false);assert.equal(r.data.shopAutoPaused,true);
+assert.equal(db.raw.prepare("SELECT value FROM shop_settings WHERE key='shop_enabled'").get().value,'0');
+assert.equal(db.raw.prepare("SELECT COUNT(*) AS n FROM order_notifications WHERE delivered=0").get().n,1);
+r=await call('health');assert.equal(r.data.ordersEnabled,false);
+r=await call('orders','POST',{items:[{id:'30',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
 globalThis.fetch=realFetch;
-console.log('PASS: health, 90 products reconciled to old order display, verification gate, closed checkout, origin blocking, LINE verification mock, signed cookie, total server-side 90 not 2, idempotency, owner/admin transitions, no double points, catalog edit');
+console.log('PASS: health, 90 products reconciled to old order display, verification gate, closed checkout, origin blocking, LINE verification mock, signed cookie, total server-side 90 not 2, idempotency, owner/admin transitions, no double points, order notification fail-closed, catalog edit');
