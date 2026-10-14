@@ -166,7 +166,17 @@ dialog{max-width:calc(100vw - 20px);max-width:calc(100dvw - 20px)}
 .menu-group-tabs button:focus-visible,.categories button:focus-visible{outline:3px solid #e4b044;outline-offset:2px}
 .category-hint{font-size:11px;font-weight:750;color:var(--muted);padding:7px 1px 0}
 .menu-explorer .categories{margin:5px -13px 0;padding:3px 13px 9px;max-width:calc(100% + 26px)}
-.menu-explorer .categories button{min-height:38px}
+.menu-explorer .categories button{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:5px 12px 5px 7px}
+.category-mascot{display:block;flex:0 0 30px;width:30px;height:30px;border-radius:50%;background-color:#f3f5ed;background-image:url('/assets/category-mascots.webp');background-repeat:no-repeat;background-size:400% 200%;overflow:hidden}
+.categories button.selected .category-mascot{background-color:#ffffff24}
+.category-mascot.pose-0{background-position:0% 0%}
+.category-mascot.pose-1{background-position:33.333333% 0%}
+.category-mascot.pose-2{background-position:66.666667% 0%}
+.category-mascot.pose-3{background-position:100% 0%}
+.category-mascot.pose-4{background-position:0% 100%}
+.category-mascot.pose-5{background-position:33.333333% 100%}
+.category-mascot.pose-6{background-position:66.666667% 100%}
+.category-mascot.pose-7{background-position:100% 100%}
 .next-step-bar{position:fixed;z-index:8;bottom:88px;bottom:calc(88px + env(safe-area-inset-bottom));left:0;right:0;pointer-events:none;padding:0 12px}
 .next-step-bar[hidden]{display:none!important}
 .next-step-inner{pointer-events:auto;max-width:900px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:6px;padding:8px;background:#edf4e3;box-shadow:0 4px 20px #263e1725;border:1px solid #bdd4a9;border-radius:14px}

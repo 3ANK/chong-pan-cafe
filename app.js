@@ -68,7 +68,23 @@ function paintCategories(){
  const products=state.products.filter(p=>q?p.name.toLowerCase().includes(q):groupForProduct(p)===state.selectedGroup);
  const cs=['ทั้งหมด',...new Set(products.map(p=>p.category))];
  if(!cs.includes(state.selectedCategory))state.selectedCategory='ทั้งหมด';
- $('categories').innerHTML=cs.map(c=>`<button type="button" data-cat="${escapeText(c)}" class="${c===state.selectedCategory?'selected':''}" aria-pressed="${c===state.selectedCategory}">${escapeText(c)}</button>`).join('');
+ const mascotPoses={'กาแฟ':0,'ชาและนม':1,'มัทฉะ':2,'ผลไม้สดปั่น':3,'กะเพรา':4,'ส้มตำ':5,'สปาเก็ตตี้':4,'ข้าวกระเทียม':4,'ข้าวไข่':4,'ไข่สั่งแยก':4,'ข้าวสั่งแยก':4,'ขนมปัง':6,'ดิปสังขยา':6,'ท็อปปิง':6,'โซดา':7,'น้ำผลไม้':7,'น้ำปั่น':3};
+ const mascotFor=category=>{
+  if(Object.prototype.hasOwnProperty.call(mascotPoses,category))return mascotPoses[category];
+  if(/กาแฟ/.test(category))return 0;
+  if(/มัทฉะ/.test(category))return 2;
+  if(/ส้มตำ/.test(category))return 5;
+  if(/ชา|นม/.test(category))return 1;
+  if(/ผลไม้|น้ำปั่น/.test(category))return 3;
+  if(/โซดา|น้ำผลไม้/.test(category))return 7;
+  if(/ขนม|สังขยา|ท็อปปิง/.test(category))return 6;
+  if(/อาหาร|กะเพรา|สปาเก็ตตี้|ข้าว|ไข่/.test(category))return 4;
+  return -1;
+ };
+ $('categories').innerHTML=cs.map(c=>{
+  const pose=mascotFor(c),mascot=pose<0?'':`<span class="category-mascot pose-${pose}" aria-hidden="true"></span>`;
+  return `<button type="button" data-cat="${escapeText(c)}" class="${c===state.selectedCategory?'selected':''}" aria-pressed="${c===state.selectedCategory}">${mascot}<span>${escapeText(c)}</span></button>`;
+ }).join('');
  $('categories').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
   state.selectedCategory=b.dataset.cat;paintCategories();paintCatalog();
  }));
