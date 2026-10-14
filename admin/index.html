@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="th"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#596b35"><meta name="robots" content="noindex,nofollow">
+<title>หลังบ้านชง&ปั่น | เจ้าของร้าน</title>
+<link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/admin/admin.css">
+<script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
+<script src="/admin/admin.js" defer></script><script src="/catalog-admin.js" defer></script>
+</head><body>
+<div class="admin-wrap">
+<header class="admin-hero"><div class="admin-title"><span class="admin-mark">ช&ป</span><div><h1>หลังบ้านร้านชง&ปั่น</h1><p>ระบบจัดการออเดอร์ · เฉพาะเจ้าของร้าน</p></div></div><a href="/order" class="admin-back">← หน้าเมนูลูกค้า</a></header>
+<section id="adminLogin" class="admin-login" role="status"><h2>กำลังตรวจสอบสิทธิ์เจ้าของร้าน…</h2><p id="adminLoginStatus">กรุณารอสักครู่</p><button id="adminLoginRetry" type="button" class="primary" hidden>เชื่อมต่อ LINE เพื่อเข้าหลังบ้าน</button></section>
+<main id="adminPrivate" hidden>
+<div id="ownerHello" class="admin-info"></div>
+<div class="admin-actions">
+<button id="refreshAdmin" class="secondary" type="button">รีเฟรชออเดอร์</button>
+<button id="manageCatalog" class="secondary" type="button">จัดการเมนู</button>
+<button id="manageLegacy" class="secondary" type="button">ย้ายแต้มสมาชิกเก่า</button>
+<button id="checkReadiness" class="secondary" type="button">ตรวจความพร้อม</button>
+<button id="testLineAlert" class="secondary" type="button">ทดสอบแจ้งเตือน LINE</button>
+<button id="toggleShop" class="secondary" type="button">เปิด / ปิดรับออเดอร์</button>
+</div>
+<section id="readinessReport" class="readiness-report" hidden></section>
+<section class="admin-section"><div class="admin-section-head"><h2>ออเดอร์ล่าสุด</h2><a href="https://manager.line.biz/" target="_blank" rel="noopener noreferrer">เปิด LINE OA เพื่อดูสลิป ↗</a></div>
+<p class="caption">ออเดอร์สแกนจ่าย: ตรวจหลักฐานในแชต LINE OA และตรวจยอดเงินจริงก่อนกดยืนยันรับเงิน สถานะไม่ได้เปลี่ยนอัตโนมัติเมื่อกดส่งสลิป</p>
+<div id="adminContent" class="admin-list">กำลังโหลดออเดอร์…</div></section>
+<section id="adminCatalog" class="admin-catalog admin-section" hidden></section>
+<section id="legacyPanel" class="admin-section" hidden><h2>ย้ายแต้มจากสมาชิกเก่า</h2><p>จับคู่บัญชี LINE หลังตรวจสอบตัวตนลูกค้าแล้วเท่านั้น</p><div id="legacyContent"></div></section>
+<section class="admin-section"><h2>ตั้งค่ารับชำระเงินร้าน</h2>
+<p class="caption">เงินสดพร้อมใช้งานแล้ว ส่วนสแกนจ่ายจะเปิดเมื่อมีรูป QR รับเงินจริงในเว็บ และ LINE OA Basic ID ที่ถูกต้องเท่านั้น</p>
+<form id="paymentSettingsForm">
+<label>LINE OA Basic ID (ขึ้นต้นด้วย @)<input id="oaId" name="oaId" autocomplete="off" placeholder="@xxxxxxxx"></label>
+<label>ตำแหน่งรูป QR ร้านบนเว็บไซต์<input id="qrPath" name="qrPath" placeholder="/assets/payment/shop-qr.png" autocomplete="off"></label>
+<button class="primary" type="submit">บันทึกการตั้งค่าชำระเงิน</button>
+<p id="paymentSettingsStatus" class="caption" role="status">กำลังตรวจสอบการตั้งค่า…</p></form>
+<p class="caption">หากยังไม่มีรูป QR บนเว็บ อย่าเพิ่งเปิดวิธีสแกนจ่าย ส่งไฟล์ QR ร้านให้ผู้ดูแลเว็บเพิ่มรูปจริงก่อน</p>
+</section>
+</main></div>
+</body></html>

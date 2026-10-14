@@ -1,0 +1,19 @@
+
+.admin-wrap{max-width:1180px;margin:0 auto;padding:18px 16px 48px}
+.admin-hero{display:flex;gap:14px;justify-content:space-between;align-items:center;background:#405a32;color:white;border-radius:20px;padding:22px;flex-wrap:wrap}
+.admin-title{display:flex;gap:14px;align-items:center}.admin-title h1{font-size:clamp(22px,4vw,30px);margin:0}.admin-title p{margin:6px 0 0;color:#e2ead9;font-size:13px}
+.admin-mark{display:grid;place-items:center;min-width:60px;height:60px;border-radius:15px;background:#fff3;color:#fff;font-weight:900;font-size:20px}
+.admin-back{color:#fff;text-decoration:none;font-size:13px;background:#ffffff20;border-radius:12px;padding:12px}
+.admin-login,.admin-section{margin-top:18px;background:#fff;border:1px solid #e8eade;padding:20px;border-radius:18px}
+.admin-login{text-align:center;padding:45px 20px}.admin-login h2{margin-bottom:10px}
+#adminPrivate[hidden],#adminLogin[hidden],.admin-section[hidden]{display:none!important}
+.admin-actions{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}
+.admin-section-head{display:flex;justify-content:space-between;gap:14px;align-items:center;flex-wrap:wrap}
+.admin-section-head h2{margin:0 0 10px}.admin-section-head a{color:#4b6738;font-weight:700}
+.admin-info{padding:14px 20px;background:#edf4e8;border-radius:12px;margin-top:15px;font-weight:700}
+.admin-list>.ordercard{margin:14px 0}.payment-chip{font-size:13px;padding:7px 10px;border-radius:8px;background:#f2f3ef;margin:10px 0;display:inline-block}
+.payment-chip.warning{background:#fff1d6;color:#8a590c}.payment-chip.success{background:#e3f1d9;color:#2e6027}
+.payment-verify{margin:8px 0 12px}.admin-section form label{display:block;margin:12px 0;font-weight:700}
+.admin-section form input{display:block;width:100%;max-width:480px;padding:12px;margin-top:6px;border:1px solid #d2d7c8;border-radius:9px}
+.admin-section button{cursor:pointer}.admin-order-details{line-height:1.65}.admin-order-details p{margin:7px 0}
+@media(max-width:520px){.admin-section{padding:15px}.admin-hero{padding:17px}.admin-actions button{flex:1 1 auto}}
