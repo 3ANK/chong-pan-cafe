@@ -175,3 +175,11 @@ dialog{max-width:calc(100vw - 20px);max-width:calc(100dvw - 20px)}
 .next-step-close{background:transparent;border:0;color:#556845;min-width:30px;min-height:42px;font-size:17px}
 @media(min-width:620px){.menu-explorer .categories{margin:5px 0 0;padding:3px 0 9px;max-width:100%}}
 @media(max-width:360px){#nextStepLabel{font-size:11px;max-width:86px}#nextStepButton{font-size:11px}}
+
+/* Mobile repeat-order actions and original options visible in customer history. */
+.history-items{display:flex;flex-direction:column;gap:6px;text-align:left;margin:12px 0;font-size:14px;line-height:1.5}
+.history-line{display:block;padding:5px 8px;background:#f7f8f3;border-radius:8px;overflow-wrap:anywhere}
+.order-history-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+.order-history-actions button{flex:1 1 145px;min-height:46px;text-align:center;font-size:14px;white-space:normal}
+.order-history-actions .pay-slip-reopen{margin:0}
+.reorder-button{background:#596b35}

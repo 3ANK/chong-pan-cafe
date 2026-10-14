@@ -339,3 +339,58 @@ assert.ok(appJS.includes('ส่งออเดอร์และไปสแก
 
 assert.ok(appJS.includes("fingerprint:payloadFingerprint")&&appJS.includes("localStorage.removeItem(pendingKeyName)"));
 assert.ok(appJS.includes("new AbortController()")&&appJS.includes("Promise.race(["));
+
+// Customer reorder uses fresh catalog, never submits directly and preserves modifiers.
+assert.ok(appJS.includes('function buildRepeatBasket(order,products,currentBasket)'));
+assert.ok(appJS.includes("data-repeat-order"));
+assert.ok(appJS.includes("await bootMenu()"));
+assert.ok(appJS.includes("('cartDialog').showModal()"));
+assert.ok(appJS.includes("return true}catch(e){")&&appJS.includes("return false}}"));
+assert.ok(css.includes('.order-history-actions{display:flex'));
+
+const reorderSection=appJS.slice(appJS.indexOf('function buildRepeatBasket('),appJS.indexOf('\nasync function repeatOrder('));
+assert.ok(reorderSection.startsWith('function buildRepeatBasket('));
+const rerunHelper=[
+ "const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระเทียม']);",
+ "const supportsEgg=p=>!!p&&eggEligibleCategories.has(p.category);",
+ "const repeatSweetness=new Set(['','ปกติ','หวานน้อย','ไม่หวาน','ไม่เติมน้ำตาล','เติมหวานน้อย','เติมหวานปกติ']);",
+ "const repeatEggTypes=new Set(['fried','omelet','creamy']);",
+ "const extra=item=>(({fried:10,omelet:10,creamy:20})[item.egg]||0)*(item.eggQty||0);",
+ "const keyOf=item=>JSON.stringify([item.id,item.sweetness,item.egg,item.egg?item.eggQty??1:0,item.note]);",
+ reorderSection,
+ "return buildRepeatBasket(order,products,currentBasket);"
+].join('\n');
+const repeatTest=new Function('order','products','currentBasket',rerunHelper);
+const repeatProducts=[
+ {id:'55',name:'ข้าวหมูกระเทียม',price:49,category:'ข้าวกระเทียม',available:true},
+ {id:'8',name:'ชาไทยเย็น',price:25,category:'ชาและนม',drink:true,available:true},
+ {id:'31',name:'ปังสังขยาชาไทย',price:20,category:'ขนมปัง',available:true},
+ {id:'99',name:'เลิกขาย',price:39,category:'ขนมปัง',available:false}
+];
+const repeatSample={items:[
+ {id:'55',name:'ข้าวหมูกระเทียม',price:49,qty:2,egg:'fried',eggQty:2,eggPrice:20,note:'ไม่เผ็ด'},
+ {id:'8',name:'ชาไทยเย็น',price:25,qty:1,sweetness:'หวานน้อย'},
+ {id:'31',name:'ปังสังขยาชาไทย',price:19,qty:3},
+ {id:'99',name:'เลิกขาย',price:39,qty:1}
+]};
+const repeatA=repeatTest(repeatSample,repeatProducts,[]);
+assert.equal(repeatA.added.length,3);
+assert.equal(repeatA.skipped.length,1);
+assert.equal(repeatA.repriced.length,1);
+assert.equal(repeatA.basket.length,3);
+assert.equal(repeatA.basket[0].eggQty,2);
+assert.equal(repeatA.basket[1].sweetness,'หวานน้อย');
+assert.equal(repeatA.basket[2].qty,3);
+assert.equal(repeatA.basket[2].price,20);
+const repeatB=repeatTest(repeatSample,repeatProducts,repeatA.basket);
+assert.equal(repeatB.basket.length,3);
+assert.equal(repeatB.basket[0].qty,4);
+assert.equal(repeatB.basket[2].qty,6);
+assert.equal(repeatA.basket[0].qty,2);
+const capped=repeatTest(repeatSample,repeatProducts,[{...repeatA.basket[0],qty:20}]);
+assert.ok(capped.skipped.some(s=>s.includes('เกินกำหนด')));
+assert.equal(capped.basket[0].qty,20);
+const invalidSweet=repeatTest({items:[{id:'8',qty:1,egg:'fried'}]},repeatProducts,[]);
+assert.equal(invalidSweet.added.length,0);
+assert.equal(invalidSweet.skipped.length,1);
+console.log('PASS: repeat-order uses current prices, original quantity and options, stock checks, and cart limits');

@@ -201,8 +201,98 @@ async function authenticate(userInitiated=false){
 }
 async function loadMember(){try{const m=await request('me');state.member=m.member}catch{state.member=null}paintMember()}
 function statusName(s){return ({pending:'รอร้านรับ',accepted:'ร้านรับแล้ว',preparing:'กำลังทำ',ready:'พร้อมรับ / ส่ง',completed:'ส่งมอบแล้ว',cancelled:'ยกเลิก'})[s]||s}
-function orderCard(o,admin=false){let items=Array.isArray(o.items)?o.items:[];return `<div class="ordercard"><div class="adminrow"><strong>ออเดอร์ #${escapeText(o.id.slice(0,8).toUpperCase())}</strong><span class="tag">${escapeText(statusName(o.status))}</span></div><p class="small">${new Date(o.created_at).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})}</p><p>${items.map(i=>escapeText(i.name)+' ×'+i.qty).join(' · ')}</p><p><strong>${fmt(o.total)}</strong> · ${o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน'}</p><p class="pay-label">${escapeText(paymentLabel(o))}</p>${o.payment_method==='qr'&&o.payment_status!=='verified'&&state.paymentConfig.qrEnabled?'<button type="button" class="secondary pay-slip-reopen" data-resend-slip="'+escapeText(o.id)+'">แสดง QR / ส่งสลิปให้ร้าน</button>':''}${admin?`<p class="small">${escapeText(o.display_name||'')} ${escapeText(o.delivery_address||'')}</p><div class="inline">${['accepted','preparing','ready','completed','cancelled'].filter(s=>s!==o.status).map(s=>`<button class="secondary" data-status="${s}" data-order="${escapeText(o.id)}">${escapeText(statusName(s))}</button>`).join('')}</div>`:''}</div>`}
-async function loadHistory(){if(!state.member){$('orderHistory').textContent='กรุณาเข้าสู่ระบบ LINE เพื่อดูประวัติ';return}try{const r=await request('orders');state.orders=r.orders;$('orderHistory').innerHTML=r.orders.length?r.orders.map(x=>orderCard(x)).join(''):'<div class="empty">ยังไม่มีประวัติออเดอร์</div>';$('orderHistory').querySelectorAll('[data-resend-slip]').forEach(b=>b.addEventListener('click',()=>{const o=state.orders.find(x=>x.id===b.dataset.resendSlip);if(o)showQrPayment(o.id,o.total)}) )}catch(e){$('orderHistory').textContent=e.message}}
+const historyEggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'};
+function historyItemLabel(i){
+ const info=[];
+ if(i.sweetness)info.push(i.sweetness);
+ if(i.egg)info.push((historyEggNames[i.egg]||'ไข่')+' '+(Number(i.eggQty)>0?Number(i.eggQty):1)+' ฟอง/จาน');
+ if(i.note)info.push(String(i.note));
+ return String(i.name||'สินค้าเก่า')+' ×'+i.qty+(info.length?' ('+info.join(' · ')+')':'');
+}
+function orderCard(o,admin=false){
+ const items=Array.isArray(o.items)?o.items:[];
+ const itemLines=items.map(i=>'<span class="history-line">'+escapeText(historyItemLabel(i))+'</span>').join('');
+ const repeatButton=!admin?'<button type="button" class="primary reorder-button" data-repeat-order="'+escapeText(o.id)+'">↻ สั่งซื้อซ้ำ</button>':'';
+ const slipButton=o.payment_method==='qr'&&o.payment_status!=='verified'&&state.paymentConfig.qrEnabled?
+ '<button type="button" class="secondary pay-slip-reopen" data-resend-slip="'+escapeText(o.id)+'">แสดง QR / ส่งสลิปให้ร้าน</button>':'';
+ const adminTools=admin?'<p class="small">'+escapeText(o.display_name||'')+' '+escapeText(o.delivery_address||'')+'</p><div class="inline">'+['accepted','preparing','ready','completed','cancelled'].filter(s=>s!==o.status).map(s=>'<button class="secondary" data-status="'+s+'" data-order="'+escapeText(o.id)+'">'+escapeText(statusName(s))+'</button>').join('')+'</div>':'';
+ return '<div class="ordercard"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statusName(o.status))+'</span></div>'+
+ '<p class="small">'+new Date(o.created_at).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})+'</p>'+
+ '<p class="history-items">'+itemLines+'</p>'+
+ '<p><strong>'+fmt(o.total)+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+'</p>'+
+ '<p class="pay-label">'+escapeText(paymentLabel(o))+'</p>'+
+ '<div class="order-history-actions">'+repeatButton+slipButton+'</div>'+adminTools+'</div>';
+}
+const repeatSweetness=new Set(['','ปกติ','หวานน้อย','ไม่หวาน','ไม่เติมน้ำตาล','เติมหวานน้อย','เติมหวานปกติ']);
+const repeatEggTypes=new Set(['fried','omelet','creamy']);
+function buildRepeatBasket(order,products,currentBasket){
+ const catalog=new Map(products.map(p=>[String(p.id),p]));
+ const basket=currentBasket.map(item=>({...item}));
+ const added=[],skipped=[],repriced=[];
+ for(const old of Array.isArray(order.items)?order.items:[]){
+  const p=catalog.get(String(old.id));
+  const label=String(old.name||'สินค้าเก่า');
+  const qty=Number(old.qty);
+  if(!p||!p.available||p.price<=0||!Number.isInteger(qty)||qty<1||qty>20){
+   skipped.push(label+' (ไม่พร้อมจำหน่ายหรือจำนวนไม่ถูกต้อง)');continue;
+  }
+  const egg=String(old.egg||'');
+  const eggQty=egg?(old.eggQty==null||Number(old.eggQty)===0?1:Number(old.eggQty)):0;
+  const sweetness=p.drink?String(old.sweetness||'ปกติ'):'';
+  if((egg&&(!supportsEgg(p)||!repeatEggTypes.has(egg)||!Number.isInteger(eggQty)||eggQty<1||eggQty>5))
+     ||!repeatSweetness.has(sweetness)){
+   skipped.push(label+' (ตัวเลือกเดิมใช้ไม่ได้แล้ว)');continue;
+  }
+  const it={id:String(p.id),name:p.name,price:p.price,qty,sweetness,egg,eggQty,note:String(old.note||'').slice(0,140)};
+  const same=basket.find(x=>keyOf(x)===keyOf(it));
+  if((same&&same.qty+qty>20)||(!same&&basket.length>=35)){
+   skipped.push(label+' (จำนวนในตะกร้าเกินกำหนด)');continue;
+  }
+  if(Number(old.price)!==Number(p.price)||Number(old.eggPrice||0)!==extra(it))repriced.push(p.name);
+  if(same)same.qty+=qty;else basket.push(it);
+  added.push(it);
+ }
+ return {basket,added,skipped,repriced};
+}
+async function repeatOrder(id,button){
+ if(!state.member)return toast('กรุณาเข้าสู่ LINE ก่อนสั่งซื้อซ้ำ');
+ const order=state.orders.find(o=>o.id===id);if(!order)return toast('ไม่พบออเดอร์นี้ กรุณาโหลดประวัติใหม่');
+ const warnings=[];
+ if(['pending','accepted','preparing','ready'].includes(order.status))warnings.push('ออเดอร์นี้ยังอยู่ระหว่างดำเนินการ โปรดตรวจสอบก่อนสั่งซ้ำ');
+ if(state.basket.length)warnings.push('ตะกร้าปัจจุบันมีสินค้าอยู่แล้ว ระบบจะเพิ่มรายการใหม่โดยไม่ลบสินค้าเดิม');
+ if(warnings.length&&!confirm(warnings.join('\n\n')+'\n\nนำรายการจากออเดอร์นี้มาใส่ตะกร้าใช่หรือไม่? (ยังไม่ส่งออเดอร์)'))return;
+ button.disabled=true;
+ try{
+  if(!(await bootMenu()))throw Error('ตรวจเมนูและราคาล่าสุดไม่ได้ กรุณาลองใหม่');
+  const plan=buildRepeatBasket(order,state.products,state.basket);
+  if(!plan.added.length){
+   alert('ยังสั่งซ้ำไม่ได้: '+(plan.skipped.slice(0,4).join(', ')||'ไม่มีรายการที่สั่งได้'));
+   return;
+  }
+  if(plan.skipped.length||plan.repriced.length){
+   let msg='พบรายการที่ต้องตรวจสอบก่อนสั่งซ้ำ:\n';
+   if(plan.skipped.length)msg+='• ไม่ได้เพิ่ม '+plan.skipped.length+' รายการ: '+plan.skipped.slice(0,3).join(', ')+'\n';
+   if(plan.repriced.length)msg+='• ราคาหรือตัวเลือกเปลี่ยน: '+[...new Set(plan.repriced)].slice(0,4).join(', ')+'\n';
+   if(!confirm(msg+'\nต้องการเพิ่มเฉพาะ '+plan.added.length+' รายการที่พร้อมขายลงตะกร้าหรือไม่?'))return;
+  }
+  state.basket=plan.basket;saveBasket();paintBasket();setTab('menu');
+  $('cartDialog').showModal();
+  $('checkoutHint').textContent='สั่งซ้ำจากประวัติแล้ว กรุณาตรวจสอบสินค้า จำนวน ราคา และวิธีรับอาหารก่อนกดยืนยัน';
+  toast('เพิ่มรายการจากออเดอร์เดิมลงตะกร้าแล้ว · ยังไม่ได้สั่งจริง');
+ }catch(e){toast('สั่งซ้ำไม่สำเร็จ · '+(e.message||'กรุณาลองใหม่'))}
+ finally{button.disabled=false}
+}
+async function loadHistory(){
+ if(!state.member){$('orderHistory').textContent='กรุณาเข้าสู่ระบบ LINE เพื่อดูประวัติ';return}
+ try{
+  const r=await request('orders');state.orders=r.orders;
+  $('orderHistory').innerHTML=r.orders.length?r.orders.map(x=>orderCard(x)).join(''):'<div class="empty">ยังไม่มีประวัติออเดอร์</div>';
+  $('orderHistory').querySelectorAll('[data-resend-slip]').forEach(b=>b.addEventListener('click',()=>{
+   const o=state.orders.find(x=>x.id===b.dataset.resendSlip);if(o)showQrPayment(o.id,o.total);
+  }));
+  $('orderHistory').querySelectorAll('[data-repeat-order]').forEach(b=>b.addEventListener('click',()=>repeatOrder(b.dataset.repeatOrder,b)));
+ }catch(e){$('orderHistory').textContent=e.message}
+}
 
 function paymentLabel(o){
  const method={cash:'เงินสด · ชำระเมื่อรับสินค้า',qr:'สแกนจ่าย',legacy:'ออเดอร์ก่อนเพิ่มตัวเลือกชำระเงิน'}[o.payment_method]||'ยังไม่ระบุวิธีจ่าย';
@@ -271,7 +361,7 @@ async function bootMenu(){try{const r=await request('menu');state.products=r.pro
    if(!p||!p.available||p.price<=0)return null;
    return {...it,name:p.name,price:p.price,egg:supportsEgg(p)?it.egg:'',sweetness:p.drink?it.sweetness:''};
   }).filter(Boolean);saveBasket();
-  state.liffId=r.liffId||'';state.canOrder=!!r.shopEnabled;show('legacyCheckout',!state.canOrder);$('statusBanner').className='notice '+(state.canOrder?'ok':'warn');$('statusBanner').textContent=state.canOrder?'พร้อมรับออเดอร์ผ่าน LINE':'ระบบใหม่อยู่ระหว่างทดสอบ · ยังไม่รับออเดอร์จริง · ราคาอ้างอิงจากข้อมูลเดิม';state.ready=true;paintMenuGroupTabs();paintCategories();paintCatalog();paintBasket()}catch(e){$('statusBanner').className='notice warn';$('statusBanner').textContent='เชื่อมต่อเมนูไม่สำเร็จ';$('catalog').innerHTML='<p class="empty">'+escapeText(e.message)+'</p>'}}
+  state.liffId=r.liffId||'';state.canOrder=!!r.shopEnabled;show('legacyCheckout',!state.canOrder);$('statusBanner').className='notice '+(state.canOrder?'ok':'warn');$('statusBanner').textContent=state.canOrder?'พร้อมรับออเดอร์ผ่าน LINE':'ระบบใหม่อยู่ระหว่างทดสอบ · ยังไม่รับออเดอร์จริง · ราคาอ้างอิงจากข้อมูลเดิม';state.ready=true;paintMenuGroupTabs();paintCategories();paintCatalog();paintBasket();return true}catch(e){$('statusBanner').className='notice warn';$('statusBanner').textContent='เชื่อมต่อเมนูไม่สำเร็จ';$('catalog').innerHTML='<p class="empty">'+escapeText(e.message)+'</p>';return false}}
 $('search').addEventListener('input',()=>{state.selectedCategory='ทั้งหมด';paintMenuGroupTabs();paintCategories();paintCatalog()});
 document.querySelectorAll('[data-menu-group]').forEach(b=>b.addEventListener('click',()=>setMenuGroup(b.dataset.menuGroup)));
 $('nextStepButton').addEventListener('click',()=>setMenuGroup(nextStepTarget));
