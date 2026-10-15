@@ -16,10 +16,18 @@
 <button id="refreshAdmin" class="secondary" type="button">รีเฟรชออเดอร์</button>
 <button id="manageCatalog" class="secondary" type="button">จัดการเมนู</button>
 <button id="manageLegacy" class="secondary" type="button">ย้ายแต้มสมาชิกเก่า</button>
+<button id="manageMembers" class="secondary" type="button">ดูแต้มลูกค้า</button>
 <button id="checkReadiness" class="secondary" type="button">ตรวจความพร้อม</button>
 <button id="testLineAlert" class="secondary" type="button">ทดสอบแจ้งเตือน LINE</button>
 <button id="toggleShop" class="secondary" type="button">เปิด / ปิดรับออเดอร์</button>
 </div>
+<section id="membersPanel" class="admin-section" hidden>
+ <div class="admin-section-head"><h2>รายชื่อลูกค้าและแต้ม</h2><button id="refreshMembers" class="secondary" type="button">อัปเดต</button></div>
+ <p class="caption">แสดงลูกค้าที่เข้าสู่ระบบด้วย LINE แล้ว ค้นหาด้วยชื่อหรือเลขท้าย LINE</p>
+ <label>ค้นหาลูกค้า<input id="memberSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อหรือเลขท้าย LINE"></label>
+ <p id="membersSummary" class="caption" role="status" aria-live="polite"></p>
+ <div id="membersContent" class="admin-list"></div>
+</section>
 <section id="readinessReport" class="readiness-report" hidden></section>
 <section class="admin-section"><div class="admin-section-head"><h2>ออเดอร์ล่าสุด</h2><a href="https://manager.line.biz/" target="_blank" rel="noopener noreferrer">เปิด LINE OA เพื่อดูสลิป ↗</a></div>
 <p class="caption">ออเดอร์สแกนจ่าย: ตรวจหลักฐานในแชต LINE OA และตรวจยอดเงินจริงก่อนกดยืนยันรับเงิน สถานะไม่ได้เปลี่ยนอัตโนมัติเมื่อกดส่งสลิป</p>
