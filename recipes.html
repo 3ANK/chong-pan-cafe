@@ -122,7 +122,7 @@ function buildChefJeweBackup(state){
  const addIngredient=(line)=>{
   const parsed=parseChefJeweLine(line),originalName=parsed?.name||String(line).trim(),name=ingredientAliases[normalizeIngredientLabel(originalName)]||originalName,unit=parsed?.unit||"รายการ";
   const key=JSON.stringify([name,unit]);
-  if(!ingredientIds.has(key)){const id=chefJeweId();ingredientIds.set(key,id);ingredients.push({id,name,quantity:0,unit,price:0});}
+  if(!ingredientIds.has(key)){const id=chefJeweId();ingredientIds.set(key,id);ingredients.push({id,name,quantity:1,unit,price:0});}
   return {ingredient:ingredientIds.get(key),quantity:parsed?.quantity||1};
  };
  for(const group of state.recipes||[])for(const name of group.names||[]){
