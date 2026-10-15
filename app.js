@@ -7,6 +7,8 @@ const escapeText=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const show=(id,visible)=>$(id).hidden=!visible;
 let timer;
 function toast(message){$('toast').textContent=message;$('toast').style.display='block';clearTimeout(timer);timer=setTimeout(()=>$('toast').style.display='none',3800)}
+let checkoutMessageOverride='';
+function checkoutStatus(message,error=false){const el=$('checkoutHint');if(!el)return;el.textContent=message;el.classList.toggle('checkout-error',error);el.setAttribute('role',error?'alert':'status')}
 async function request(path,opts={}){
  const controller=new AbortController();
  const duration=path==='orders'&&opts.method==='POST'?20000:15000;
@@ -165,7 +167,7 @@ function addItem(){
  suggestNextStep(state.selectedProduct);
  toast('เพิ่ม '+item.name+' '+item.qty+' รายการลงตะกร้าแล้ว');
 }
-function paintBasket(){const count=state.basket.reduce((n,it)=>n+it.qty,0);show('basketBar',count>0);$('basketLabel').textContent=count+' รายการ';$('basketTotal').textContent=subTotal().toLocaleString('th-TH');$('cartSum').textContent=fmt(subTotal());$('cartItems').innerHTML=state.basket.map((it,i)=>`<div class="cartline"><div><strong>${escapeText(it.name)}</strong><br><small>${escapeText([it.sweetness,it.egg?({fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'})[it.egg]+' '+(it.eggQty??1)+' ฟอง/จาน':'',it.note].filter(Boolean).join(' · '))}</small><div>${fmt(lineSubtotal(it))}</div></div><div class="cartbuttons"><button data-qty="${i}" data-step="-1" aria-label="ลดจำนวน">−</button>${it.qty}<button data-qty="${i}" data-step="1" aria-label="เพิ่มจำนวน">+</button></div></div>`).join('')||'<p class="empty">ตะกร้าว่าง</p>';for(const b of $('cartItems').querySelectorAll('[data-qty]'))b.addEventListener('click',()=>{const i=Number(b.dataset.qty);state.basket[i].qty+=Number(b.dataset.step);if(state.basket[i].qty<1)state.basket.splice(i,1);if(state.basket[i]?.qty>20)state.basket[i].qty=20;saveBasket();paintBasket()});$('placeOrder').disabled=!state.canOrder||!state.member||!count;$('checkoutHint').textContent=!state.canOrder?'ระบบทดลอง ยังไม่เปิดรับออเดอร์จริง':!state.member?'เข้าสู่ LINE ก่อนยืนยันออเดอร์':'ตรวจสอบราคาและรายละเอียดให้ถูกต้องก่อนสั่ง'}
+function paintBasket(){const count=state.basket.reduce((n,it)=>n+it.qty,0);show('basketBar',count>0);$('basketLabel').textContent=count+' รายการ';$('basketTotal').textContent=subTotal().toLocaleString('th-TH');$('cartSum').textContent=fmt(subTotal());$('cartItems').innerHTML=state.basket.map((it,i)=>`<div class="cartline"><div><strong>${escapeText(it.name)}</strong><br><small>${escapeText([it.sweetness,it.egg?({fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'})[it.egg]+' '+(it.eggQty??1)+' ฟอง/จาน':'',it.note].filter(Boolean).join(' · '))}</small><div>${fmt(lineSubtotal(it))}</div></div><div class="cartbuttons"><button data-qty="${i}" data-step="-1" aria-label="ลดจำนวน">−</button>${it.qty}<button data-qty="${i}" data-step="1" aria-label="เพิ่มจำนวน">+</button></div></div>`).join('')||'<p class="empty">ตะกร้าว่าง</p>';for(const b of $('cartItems').querySelectorAll('[data-qty]'))b.addEventListener('click',()=>{const i=Number(b.dataset.qty);state.basket[i].qty+=Number(b.dataset.step);if(state.basket[i].qty<1)state.basket.splice(i,1);if(state.basket[i]?.qty>20)state.basket[i].qty=20;saveBasket();paintBasket()});$('placeOrder').disabled=!state.canOrder||!state.member||!count;if(!checkoutMessageOverride)checkoutStatus(!state.canOrder?'ระบบทดลอง ยังไม่เปิดรับออเดอร์จริง':!state.member?'เข้าสู่ LINE ก่อนยืนยันออเดอร์':'ตรวจสอบราคาและรายละเอียดให้ถูกต้องก่อนสั่ง');
 function setTab(tab){hideNextStep();for(const t of ['menu','history'])show(t+'Panel',t===tab);document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.tab===tab));if(tab==='history')loadHistory()}
 function paintMember(){const m=state.member;$('memberName').textContent=m?.name||'ยังไม่ได้เข้าสู่ระบบ';$('points').textContent=m?.points??'–';$('loginBtn').textContent=m?'บัญชี LINE ✓':'เข้าสู่ LINE';state.admin=!!m?.isOwner;show('adminShortcut',state.admin);paintBasket()}
 const loginAttemptKey='chongpan-v2-line-login-attempt';
@@ -336,14 +338,14 @@ function showQrPayment(orderId,total){
  $('paymentDialog').showModal();
 }
 async function placeOrder(){
- if(!state.canOrder)return toast('ร้านยังไม่เปิดรับออเดอร์');
- if(!state.member)return authenticate(true);
- if(!state.basket.length)return;
+ if(!state.canOrder){checkoutStatus('ร้านยังไม่เปิดรับออเดอร์ในขณะนี้ กรุณาติดต่อร้าน',true);return}
+ if(!state.member){checkoutStatus('กรุณาเข้าสู่ระบบ LINE ก่อนยืนยันออเดอร์',true);return authenticate(true)}
+ if(!state.basket.length){checkoutStatus('ยังไม่มีสินค้าในตะกร้า',true);return}
  const fulfillment=$('fulfillment').value;
  const deliveryAddress=$('deliveryAddress').value.trim();
- if(fulfillment==='delivery'&&!deliveryAddress)return toast('กรุณากรอกที่อยู่จัดส่ง');
+ if(fulfillment==='delivery'&&!deliveryAddress){checkoutStatus('กรุณากรอกที่อยู่จัดส่งก่อนส่งออเดอร์',true);$('deliveryAddress').focus();return}
  const paymentMethod=document.querySelector('input[name="paymentMethod"]:checked')?.value||'cash';
- if(paymentMethod==='qr'&&!state.paymentConfig.qrEnabled)return toast('สแกนจ่ายยังไม่พร้อม กรุณาเลือกเงินสด');
+ if(paymentMethod==='qr'&&!state.paymentConfig.qrEnabled){checkoutStatus('สแกนจ่ายยังไม่พร้อม กรุณาเลือกเงินสดหรือติดต่อร้าน',true);return}
  const items=state.basket.map(({id,qty,sweetness,egg,eggQty,note})=>({id,qty,sweetness,egg,eggQty:egg?(eggQty??1):0,note}));
  // Preserve the same idempotency key after timeouts, tab refreshes and lost responses.
  const payloadFingerprint=JSON.stringify({items,fulfillment,deliveryAddress,paymentMethod,note:$('orderNote').value.trim()});
@@ -352,11 +354,13 @@ async function placeOrder(){
  try{previous=JSON.parse(localStorage.getItem(pendingKeyName)||'null')}catch{}
  const reqKey=previous?.fingerprint===payloadFingerprint&&/^[0-9a-f-]{36}$/i.test(previous.key)?previous.key:crypto.randomUUID();
  try{localStorage.setItem(pendingKeyName,JSON.stringify({key:reqKey,fingerprint:payloadFingerprint}))}catch{}
+ checkoutMessageOverride='กำลังส่งคำสั่งซื้อ กรุณารอสักครู่และอย่ากดซ้ำ';
+ checkoutStatus(checkoutMessageOverride);
  $('placeOrder').disabled=true;
- $('checkoutHint').textContent='กำลังส่งคำสั่งซื้อ กรุณาอย่ากดซ้ำ';
  try{
   const r=await request('orders',{method:'POST',body:JSON.stringify({items,fulfillment,deliveryAddress,paymentMethod,note:$('orderNote').value.trim(),requestKey:reqKey})});
   try{localStorage.removeItem(pendingKeyName)}catch{}
+  checkoutMessageOverride='';
   state.basket=[];saveBasket();paintBasket();$('cartDialog').close();
   if(r.confirmationPending){
    alert('บันทึกออเดอร์ #'+r.orderId.slice(0,8)+' แล้ว ขณะนี้กำลังตรวจสอบการแจ้งร้าน กรุณารอร้านยืนยัน และยังไม่ต้องโอนเงิน อย่าสั่งซ้ำ');
@@ -367,7 +371,7 @@ async function placeOrder(){
   }
   setTab('history');
   if(paymentMethod==='qr'&&r.ownerAlertOk===true)showQrPayment(r.orderId,r.total);
- }catch(e){toast('ยังยืนยันสถานะออเดอร์ไม่ได้ · '+e.message+' · กรุณาลองกดยืนยันอีกครั้งด้วยรายการเดิม ระบบจะไม่สร้างซ้ำ')}finally{$('placeOrder').disabled=!state.canOrder;paintBasket()}
+ }catch(e){checkoutMessageOverride='ส่งออเดอร์ยังไม่สำเร็จ: '+e.message+'. หากไม่แน่ใจว่าระบบได้รับออเดอร์หรือไม่ ให้ลองกดอีกครั้งด้วยรายการเดิม ระบบจะตรวจคำขอเดิมและป้องกันการสร้างซ้ำ';}finally{$('placeOrder').disabled=!state.canOrder;paintBasket();if(checkoutMessageOverride)checkoutStatus(checkoutMessageOverride,true)}
 }
 async function bootMenu(){try{const r=await request('menu');state.products=r.products;
   // The stored cart is an untrusted snapshot: use the current catalogue name and price.
@@ -405,7 +409,7 @@ $('increaseOptionQty').addEventListener('click',()=>setOptionQuantity(optionQuan
 $('egg').addEventListener('change',()=>setOptionEggQuantity(1));
 $('decreaseEggQty').addEventListener('click',()=>setOptionEggQuantity(optionEggQuantity-1));
 $('increaseEggQty').addEventListener('click',()=>setOptionEggQuantity(optionEggQuantity+1));
-$('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>{hideNextStep();$('cartDialog').showModal();void bootPayments()});$('fulfillment').addEventListener('change',()=>show('addressLabel',$('fulfillment').value==='delivery'));document.querySelectorAll('input[name="paymentMethod"]').forEach(el=>el.addEventListener('change',()=>{
+$('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>{hideNextStep();checkoutMessageOverride='';$('cartDialog').showModal();paintBasket();void bootPayments()});$('fulfillment').addEventListener('change',()=>show('addressLabel',$('fulfillment').value==='delivery'));document.querySelectorAll('input[name="paymentMethod"]').forEach(el=>el.addEventListener('change',()=>{
  $('placeOrder').textContent=el.value==='qr'?'ส่งออเดอร์และไปสแกนจ่าย':'ยืนยันสั่งอาหาร';
 }));
 $('placeOrder').addEventListener('click',placeOrder);$('closePaymentDialog').addEventListener('click',()=>$('paymentDialog').close());
