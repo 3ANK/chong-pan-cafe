@@ -44,3 +44,7 @@
 
 #manageAdmins[hidden]{display:none!important}
 #adminsPanel h3{font-size:16px;margin:18px 0 8px;color:#405a32}
+
+
+/* Primary logo in the admin page header. */
+.admin-mark{display:block;width:64px;min-width:64px;height:64px;object-fit:cover;border-radius:15px;background:#fff;padding:0;flex:0 0 64px}
