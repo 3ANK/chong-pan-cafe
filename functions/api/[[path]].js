@@ -123,8 +123,11 @@ async function createOrder(req,env,db,s){
  }
  const config=await menu(db,env);
  if(!config.shopEnabled)return fail('ร้านยังไม่เปิดรับออเดอร์ผ่านระบบใหม่',503);
- const requestedPayment=data.paymentMethod===undefined?'cash':data.paymentMethod;
- if(!['cash','qr'].includes(requestedPayment))return fail('กรุณาเลือกชำระเงินสดหรือสแกนจ่าย');
+ const redeemOnly=data.redeemOnly===true;
+ const requestedPayment=redeemOnly?'points':(data.paymentMethod===undefined?'cash':data.paymentMethod);
+ if(redeemOnly&&data.paymentMethod!=='points')return fail('ข้อมูลการแลกแต้มไม่ถูกต้อง กรุณาเริ่มจากหน้าแลกเมนู');
+ if(!redeemOnly&&Number(data.pointsToUse||0)>0)return fail('แต้มใช้แลกเป็นเมนูได้จากหน้าแลกแต้ม กรุณาโหลดหน้าเว็บใหม่');
+ if(!redeemOnly&&!['cash','qr'].includes(requestedPayment))return fail('กรุณาเลือกชำระเงินสดหรือสแกนจ่าย');
  if(!Array.isArray(data.items)||!data.items.length||data.items.length>35)return fail('จำนวนรายการไม่ถูกต้อง');
  if(!['pickup','delivery'].includes(data.fulfillment))return fail('วิธีรับอาหารไม่ถูกต้อง');
  const address=safe(data.deliveryAddress,500);
@@ -145,10 +148,9 @@ async function createOrder(req,env,db,s){
   validated.push(item);
  }
  if(subtotal<0||subtotal>200000)return fail('ยอดสั่งซื้อเกินกำหนด');
- const pointsUsed=data.pointsToUse===undefined?0:Number(data.pointsToUse);
- if(!Number.isInteger(pointsUsed)||pointsUsed<0||pointsUsed>subtotal)return fail('จำนวนแต้มที่ใช้ไม่ถูกต้อง หรือเกินยอดอาหาร');
+ const pointsUsed=redeemOnly?subtotal:0;
  const total=subtotal-pointsUsed,paymentSettings=await paymentConfig(db,env);
- const paymentMethod=total===0&&pointsUsed>0?'points':requestedPayment;
+ const paymentMethod=redeemOnly?'points':requestedPayment;
  if(total>0&&paymentMethod==='qr'&&!paymentSettings.qrEnabled)return fail('ยังไม่เปิดสแกนจ่าย กรุณาเลือกเงินสด',409);
  const id=crypto.randomUUID(),name=safe(s.name||'สมาชิก LINE',80),note=safe(data.note,300);
  const orderInsert=db.prepare('INSERT INTO orders(id,request_key,line_user_id,display_name,fulfillment,delivery_address,note,total,points_used,status,payment_method,payment_status) SELECT ?,?,?,?,?,?,?,?,?,?,?,? WHERE ?=0 OR COALESCE((SELECT points FROM members WHERE line_user_id=?),0)>=?')
@@ -175,9 +177,10 @@ async function createOrder(req,env,db,s){
  try{
   const lines=validated.map(i=>i.qty+'× '+i.name+(i.sweetness?' ('+i.sweetness+')':'')+(i.egg?' +'+eggNames[i.egg]+' '+i.eggQty+' ฟอง/จาน (+'+i.extra+' บาท/จาน)':'')+(i.note?' | '+i.note:''));
   const msg=['มีออเดอร์ใหม่ #'+id.slice(0,8),
-   'ลูกค้า: '+name,'ยอดชำระ: '+total+' บาท',
-   ...(pointsUsed?['หักแต้ม: '+pointsUsed+' แต้ม (ใช้ซื้อเมนู)']:[]),
-   'ชำระเงิน: '+(paymentMethod==='points'?'ใช้แต้มครบจำนวน · รอรับสินค้า':paymentMethod==='qr'?'สแกน QR · รอตรวจสลิปใน LINE OA':'เงินสด · รอรับเงินจริง'),
+   ...(redeemOnly?['ประเภท: แลกแต้มเป็นเมนู']:[]),
+   'ลูกค้า: '+name,...(redeemOnly?[]:['ยอดชำระ: '+total+' บาท']),
+   ...(pointsUsed?['ใช้แลกเมนู: '+pointsUsed+' แต้ม · ไม่ต้องรับเงิน']:[]),
+   'ชำระเงิน: '+(paymentMethod==='points'?'แลกแต้ม · ไม่ต้องรับเงิน':paymentMethod==='qr'?'สแกน QR · รอตรวจสลิปใน LINE OA':'เงินสด · รอรับเงินจริง'),
    'วิธีรับ: '+(data.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน'),
    ...(data.fulfillment==='delivery'?['ที่อยู่: '+address]:[]),
    ...(data.note?['หมายเหตุ: '+note]:[]),...lines].join('\n').slice(0,4350)+
@@ -276,7 +279,7 @@ async function assignLegacy(req,db,ownerSession){
   const bal=await db.prepare('SELECT points FROM members WHERE line_user_id=?').bind(userId).first();
   return json({ok:true,legacyCode:code,pointsTransferred:old.snapshot_points,currentPoints:bal?.points});
 }
-async function updateOrder(req,db){const d=await body(req);if(typeof d.id!=='string'||!validStatus.has(d.status))return fail('ข้อมูลสถานะไม่ถูกต้อง');const o=await db.prepare('SELECT id,status,line_user_id,total,payment_method,payment_status FROM orders WHERE id=?').bind(d.id).first();if(!o)return fail('ไม่พบออเดอร์',404);if(o.status==='completed'||o.status==='cancelled')return fail('ออเดอร์ถูกปิดแล้ว',409);const allowed={pending:['accepted','cancelled'],accepted:['preparing','ready','cancelled'],preparing:['ready','cancelled'],ready:['completed','cancelled']};if(!allowed[o.status]?.includes(d.status))return fail('ลำดับสถานะไม่ถูกต้อง',409);if(d.status==='completed'&&o.payment_method==='qr'&&o.payment_status!=='verified')return fail('สแกนจ่ายยังไม่ผ่านการตรวจสลิป/การรับเงินจริง',409);if(d.status==='completed'){const pts=Math.floor(o.total/25);const id=crypto.randomUUID();await db.batch([db.prepare("UPDATE orders SET status='completed',completed_at=CURRENT_TIMESTAMP WHERE id=? AND status='ready'").bind(o.id),db.prepare('INSERT OR IGNORE INTO points_ledger(id,order_id,line_user_id,delta) VALUES(?,?,?,?)').bind(id,o.id,o.line_user_id,pts),refreshPoints(db,o.line_user_id)]);return json({ok:true,pointsAdded:pts})}if(d.status==='cancelled'){
+async function updateOrder(req,db){const d=await body(req);if(typeof d.id!=='string'||!validStatus.has(d.status))return fail('ข้อมูลสถานะไม่ถูกต้อง');const o=await db.prepare('SELECT id,status,line_user_id,total,payment_method,payment_status FROM orders WHERE id=?').bind(d.id).first();if(!o)return fail('ไม่พบออเดอร์',404);if(o.status==='completed'||o.status==='cancelled')return fail('ออเดอร์ถูกปิดแล้ว',409);const allowed={pending:['accepted','cancelled'],accepted:['preparing','ready','cancelled'],preparing:['ready','cancelled'],ready:['completed','cancelled']};if(!allowed[o.status]?.includes(d.status))return fail('ลำดับสถานะไม่ถูกต้อง',409);if(d.status==='completed'&&o.payment_method==='qr'&&o.payment_status!=='verified')return fail('สแกนจ่ายยังไม่ผ่านการตรวจสลิป/การรับเงินจริง',409);if(d.status==='completed'){const pts=Math.floor(o.total/25);const id=crypto.randomUUID();const steps=[db.prepare("UPDATE orders SET status='completed',completed_at=CURRENT_TIMESTAMP WHERE id=? AND status='ready'").bind(o.id)];if(pts>0)steps.push(db.prepare('INSERT OR IGNORE INTO points_ledger(id,order_id,line_user_id,delta) VALUES(?,?,?,?)').bind(id,o.id,o.line_user_id,pts));steps.push(refreshPoints(db,o.line_user_id));await db.batch(steps);return json({ok:true,pointsAdded:pts})}if(d.status==='cancelled'){
  await db.batch([
   db.prepare('UPDATE orders SET status=? WHERE id=? AND status=?').bind(d.status,o.id,o.status),
   db.prepare("INSERT OR IGNORE INTO points_adjustments(source_key,line_user_id,delta,reason) SELECT 'order-points-refund:'||id,line_user_id,points_used,'order-redemption-refund' FROM orders WHERE id=? AND status='cancelled' AND points_used>0").bind(o.id),

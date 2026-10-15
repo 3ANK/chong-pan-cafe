@@ -1,8 +1,9 @@
 /* Chong & Pan ordering v2 — no real orders until SHOP_ENABLED is configured server-side. */
 'use strict';
 const $=id=>document.getElementById(id);
-const state={products:[],categories:[],basket:[],orders:[],paymentConfig:{qrEnabled:false,qrImage:'',oaId:''},member:null,pointsToUse:0,usePoints:false,ready:false,canOrder:false,selectedCategory:'ทั้งหมด',selectedGroup:'food',selectedProduct:null,liffId:'',admin:false};
+const state={products:[],categories:[],basket:[],orders:[],paymentConfig:{qrEnabled:false,qrImage:'',oaId:''},member:null,pointsToUse:0,usePoints:false,redeemMode:new URLSearchParams(location.search).get('redeem')==='1',ready:false,canOrder:false,selectedCategory:'ทั้งหมด',selectedGroup:'food',selectedProduct:null,liffId:'',admin:false};
 const fmt=n=>'฿'+Number(n||0).toLocaleString('th-TH');
+const costLabel=n=>state.redeemMode?Number(n||0).toLocaleString('th-TH')+' แต้ม':fmt(n);
 const escapeText=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const show=(id,visible)=>$(id).hidden=!visible;
 let timer;
@@ -107,7 +108,7 @@ function suggestNextStep(product){
  $('nextStepButton').textContent=nextStepTarget==='drinks'?'🥤 เลือกเครื่องดื่มต่อ →':'🍞 เลือกขนมต่อ →';
  show('nextStepBar',true);
 }
-function paintCatalog(){const g=menuGroups();const html=Object.entries(g).map(([cat,products])=>`<div class="sectiontitle"><h2>${escapeText(cat)}</h2><small>${products.length} รายการ</small></div>${products.map(p=>`<article class="item"><div class="productart">${p.image?`<img loading="lazy" src="${escapeText(p.image)}" alt="${escapeText(p.name)}">`:escapeText(p.emoji||'🥤')}</div><div class="itembody"><div class="itemtitle">${escapeText(p.name)}</div><div class="price">${p.price>0?fmt(p.price):'รอยืนยันราคา'}</div><div class="small">${p.price<=0?'รอกำหนดราคา':!p.available?'ยังไม่เปิดขาย':'เลือกตัวเลือกได้'}${p.id==='30'&&p.price===15?' · 2 ชิ้น 25 บาท':(p.id==='31'||p.id==='32')&&p.price===20?' · 2 ชิ้น 35 บาท':''}</div></div><button class="add" data-add="${escapeText(p.id)}" ${!p.available||p.price<=0?'disabled':''}>เพิ่ม +</button></article>`).join('')}`).join('');$('catalog').innerHTML=html||'<p class="empty">ไม่พบเมนูที่ค้นหา</p>';$('catalog').querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>openOption(b.dataset.add)))}
+function paintCatalog(){const g=menuGroups();const html=Object.entries(g).map(([cat,products])=>`<div class="sectiontitle"><h2>${escapeText(cat)}</h2><small>${products.length} รายการ</small></div>${products.map(p=>`<article class="item"><div class="productart">${p.image?`<img loading="lazy" src="${escapeText(p.image)}" alt="${escapeText(p.name)}">`:escapeText(p.emoji||'🥤')}</div><div class="itembody"><div class="itemtitle">${escapeText(p.name)}</div><div class="price">${p.price>0?costLabel(p.price):'รอยืนยันราคา'}</div><div class="small">${p.price<=0?'รอกำหนดราคา':!p.available?'ยังไม่เปิดขาย':state.redeemMode?'ราคาที่แสดงคือแต้มที่ใช้แลก':'เลือกตัวเลือกได้'}${(p.id==='30'&&p.price===15?' · 2 ชิ้น '+(state.redeemMode?'25 แต้ม':'25 บาท'):(p.id==='31'||p.id==='32')&&p.price===20?' · 2 ชิ้น '+(state.redeemMode?'35 แต้ม':'35 บาท'):'')}</div></div><button class="add" data-add="${escapeText(p.id)}" ${!p.available||p.price<=0?'disabled':''}>${state.redeemMode?'เลือกเมนู':'เพิ่ม +'}</button></article>`).join('')}`).join('');$('catalog').innerHTML=html||'<p class="empty">ไม่พบเมนูที่ค้นหา</p>';$('catalog').querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>openOption(b.dataset.add)))}
 let optionQuantity=1;
 let optionEggQuantity=1;
 function selectedOptionItem(){
@@ -125,9 +126,9 @@ function paintOptionQuantity(){
  $('increaseEggQty').disabled=!draft.egg||draft.eggQty>=5;
  $('decreaseOptionQty').disabled=optionQuantity<=1;
  $('increaseOptionQty').disabled=optionQuantity>=20;
- const sum=fmt(lineSubtotal(draft));
+ const sum=costLabel(lineSubtotal(draft));
  $('optionQuantityPrice').textContent='รวม '+sum;
- $('addSelectedItem').textContent='ใส่ตะกร้า '+optionQuantity+' รายการ · '+sum;
+ $('addSelectedItem').textContent=(state.redeemMode?'เลือกเมนู ':'ใส่ตะกร้า ')+optionQuantity+' รายการ · '+sum;
 }
 function setOptionEggQuantity(next){
  optionEggQuantity=Math.max(1,Math.min(5,Math.trunc(Number(next)||1)));
@@ -141,7 +142,9 @@ function openOption(id){
  const p=state.products.find(p=>p.id===id);
  if(!p||!p.available||p.price<=0)return;
  state.selectedProduct=p;
- $('optionTitle').textContent=p.name+' · '+fmt(p.price)+(p.id==='30'&&p.price===15?' · 2 ชิ้น 25 บาท':(p.id==='31'||p.id==='32')&&p.price===20?' · 2 ชิ้น 35 บาท':'');
+ $('optionTitle').textContent=p.name+' · '+costLabel(p.price)+(state.redeemMode?'':(p.id==='30'&&p.price===15?' · 2 ชิ้น 25 บาท':(p.id==='31'||p.id==='32')&&p.price===20?' · 2 ชิ้น 35 บาท':''));
+ const eggUnit=state.redeemMode?'แต้ม':'บาท';
+ for(const o of $('egg').options){if(!o.value)o.textContent='ไม่เพิ่มไข่';else{o.textContent=({fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'})[o.value]+' +'+({fried:10,omelet:10,creamy:20})[o.value]+' '+eggUnit}}
  show('sweetnessGroup',!!p.drink);
  show('eggGroup',supportsEgg(p));
  $('itemNote').value='';
@@ -167,31 +170,40 @@ function addItem(){
  suggestNextStep(state.selectedProduct);
  toast('เพิ่ม '+item.name+' '+item.qty+' รายการลงตะกร้าแล้ว');
 }
-function pointsUsedForOrder(){
- return state.usePoints?Math.min(Math.max(0,Math.floor(Number(state.pointsToUse)||0)),Math.max(0,Number(state.member?.points)||0),subTotal()):0;
-}
-function syncPointSpendUi(clampInput=true){
- const balance=Math.max(0,Number(state.member?.points)||0),max=Math.min(balance,subTotal());
- if(clampInput)state.pointsToUse=Math.min(Math.max(0,Math.floor(Number(state.pointsToUse)||0)),max);
- const used=pointsUsedForOrder(),toggle=$('usePoints'),input=$('pointsToUse');
- toggle.disabled=!state.member||balance<1||subTotal()<1;toggle.checked=!!state.usePoints;
- input.disabled=!state.usePoints;input.max=String(max);if(clampInput)input.value=String(state.pointsToUse||0);
- $('pointsAvailableText').textContent='แต้มของคุณ '+balance.toLocaleString('th-TH')+' แต้ม · ใช้ได้สูงสุด '+max.toLocaleString('th-TH')+' แต้ม';
- $('pointsDiscountRow').hidden=used===0;
- $('cartPointsUsed').textContent='−'+used.toLocaleString('th-TH')+' แต้ม (−'+fmt(used)+')';
- $('cartTotalDue').textContent=fmt(Math.max(0,subTotal()-used));
+function pointsUsedForOrder(){return state.redeemMode?subTotal():0}
+function syncPointSpendUi(){
+ const balance=Math.max(0,Number(state.member?.points)||0),total=subTotal(),used=pointsUsedForOrder();
+ show('regularPointsControls',false);show('redemptionPointsDetails',state.redeemMode);
+ show('paymentSelector',!state.redeemMode);show('cashPaymentHelp',!state.redeemMode);show('cartTotalDueRow',!state.redeemMode);
+ $('cartSumLabel').textContent=state.redeemMode?'มูลค่าเมนูที่แลก':'รวมสินค้า';
+ $('cartSum').textContent=costLabel(total);
+ $('cartTotalDueLabel').textContent=state.redeemMode?'แต้มที่ใช้แลก':'ยอดชำระ';
+ $('cartTotalDue').textContent=state.redeemMode?used.toLocaleString('th-TH')+' แต้ม':fmt(total);
+ $('pointsAvailableText').textContent='แต้มคงเหลือ '+balance.toLocaleString('th-TH')+' แต้ม';
+ $('cartPointsUsed').textContent=used.toLocaleString('th-TH')+' แต้ม';
+ $('pointsRemainingAfter').textContent=Math.max(0,balance-used).toLocaleString('th-TH')+' แต้ม';
+ $('placeOrder').textContent=state.redeemMode?'ยืนยันแลกเมนู':'ยืนยันสั่งอาหาร';
+ $('placeOrder').disabled=!state.canOrder||!state.member||!state.basket.length||(state.redeemMode&&balance<used);
+ if(!checkoutMessageOverride){
+  if(!state.canOrder)checkoutStatus('ร้านยังไม่เปิดรับออเดอร์ในขณะนี้');
+  else if(!state.member)checkoutStatus('เข้าสู่ LINE ก่อนยืนยันออเดอร์');
+  else if(state.redeemMode&&balance<used)checkoutStatus('แต้มไม่พอสำหรับเมนูที่เลือก · ต้องใช้ '+used.toLocaleString('th-TH')+' แต้ม');
+  else checkoutStatus(state.redeemMode?'ตรวจสอบเมนูและแต้มที่จะใช้แลกก่อนยืนยัน':'ตรวจสอบรายการก่อนยืนยันออเดอร์');
+ }
 }
 function paintBasket(){
  const count=state.basket.reduce((n,it)=>n+it.qty,0);
  show('basketBar',count>0);
  $('basketLabel').textContent=count+' รายการ';
  $('basketTotal').textContent=subTotal().toLocaleString('th-TH');
- $('cartSum').textContent=fmt(subTotal());
- $('cartItems').innerHTML=state.basket.map((it,i)=>'<div class="cartline"><div><strong>'+escapeText(it.name)+'</strong><br><small>'+escapeText([it.sweetness,it.egg?({fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'})[it.egg]+' '+(it.eggQty??1)+' ฟอง/จาน':'',it.note].filter(Boolean).join(' · '))+'</small><div>'+fmt(lineSubtotal(it))+'</div></div><div class="cartbuttons"><button data-qty="'+i+'" data-step="-1" aria-label="ลดจำนวน">−</button>'+it.qty+'<button data-qty="'+i+'" data-step="1" aria-label="เพิ่มจำนวน">+</button></div></div>').join('')||'<p class="empty">ตะกร้าว่าง</p>';
+ $('basketTotalUnit').textContent=state.redeemMode?'แต้ม':'บาท';
+ $('cartSum').textContent=costLabel(subTotal());
+ $('cartItems').innerHTML=state.basket.map((it,i)=>'<div class="cartline"><div><strong>'+escapeText(it.name)+'</strong><br><small>'+escapeText([it.sweetness,it.egg?({fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'})[it.egg]+' '+(it.eggQty??1)+' ฟอง/จาน':'',it.note].filter(Boolean).join(' · '))+'</small><div>'+costLabel(lineSubtotal(it))+'</div></div><div class="cartbuttons"><button data-qty="'+i+'" data-step="-1" aria-label="ลดจำนวน">−</button>'+it.qty+'<button data-qty="'+i+'" data-step="1" aria-label="เพิ่มจำนวน">+</button></div></div>').join('')||'<p class="empty">ตะกร้าว่าง</p>';
  for(const b of $('cartItems').querySelectorAll('[data-qty]'))b.addEventListener('click',()=>{const i=Number(b.dataset.qty);state.basket[i].qty+=Number(b.dataset.step);if(state.basket[i].qty<1)state.basket.splice(i,1);if(state.basket[i]?.qty>20)state.basket[i].qty=20;saveBasket();paintBasket()});
  syncPointSpendUi();
- $('placeOrder').disabled=!state.canOrder||!state.member||!count;
- if(!checkoutMessageOverride)checkoutStatus(!state.canOrder?'ระบบทดลอง ยังไม่เปิดรับออเดอร์จริง':!state.member?'เข้าสู่ LINE ก่อนยืนยันออเดอร์':'ตรวจสอบราคา แต้มที่ใช้ และยอดชำระก่อนสั่ง');
+ $('placeOrder').disabled=!state.canOrder||!state.member||!count||(state.redeemMode&&Number(state.member?.points||0)<subTotal());
+ show('redemptionBanner',state.redeemMode);
+ if(!checkoutMessageOverride&&!state.redeemMode)checkoutStatus(!state.canOrder?'ระบบทดลอง ยังไม่เปิดรับออเดอร์จริง':!state.member?'เข้าสู่ LINE ก่อนยืนยันออเดอร์':'ตรวจสอบราคาและยอดชำระก่อนสั่ง');
 }
 function setTab(tab){hideNextStep();for(const t of ['menu','history'])show(t+'Panel',t===tab);document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.tab===tab));if(tab==='history')loadHistory()}
 function paintMember(){const m=state.member;$('memberName').textContent=m?.name||'ยังไม่ได้เข้าสู่ระบบ';$('points').textContent=m?.points??'–';$('loginBtn').textContent=m?'บัญชี LINE ✓':'เข้าสู่ LINE';state.admin=!!m?.isOwner;show('adminShortcut',state.admin);paintBasket()}
@@ -226,7 +238,7 @@ async function authenticate(userInitiated=false){
    if(loginWasAttempted()&&!userInitiated)throw Error('ยังไม่ได้ยืนยันการเชื่อมต่อ LINE กรุณากดปุ่มด้านล่างเพื่อลองอีกครั้ง');
    markLoginAttempt();
    gateStatus('กำลังเปิดหน้าขออนุญาตเชื่อมต่อ LINE…');
-   liff.login({redirectUri:location.origin+location.pathname});
+   liff.login({redirectUri:location.origin+location.pathname+(state.redeemMode?'?redeem=1':'')});
    return;
   }
   const idToken=liff.getIDToken();
@@ -262,7 +274,7 @@ function orderCard(o,admin=false){
  return '<div class="ordercard"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statusName(o.status))+'</span></div>'+
  '<p class="small">'+new Date(o.created_at).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})+'</p>'+
  '<p class="history-items">'+itemLines+'</p>'+
- '<p><strong>'+fmt(o.total)+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+(Number(o.points_used)>0?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
+ '<p><strong>'+(o.payment_method==='points'?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+(Number(o.points_used)>0&&o.payment_method!=='points'?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
  '<p class="pay-label">'+escapeText(paymentLabel(o))+'</p>'+
  '<div class="order-history-actions">'+repeatButton+slipButton+'</div>'+adminTools+'</div>';
 }
@@ -338,8 +350,9 @@ async function loadHistory(){
 }
 
 function paymentLabel(o){
- const method={cash:'เงินสด · ชำระเมื่อรับสินค้า',qr:'สแกนจ่าย',points:'ใช้แต้มครบจำนวน',legacy:'ออเดอร์ก่อนเพิ่มตัวเลือกชำระเงิน'}[o.payment_method]||'ยังไม่ระบุวิธีจ่าย';
- return method+' · '+(o.payment_method==='points'?'ชำระครบด้วยแต้ม':o.payment_status==='verified'?'ร้านยืนยันรับเงินแล้ว':o.payment_method==='qr'?'รอร้านตรวจสอบสลิป':'ยังไม่ยืนยันรับเงิน');
+ if(o.payment_method==='points')return 'แลกเมนูด้วยแต้ม · ไม่ต้องจ่ายเงินเพิ่ม';
+ const method={cash:'เงินสด · ชำระเมื่อรับสินค้า',qr:'สแกนจ่าย',legacy:'ออเดอร์ก่อนเพิ่มตัวเลือกชำระเงิน'}[o.payment_method]||'ยังไม่ระบุวิธีจ่าย';
+ return method+' · '+(o.payment_status==='verified'?'ร้านยืนยันรับเงินแล้ว':o.payment_method==='qr'?'รอร้านตรวจสอบสลิป':'ยังไม่ยืนยันรับเงิน');
 }
 async function bootPayments(){
  try{
@@ -368,11 +381,13 @@ async function placeOrder(){
  if(!state.basket.length){checkoutStatus('ยังไม่มีสินค้าในตะกร้า',true);return}
  const fulfillment=$('fulfillment').value,deliveryAddress=$('deliveryAddress').value.trim();
  if(fulfillment==='delivery'&&!deliveryAddress){checkoutStatus('กรุณากรอกที่อยู่จัดส่งก่อนส่งออเดอร์',true);$('deliveryAddress').focus();return}
- const paymentMethod=document.querySelector('input[name="paymentMethod"]:checked')?.value||'cash';
- const pointsToUse=pointsUsedForOrder(),payable=subTotal()-pointsToUse;
+ const redeemOnly=state.redeemMode;
+ const paymentMethod=redeemOnly?'points':(document.querySelector('input[name="paymentMethod"]:checked')?.value||'cash');
+ const pointsToUse=redeemOnly?subTotal():0,payable=subTotal()-pointsToUse;
+ if(redeemOnly&&Number(state.member?.points||0)<pointsToUse){checkoutStatus('แต้มคงเหลือไม่พอสำหรับเมนูที่เลือก กรุณาอัปเดตยอดแต้ม',true);return}
  if(paymentMethod==='qr'&&payable>0&&!state.paymentConfig.qrEnabled){checkoutStatus('สแกนจ่ายยังไม่พร้อม กรุณาเลือกเงินสดหรือติดต่อร้าน',true);return}
  const items=state.basket.map(({id,qty,sweetness,egg,eggQty,note})=>({id,qty,sweetness,egg,eggQty:egg?(eggQty??1):0,note}));
- const payloadFingerprint=JSON.stringify({items,fulfillment,deliveryAddress,paymentMethod,pointsToUse,note:$('orderNote').value.trim()});
+ const payloadFingerprint=JSON.stringify({items,fulfillment,deliveryAddress,paymentMethod,redeemOnly,pointsToUse,note:$('orderNote').value.trim()});
  const pendingKeyName='chongpan-v2-pending-checkout';
  let previous=null;try{previous=JSON.parse(localStorage.getItem(pendingKeyName)||'null')}catch{}
  const reqKey=previous?.fingerprint===payloadFingerprint&&/^[0-9a-f-]{36}$/i.test(previous.key)?previous.key:crypto.randomUUID();
@@ -380,7 +395,7 @@ async function placeOrder(){
  checkoutMessageOverride='กำลังส่งคำสั่งซื้อ กรุณารอสักครู่และอย่ากดซ้ำ';
  checkoutStatus(checkoutMessageOverride);$('placeOrder').disabled=true;
  try{
-  const r=await request('orders',{method:'POST',body:JSON.stringify({items,fulfillment,deliveryAddress,paymentMethod,pointsToUse,note:$('orderNote').value.trim(),requestKey:reqKey})});
+  const r=await request('orders',{method:'POST',body:JSON.stringify({items,fulfillment,deliveryAddress,paymentMethod,redeemOnly,pointsToUse,note:$('orderNote').value.trim(),requestKey:reqKey})});
   try{localStorage.removeItem(pendingKeyName)}catch{}
   checkoutMessageOverride='';
   state.basket=[];state.usePoints=false;state.pointsToUse=0;
@@ -391,7 +406,7 @@ async function placeOrder(){
   }else if(r.ownerAlertOk!==true){
    alert('ระบบบันทึกออเดอร์ #'+r.orderId.slice(0,8)+' แล้ว แต่แจ้งร้านไม่สำเร็จ กรุณาโทร 062-594-6399 เพื่อยืนยัน อย่าสั่งซ้ำและยังไม่ต้องโอนเงิน');
   }else{
-   toast('ส่งออเดอร์สำเร็จ #'+r.orderId.slice(0,8)+(Number(r.pointsUsed)>0?' · ใช้ '+Number(r.pointsUsed)+' แต้ม':''));
+   toast((redeemOnly?'แลกเมนูสำเร็จ #':'ส่งออเดอร์สำเร็จ #')+r.orderId.slice(0,8)+(Number(r.pointsUsed)>0?' · ใช้ '+Number(r.pointsUsed)+' แต้ม':''));
   }
   setTab('history');
   if(r.paymentMethod==='qr'&&Number(r.total)>0&&r.ownerAlertOk===true)showQrPayment(r.orderId,r.total);
@@ -437,9 +452,7 @@ $('increaseEggQty').addEventListener('click',()=>setOptionEggQuantity(optionEggQ
 $('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>{hideNextStep();checkoutMessageOverride='';$('cartDialog').showModal();paintBasket();void bootPayments()});$('fulfillment').addEventListener('change',()=>show('addressLabel',$('fulfillment').value==='delivery'));document.querySelectorAll('input[name="paymentMethod"]').forEach(el=>el.addEventListener('change',()=>{
  $('placeOrder').textContent=el.value==='qr'?'ส่งออเดอร์และไปสแกนจ่าย':'ยืนยันสั่งอาหาร';
 }));
-$('usePoints').addEventListener('change',()=>{state.usePoints=$('usePoints').checked;state.pointsToUse=state.usePoints?Math.min(Number(state.member?.points)||0,subTotal()):0;paintBasket()});
-$('pointsToUse').addEventListener('input',()=>{state.pointsToUse=Math.max(0,Math.floor(Number($('pointsToUse').value)||0));syncPointSpendUi(false)});
-$('pointsToUse').addEventListener('change',()=>{state.pointsToUse=Math.min(Number(state.member?.points)||0,subTotal(),Math.max(0,Math.floor(Number($('pointsToUse').value)||0)));syncPointSpendUi(true)});
+
 $('placeOrder').addEventListener('click',placeOrder);$('closePaymentDialog').addEventListener('click',()=>$('paymentDialog').close());
 $('donePaymentDialog').addEventListener('click',()=>$('paymentDialog').close());
 restoreBasket();
