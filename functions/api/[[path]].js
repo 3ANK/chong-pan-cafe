@@ -89,154 +89,122 @@ async function authLine(req,env,db){if(!env.LINE_CHANNEL_ID||!env.SESSION_SECRET
 async function pointHistory(db, sessionData){
   const member=await db.prepare('SELECT display_name,points,created_at FROM members WHERE line_user_id=?').bind(sessionData.sub).first();
   if(!member)return fail('กรุณาเข้าสู่ LINE เพื่อดูแต้มสมาชิก',401);
-  const [history,pending,rewards,reserved]=await Promise.all([
-   db.prepare(`SELECT kind,delta,reference,created_at FROM (
+  const history=await db.prepare(`SELECT kind,delta,reference,created_at FROM (
     SELECT 'order' AS kind,delta,order_id AS reference,created_at FROM points_ledger WHERE line_user_id=?
     UNION ALL
-    SELECT CASE WHEN reason='screenshot-migration' THEN 'legacy' ELSE 'adjustment' END AS kind,
-     delta, '' AS reference,created_at FROM points_adjustments WHERE line_user_id=? AND reason<>'reward-redemption'
-    UNION ALL
-    SELECT 'redemption' AS kind,-points_cost AS delta,reward_name AS reference,decided_at AS created_at
-     FROM point_redemptions WHERE line_user_id=? AND status='approved'
-   ) ORDER BY created_at DESC LIMIT 100`).bind(sessionData.sub,sessionData.sub,sessionData.sub).all(),
-   db.prepare('SELECT id,reward_name,points_cost,status,created_at,decided_at FROM point_redemptions WHERE line_user_id=? ORDER BY created_at DESC LIMIT 30').bind(sessionData.sub).all(),
-   db.prepare('SELECT id,name,description,points_cost FROM point_rewards WHERE active=1 ORDER BY sort_order,points_cost,name').all(),
-   db.prepare("SELECT COALESCE(SUM(points_cost),0) AS total FROM point_redemptions WHERE line_user_id=? AND status='pending'").bind(sessionData.sub).first()
-  ]);
-  const pendingPoints=Number(reserved?.total||0);
+    SELECT CASE
+      WHEN reason='screenshot-migration' THEN 'legacy'
+      WHEN reason='order-redemption' THEN 'redemption'
+      WHEN reason='order-redemption-refund' THEN 'refund'
+      ELSE 'adjustment' END AS kind,
+      delta,
+      CASE WHEN reason='order-redemption' THEN substr(source_key,14)
+           WHEN reason='order-redemption-refund' THEN substr(source_key,21)
+           ELSE '' END AS reference,created_at
+    FROM points_adjustments WHERE line_user_id=? AND reason<>'reward-redemption'
+  ) ORDER BY created_at DESC LIMIT 100`).bind(sessionData.sub,sessionData.sub).all();
   return json({
-   member:{name:member.display_name,points:Number(member.points),availablePoints:Math.max(0,Number(member.points)-pendingPoints),pendingPoints,joinedAt:member.created_at},
-   history:(history.results||[]).map(t=>({kind:t.kind,delta:Number(t.delta),orderId:t.kind==='order'?t.reference:null,rewardName:t.kind==='redemption'?t.reference:null,createdAt:t.created_at})),
-   redemptions:(pending.results||[]).map(r=>({id:r.id,rewardName:r.reward_name,points:Number(r.points_cost),status:r.status,createdAt:r.created_at,decidedAt:r.decided_at})),
-   rewards:(rewards.results||[]).map(r=>({id:r.id,name:r.name,description:r.description,points:Number(r.points_cost)})),
-   policy:{bahtPerPoint:25,awardWhen:'completed',fractionalCarry:false},
-   rewardsEnabled:true
+   member:{name:member.display_name,points:Number(member.points),joinedAt:member.created_at},
+   history:(history.results||[]).map(t=>({kind:t.kind,delta:Number(t.delta),orderId:t.reference||null,createdAt:t.created_at})),
+   policy:{bahtPerPoint:25,awardWhen:'completed',fractionalCarry:false}
   });
-}
-async function createRedemption(req,db,s){
-  if(!s)return fail('กรุณาเข้าสู่ LINE เพื่อแลกแต้ม',401);
-  const data=await body(req),rewardId=text(data.rewardId),requestKey=text(data.requestKey);
-  if(!/^[0-9a-fA-F-]{36}$/.test(requestKey)||!rewardId)return fail('ข้อมูลคำขอแลกแต้มไม่ถูกต้อง');
-  const prior=await db.prepare('SELECT id,reward_name,points_cost,status FROM point_redemptions WHERE line_user_id=? AND request_key=?').bind(s.sub,requestKey).first();
-  if(prior)return json({ok:true,reused:true,redemption:{id:prior.id,rewardName:prior.reward_name,points:Number(prior.points_cost),status:prior.status}});
-  const reward=await db.prepare('SELECT id,name,description,points_cost,active FROM point_rewards WHERE id=?').bind(rewardId).first();
-  if(!reward||Number(reward.active)!==1)return fail('ของรางวัลนี้ปิดรับแลกแล้ว กรุณาอัปเดตรายการ',409);
-  const redemptionId=crypto.randomUUID(),cost=Number(reward.points_cost);
-  await db.prepare(`INSERT INTO point_redemptions(id,request_key,line_user_id,reward_id,reward_name,points_cost,status)
-   SELECT ?,?,?,?,?,?,'pending'
-   WHERE EXISTS(SELECT 1 FROM point_rewards WHERE id=? AND active=1 AND points_cost=?)
-   AND COALESCE((SELECT points FROM members WHERE line_user_id=?),0)
-       - COALESCE((SELECT SUM(points_cost) FROM point_redemptions WHERE line_user_id=? AND status='pending'),0) >= ?
-   ON CONFLICT(line_user_id,request_key) DO NOTHING`).bind(
-    redemptionId,requestKey,s.sub,reward.id,reward.name,cost,reward.id,cost,s.sub,s.sub,cost
-   ).run();
-  const created=await db.prepare('SELECT id,reward_name,points_cost,status FROM point_redemptions WHERE line_user_id=? AND request_key=?').bind(s.sub,requestKey).first();
-  if(!created)return fail('แต้มที่ใช้ได้ไม่พอ หรือของรางวัลถูกปิดแลกแล้ว',409);
-  return json({ok:true,redemption:{id:created.id,rewardName:created.reward_name,points:Number(created.points_cost),status:created.status}},201);
 }
 async function createOrder(req,env,db,s){
  if(!s)return fail('กรุณาเข้าสู่ LINE',401);
  const data=await body(req);
  const requestKey=text(data.requestKey);
  if(!/^[0-9a-fA-F-]{36}$/.test(requestKey))return fail('รหัสคำขอไม่ถูกต้อง');
- // A retry for an already-persisted order must work even after checkout is auto-paused.
- const existing=await db.prepare('SELECT id,total,payment_method FROM orders WHERE line_user_id=? AND request_key=?').bind(s.sub,requestKey).first();
+ const existing=await db.prepare('SELECT id,total,points_used,payment_method FROM orders WHERE line_user_id=? AND request_key=?').bind(s.sub,requestKey).first();
  if(existing){
   const delivery=await db.prepare('SELECT delivered FROM order_notifications WHERE order_id=?').bind(existing.id).first();
-  return json({orderId:existing.id,total:existing.total,paymentMethod:existing.payment_method,reused:true,
+  const balance=await db.prepare('SELECT points FROM members WHERE line_user_id=?').bind(s.sub).first();
+  return json({orderId:existing.id,total:existing.total,pointsUsed:Number(existing.points_used||0),pointsRemaining:Number(balance?.points||0),paymentMethod:existing.payment_method,reused:true,
    ownerAlertOk:delivery?.delivered===1,confirmationPending:!delivery});
  }
  const config=await menu(db,env);
  if(!config.shopEnabled)return fail('ร้านยังไม่เปิดรับออเดอร์ผ่านระบบใหม่',503);
- const paymentMethod=data.paymentMethod===undefined?'cash':data.paymentMethod;const paymentSettings=await paymentConfig(db,env);if(!['cash','qr'].includes(paymentMethod))return fail('กรุณาเลือกชำระเงินสดหรือสแกนจ่าย');if(paymentMethod==='qr'&&!paymentSettings.qrEnabled)return fail('ยังไม่เปิดสแกนจ่าย กรุณาเลือกเงินสด',409);if(!Array.isArray(data.items)||!data.items.length||data.items.length>35)return fail('จำนวนรายการไม่ถูกต้อง');if(!['pickup','delivery'].includes(data.fulfillment))return fail('วิธีรับอาหารไม่ถูกต้อง');const address=safe(data.deliveryAddress,500);if(data.fulfillment==='delivery'&&!address)return fail('โปรดระบุที่อยู่จัดส่ง');const stock=new Map(config.products.map(p=>[p.id,p]));const validated=[];let total=0;for(const raw of data.items){const p=stock.get(String(raw?.id));const qty=Number(raw?.qty);if(!p||!p.available||p.price<=0||!Number.isInteger(qty)||qty<1||qty>20)return fail('เมนูหรือจำนวนสินค้าไม่ถูกต้อง');const sweetness=safe(raw.sweetness,40);const egg=safe(raw.egg,20);if(!validSweet.has(sweetness)||(sweetness&&!p.drink))return fail('ตัวเลือกความหวานไม่ถูกต้อง');const baseEggPrice=egg?eggPrice(egg):0;
- const eggQty=raw.eggQty===undefined?(egg?1:0):raw.eggQty;
- if(baseEggPrice===null||(egg&&!eggEligibleCategories.has(p.category))||!Number.isInteger(eggQty)||eggQty<0||eggQty>5||(egg&&eggQty===0)||(!egg&&eggQty!==0))return fail('ตัวเลือกหรือจำนวนไข่ไม่ถูกต้อง');
- const extra=baseEggPrice*eggQty;
- const item={id:p.id,name:p.name,qty,price:p.price,egg,eggQty,sweetness,note:safe(raw.note,140),extra};const pair=extra===0?(p.id==='30'&&p.price===15?25:(p.id==='31'||p.id==='32')&&p.price===20?35:null):null;
- total+=pair===null?(p.price+extra)*qty:Math.floor(qty/2)*pair+(qty%2)*p.price;
- validated.push(item)}if(total<0||total>200000)return fail('ยอดสั่งซื้อเกินกำหนด');const id=crypto.randomUUID();const name=safe(s.name||'สมาชิก LINE',80);const steps=[db.prepare('INSERT INTO orders(id,request_key,line_user_id,display_name,fulfillment,delivery_address,note,total,status,payment_method,payment_status) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(id,requestKey,s.sub,name,data.fulfillment,address,safe(data.note,300),total,'pending',paymentMethod,'unpaid'),...validated.map(i=>db.prepare('INSERT INTO order_items(id,order_id,catalog_id,name,unit_price,egg_price,qty,sweetness,egg,egg_qty,note) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(crypto.randomUUID(),id,i.id,i.name,i.price,i.extra,i.qty,i.sweetness,i.egg,i.eggQty,i.note))];try{await db.batch(steps)}catch(e){const old=await db.prepare('SELECT id,total FROM orders WHERE line_user_id=? AND request_key=?').bind(s.sub,requestKey).first();if(old)return json({orderId:old.id,total:old.total,reused:true});throw e}let alertOk=false;
+ const requestedPayment=data.paymentMethod===undefined?'cash':data.paymentMethod;
+ if(!['cash','qr'].includes(requestedPayment))return fail('กรุณาเลือกชำระเงินสดหรือสแกนจ่าย');
+ if(!Array.isArray(data.items)||!data.items.length||data.items.length>35)return fail('จำนวนรายการไม่ถูกต้อง');
+ if(!['pickup','delivery'].includes(data.fulfillment))return fail('วิธีรับอาหารไม่ถูกต้อง');
+ const address=safe(data.deliveryAddress,500);
+ if(data.fulfillment==='delivery'&&!address)return fail('โปรดระบุที่อยู่จัดส่ง');
+ const stock=new Map(config.products.map(p=>[p.id,p])),validated=[];
+ let subtotal=0;
+ for(const raw of data.items){
+  const p=stock.get(String(raw?.id)),qty=Number(raw?.qty);
+  if(!p||!p.available||p.price<=0||!Number.isInteger(qty)||qty<1||qty>20)return fail('เมนูหรือจำนวนสินค้าไม่ถูกต้อง');
+  const sweetness=safe(raw.sweetness,40),egg=safe(raw.egg,20);
+  if(!validSweet.has(sweetness)||(sweetness&&!p.drink))return fail('ตัวเลือกความหวานไม่ถูกต้อง');
+  const baseEggPrice=egg?eggPrice(egg):0,eggQty=raw.eggQty===undefined?(egg?1:0):raw.eggQty;
+  if(baseEggPrice===null||(egg&&!eggEligibleCategories.has(p.category))||!Number.isInteger(eggQty)||eggQty<0||eggQty>5||(egg&&eggQty===0)||(!egg&&eggQty!==0))return fail('ตัวเลือกหรือจำนวนไข่ไม่ถูกต้อง');
+  const extra=baseEggPrice*eggQty;
+  const item={id:p.id,name:p.name,qty,price:p.price,egg,eggQty,sweetness,note:safe(raw.note,140),extra};
+  const pair=extra===0?(p.id==='30'&&p.price===15?25:(p.id==='31'||p.id==='32')&&p.price===20?35:null):null;
+  subtotal+=pair===null?(p.price+extra)*qty:Math.floor(qty/2)*pair+(qty%2)*p.price;
+  validated.push(item);
+ }
+ if(subtotal<0||subtotal>200000)return fail('ยอดสั่งซื้อเกินกำหนด');
+ const pointsUsed=data.pointsToUse===undefined?0:Number(data.pointsToUse);
+ if(!Number.isInteger(pointsUsed)||pointsUsed<0||pointsUsed>subtotal)return fail('จำนวนแต้มที่ใช้ไม่ถูกต้อง หรือเกินยอดอาหาร');
+ const total=subtotal-pointsUsed,paymentSettings=await paymentConfig(db,env);
+ const paymentMethod=total===0&&pointsUsed>0?'points':requestedPayment;
+ if(total>0&&paymentMethod==='qr'&&!paymentSettings.qrEnabled)return fail('ยังไม่เปิดสแกนจ่าย กรุณาเลือกเงินสด',409);
+ const id=crypto.randomUUID(),name=safe(s.name||'สมาชิก LINE',80),note=safe(data.note,300);
+ const orderInsert=db.prepare('INSERT INTO orders(id,request_key,line_user_id,display_name,fulfillment,delivery_address,note,total,points_used,status,payment_method,payment_status) SELECT ?,?,?,?,?,?,?,?,?,?,?,? WHERE ?=0 OR COALESCE((SELECT points FROM members WHERE line_user_id=?),0)>=?')
+  .bind(id,requestKey,s.sub,name,data.fulfillment,address,note,total,pointsUsed,'pending',paymentMethod,total===0?'verified':'unpaid',pointsUsed,s.sub,pointsUsed);
+ const steps=[
+  orderInsert,
+  db.prepare("INSERT OR IGNORE INTO points_adjustments(source_key,line_user_id,delta,reason) SELECT 'order-points:'||id,line_user_id,-points_used,'order-redemption' FROM orders WHERE id=? AND points_used>0").bind(id),
+  refreshPoints(db,s.sub),
+  ...validated.map(i=>db.prepare('INSERT INTO order_items(id,order_id,catalog_id,name,unit_price,egg_price,qty,sweetness,egg,egg_qty,note) SELECT ?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS(SELECT 1 FROM orders WHERE id=?)').bind(crypto.randomUUID(),id,i.id,i.name,i.price,i.extra,i.qty,i.sweetness,i.egg,i.eggQty,i.note,id))
+ ];
+ try{await db.batch(steps)}catch(e){
+  const old=await db.prepare('SELECT id,total,points_used,payment_method FROM orders WHERE line_user_id=? AND request_key=?').bind(s.sub,requestKey).first();
+  if(old)return json({orderId:old.id,total:old.total,pointsUsed:Number(old.points_used||0),paymentMethod:old.payment_method,reused:true});
+  if(pointsUsed){
+   const current=await db.prepare('SELECT points FROM members WHERE line_user_id=?').bind(s.sub).first();
+   if(Number(current?.points||0)<pointsUsed)return fail('แต้มคงเหลือไม่พอ กรุณาอัปเดตยอดแล้วลองใหม่',409);
+  }
+  throw e;
+ }
+ const created=await db.prepare('SELECT id,total,points_used,payment_method FROM orders WHERE id=?').bind(id).first();
+ if(!created)return fail('แต้มคงเหลือไม่พอ กรุณาอัปเดตยอดแล้วลองใหม่',409);
+ const balance=await db.prepare('SELECT points FROM members WHERE line_user_id=?').bind(s.sub).first();
+ let alertOk=false;
  try{
-  const lines=validated.map(i=>`${i.qty}× ${i.name}${i.sweetness?' ('+i.sweetness+')':''}${i.egg?' +'+eggNames[i.egg]+' '+i.eggQty+' ฟอง/จาน (+'+i.extra+' บาท/จาน)':''}${i.note?' | '+i.note:''}`);
-  const msg=[`มีออเดอร์ใหม่ #${id.slice(0,8)}`,
-   `ลูกค้า: ${name}`,`ยอด: ${total} บาท`,`ชำระเงิน: ${paymentMethod==='qr'?'สแกน QR · รอตรวจสลิปใน LINE OA':'เงินสด · รอรับเงินจริง'}`,
-   `วิธีรับ: ${data.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน'}`,
-   ...(data.fulfillment==='delivery'?[`ที่อยู่: ${address}`]:[]),
-   ...(data.note?[`หมายเหตุ: ${safe(data.note,300)}`]:[]),
-   ...lines].join('\n').slice(0,4350)+
+  const lines=validated.map(i=>i.qty+'× '+i.name+(i.sweetness?' ('+i.sweetness+')':'')+(i.egg?' +'+eggNames[i.egg]+' '+i.eggQty+' ฟอง/จาน (+'+i.extra+' บาท/จาน)':'')+(i.note?' | '+i.note:''));
+  const msg=['มีออเดอร์ใหม่ #'+id.slice(0,8),
+   'ลูกค้า: '+name,'ยอดชำระ: '+total+' บาท',
+   ...(pointsUsed?['หักแต้ม: '+pointsUsed+' แต้ม (ใช้ซื้อเมนู)']:[]),
+   'ชำระเงิน: '+(paymentMethod==='points'?'ใช้แต้มครบจำนวน · รอรับสินค้า':paymentMethod==='qr'?'สแกน QR · รอตรวจสลิปใน LINE OA':'เงินสด · รอรับเงินจริง'),
+   'วิธีรับ: '+(data.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน'),
+   ...(data.fulfillment==='delivery'?['ที่อยู่: '+address]:[]),
+   ...(data.note?['หมายเหตุ: '+note]:[]),...lines].join('\n').slice(0,4350)+
    '\n\n📲 กดรับ / จัดการออเดอร์นี้:\nhttps://chongpan-ordering-v2.pages.dev/admin/?order='+encodeURIComponent(id);
   const recipients=await adminLineUserIds(db,env);
   const results=await Promise.all(recipients.map(async to=>{
    try{
     const push=await fetch('https://api.line.me/v2/bot/message/push',{
-     method:'POST',headers:{Authorization:`Bearer ${env.LINE_MESSAGING_ACCESS_TOKEN}`,'Content-Type':'application/json'},
-     body:JSON.stringify({to,messages:[{type:'text',text:msg}]}),
-     signal:AbortSignal.timeout(8000)
+     method:'POST',headers:{Authorization:'Bearer '+env.LINE_MESSAGING_ACCESS_TOKEN,'Content-Type':'application/json'},
+     body:JSON.stringify({to,messages:[{type:'text',text:msg}]}),signal:AbortSignal.timeout(8000)
     });
     return push.ok;
    }catch{return false}
   }));
   alertOk=recipients.length>0&&results.every(Boolean);
- }catch{/* Order is in DB; emergency stop below prevents further silent orders. */}
+ }catch{/* Order is saved even if a LINE notification fails. */}
  await db.prepare('INSERT INTO order_notifications(order_id,delivered) VALUES(?,?)').bind(id,alertOk?1:0).run();
  if(!alertOk){
   await db.prepare("UPDATE shop_settings SET value='0' WHERE key='shop_enabled'").run();
-  return json({orderId:id,total,paymentMethod,ownerAlertOk:false,shopAutoPaused:true},201);
+  return json({orderId:id,total,pointsUsed,pointsRemaining:Number(balance?.points||0),paymentMethod,ownerAlertOk:false,shopAutoPaused:true},201);
  }
- return json({orderId:id,total,paymentMethod,ownerAlertOk:true},201)}
-// Balances comprise points from completed orders and explicitly approved, idempotent adjustments.
+ return json({orderId:id,total,pointsUsed,pointsRemaining:Number(balance?.points||0),paymentMethod,ownerAlertOk:true},201);
+}
 function refreshPoints(db,userId){return db.prepare(`UPDATE members SET points =
   (SELECT COALESCE(SUM(delta),0) FROM points_ledger WHERE line_user_id=?) +
   (SELECT COALESCE(SUM(delta),0) FROM points_adjustments WHERE line_user_id=?),
   updated_at=CURRENT_TIMESTAMP WHERE line_user_id=?`).bind(userId,userId,userId)}
-async function listAdminRedemptions(db){
- const r=await db.prepare(`SELECT x.id,x.line_user_id,m.display_name,x.reward_name,x.points_cost,x.status,x.created_at,x.decided_at
-  FROM point_redemptions x LEFT JOIN members m ON m.line_user_id=x.line_user_id
-  ORDER BY CASE x.status WHEN 'pending' THEN 0 ELSE 1 END,x.created_at DESC LIMIT 200`).all();
- return json({redemptions:(r.results||[]).map(x=>({...x,points:Number(x.points_cost)}))});
-}
-async function listAdminRewards(db){
- const r=await db.prepare(`SELECT r.id,r.name,r.description,r.points_cost,r.active,r.sort_order,
-  (SELECT COUNT(*) FROM point_redemptions x WHERE x.reward_id=r.id) AS redemption_count
-  FROM point_rewards r ORDER BY r.sort_order,r.points_cost,r.name`).all();
- return json({rewards:(r.results||[]).map(x=>({...x,points:Number(x.points_cost),active:!!x.active,redemptionCount:Number(x.redemption_count||0)}))});
-}
-async function createAdminReward(req,db){
- const d=await body(req),name=safe(d.name,80),description=safe(d.description,180),points=Number(d.points);
- if(!name||!Number.isInteger(points)||points<1||points>100000)return fail('กรอกชื่อของรางวัลและจำนวนแต้มให้ถูกต้อง');
- const id=crypto.randomUUID();
- await db.prepare('INSERT INTO point_rewards(id,name,description,points_cost,active,sort_order) VALUES(?,?,?,?,1,100)').bind(id,name,description,points).run();
- return json({ok:true,id},201);
-}
-async function updateAdminReward(req,db){
- const d=await body(req),id=text(d.id);
- if(!id||typeof d.active!=='boolean')return fail('ข้อมูลของรางวัลไม่ถูกต้อง');
- const r=await db.prepare('UPDATE point_rewards SET active=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(d.active?1:0,id).run();
- if(!r.meta?.changes)return fail('ไม่พบของรางวัลนี้',404);
- return json({ok:true});
-}
-async function decideRedemption(req,db,s){
- const d=await body(req),id=text(d.id),decision=text(d.decision);
- if(!id||!['approve','reject'].includes(decision))return fail('ข้อมูลการยืนยันแลกแต้มไม่ถูกต้อง');
- const before=await db.prepare('SELECT id,line_user_id,points_cost,status FROM point_redemptions WHERE id=?').bind(id).first();
- if(!before)return fail('ไม่พบคำขอแลกแต้ม',404);
- if(before.status!=='pending')return json({ok:true,alreadyDecided:true,status:before.status});
- if(decision==='approve'){
-  await db.batch([
-   db.prepare(`INSERT OR IGNORE INTO points_adjustments(source_key,line_user_id,delta,reason)
-    SELECT 'redemption:'||id,line_user_id,-points_cost,'reward-redemption'
-    FROM point_redemptions WHERE id=? AND status='pending'`).bind(id),
-   db.prepare(`UPDATE point_redemptions SET status='approved',decided_by=?,decided_at=CURRENT_TIMESTAMP
-    WHERE id=? AND status='pending'
-    AND EXISTS(SELECT 1 FROM points_adjustments WHERE source_key='redemption:'||?)`).bind(s.sub,id,id),
-   refreshPoints(db,before.line_user_id)
-  ]);
- }else{
-  await db.prepare(`UPDATE point_redemptions SET status='rejected',decided_by=?,decided_at=CURRENT_TIMESTAMP WHERE id=? AND status='pending'`).bind(s.sub,id).run();
- }
- const after=await db.prepare('SELECT status FROM point_redemptions WHERE id=?').bind(id).first();
- if(after?.status==='pending')return fail('ไม่สามารถเปลี่ยนสถานะคำขอนี้ได้ กรุณารีเฟรช',409);
- return json({ok:true,status:after?.status||before.status,pointsDeducted:decision==='approve'?Number(before.points_cost):0});
-}
 async function listAdminMembers(db){
  const r=await db.prepare('SELECT line_user_id,display_name,points FROM members ORDER BY points DESC,display_name').all();
  return json({members:(r.results||[]).map(m=>({...m,points:Number(m.points||0)}))});
@@ -308,7 +276,16 @@ async function assignLegacy(req,db,ownerSession){
   const bal=await db.prepare('SELECT points FROM members WHERE line_user_id=?').bind(userId).first();
   return json({ok:true,legacyCode:code,pointsTransferred:old.snapshot_points,currentPoints:bal?.points});
 }
-async function updateOrder(req,db){const d=await body(req);if(typeof d.id!=='string'||!validStatus.has(d.status))return fail('ข้อมูลสถานะไม่ถูกต้อง');const o=await db.prepare('SELECT id,status,line_user_id,total,payment_method,payment_status FROM orders WHERE id=?').bind(d.id).first();if(!o)return fail('ไม่พบออเดอร์',404);if(o.status==='completed'||o.status==='cancelled')return fail('ออเดอร์ถูกปิดแล้ว',409);const allowed={pending:['accepted','cancelled'],accepted:['preparing','ready','cancelled'],preparing:['ready','cancelled'],ready:['completed','cancelled']};if(!allowed[o.status]?.includes(d.status))return fail('ลำดับสถานะไม่ถูกต้อง',409);if(d.status==='completed'&&o.payment_method==='qr'&&o.payment_status!=='verified')return fail('สแกนจ่ายยังไม่ผ่านการตรวจสลิป/การรับเงินจริง',409);if(d.status==='completed'){const pts=Math.floor(o.total/25);const id=crypto.randomUUID();await db.batch([db.prepare("UPDATE orders SET status='completed',completed_at=CURRENT_TIMESTAMP WHERE id=? AND status='ready'").bind(o.id),db.prepare('INSERT OR IGNORE INTO points_ledger(id,order_id,line_user_id,delta) VALUES(?,?,?,?)').bind(id,o.id,o.line_user_id,pts),refreshPoints(db,o.line_user_id)]);return json({ok:true,pointsAdded:pts})}await db.prepare('UPDATE orders SET status=? WHERE id=? AND status=?').bind(d.status,o.id,o.status).run();return json({ok:true})}
+async function updateOrder(req,db){const d=await body(req);if(typeof d.id!=='string'||!validStatus.has(d.status))return fail('ข้อมูลสถานะไม่ถูกต้อง');const o=await db.prepare('SELECT id,status,line_user_id,total,payment_method,payment_status FROM orders WHERE id=?').bind(d.id).first();if(!o)return fail('ไม่พบออเดอร์',404);if(o.status==='completed'||o.status==='cancelled')return fail('ออเดอร์ถูกปิดแล้ว',409);const allowed={pending:['accepted','cancelled'],accepted:['preparing','ready','cancelled'],preparing:['ready','cancelled'],ready:['completed','cancelled']};if(!allowed[o.status]?.includes(d.status))return fail('ลำดับสถานะไม่ถูกต้อง',409);if(d.status==='completed'&&o.payment_method==='qr'&&o.payment_status!=='verified')return fail('สแกนจ่ายยังไม่ผ่านการตรวจสลิป/การรับเงินจริง',409);if(d.status==='completed'){const pts=Math.floor(o.total/25);const id=crypto.randomUUID();await db.batch([db.prepare("UPDATE orders SET status='completed',completed_at=CURRENT_TIMESTAMP WHERE id=? AND status='ready'").bind(o.id),db.prepare('INSERT OR IGNORE INTO points_ledger(id,order_id,line_user_id,delta) VALUES(?,?,?,?)').bind(id,o.id,o.line_user_id,pts),refreshPoints(db,o.line_user_id)]);return json({ok:true,pointsAdded:pts})}if(d.status==='cancelled'){
+ await db.batch([
+  db.prepare('UPDATE orders SET status=? WHERE id=? AND status=?').bind(d.status,o.id,o.status),
+  db.prepare("INSERT OR IGNORE INTO points_adjustments(source_key,line_user_id,delta,reason) SELECT 'order-points-refund:'||id,line_user_id,points_used,'order-redemption-refund' FROM orders WHERE id=? AND status='cancelled' AND points_used>0").bind(o.id),
+  refreshPoints(db,o.line_user_id)
+ ]);
+ const refund=await db.prepare("SELECT delta FROM points_adjustments WHERE source_key=?").bind('order-points-refund:'+o.id).first();
+ return json({ok:true,pointsRefunded:Number(refund?.delta||0)});
+ }
+ await db.prepare('UPDATE orders SET status=? WHERE id=? AND status=?').bind(d.status,o.id,o.status).run();return json({ok:true})}
 async function listAdminMenu(db){
  const r=await db.prepare("SELECT c.id,c.name,c.category,c.price,c.image,c.available,c.drink,COALESCE(pr.verified,0) AS verified,pr.source FROM catalog c LEFT JOIN catalog_price_reviews pr ON pr.product_id=c.id ORDER BY c.sort_order,c.id").all();
  const products=r.results||[];
@@ -364,4 +341,4 @@ async function createMenu(req,db){
  ]);
  return json({ok:true,id,draft:true},201);
 }
-export async function onRequest({request,env}){const path=new URL(request.url).pathname.replace(/^\/api\/?/,'');const method=request.method.toUpperCase();const db=env.DB;if(!db)return fail('ยังไม่ได้ผูกฐานข้อมูล D1',503);if(!['GET','HEAD'].includes(method)){const origin=request.headers.get('Origin');if(origin&&origin!==new URL(request.url).origin)return fail('Origin ไม่ได้รับอนุญาต',403)}try{if(path==='health'&&method==='GET')return json({ok:true,service:'chongpan-ordering-v2',ordersEnabled:(await menu(db,env)).shopEnabled,db:true});if(path==='menu'&&method==='GET')return json(await menu(db,env));if(path==='loyalty/info'&&method==='GET')return json({liffId:env.LIFF_ID||'',policy:{bahtPerPoint:25,awardWhen:'completed',fractionalCarry:false},rewardsEnabled:true});if(path==='payment/config'&&method==='GET')return json(await paymentConfig(db,env));if(path==='auth/line'&&method==='POST')return authLine(request,env,db);const s=await session(request,env);if(path==='points'&&method==='GET'){if(!s)return fail('กรุณาเข้าสู่ LINE เพื่อดูแต้มสมาชิก',401);return pointHistory(db,s)}if(path==='redemptions'&&method==='POST')return createRedemption(request,db,s);if(path==='me'&&method==='GET'){if(!s)return json({member:null});const m=await db.prepare('SELECT display_name,points FROM members WHERE line_user_id=?').bind(s.sub).first();return json({member:{name:m?.display_name||s.name,points:m?.points||0,isOwner:await isAdmin(s,env,db),isPrimaryOwner:primaryOwner(s,env)}})}if(path==='orders'&&method==='GET'){if(!s)return fail('กรุณาเข้าสู่ LINE',401);return json({orders:await getOrders(db,'WHERE line_user_id=?',[s.sub])})}if(path==='orders'&&method==='POST')return createOrder(request,env,db,s);if(path.startsWith('admin/')){if(!await isAdmin(s,env,db))return fail('เฉพาะผู้ดูแลร้าน',403);if(path==='admin/admins'){if(!primaryOwner(s,env))return fail('เฉพาะเจ้าของร้านเท่านั้นที่จัดการสิทธิ์แอดมินได้',403);if(method==='GET')return adminRoster(db,env);if(method==='POST')return addAdmin(request,db,s,env);if(method==='DELETE')return removeAdmin(request,db,env)}if(path==='admin/readiness'&&method==='GET')return json(await readiness(db,env));if(path==='admin/payment/config'&&method==='GET')return json(await paymentConfig(db,env));if(path==='admin/payment/config'&&method==='POST')return setPaymentConfig(request,db,env);if(path==='admin/orders/payment'&&method==='PATCH')return confirmPayment(request,db);if(path==='admin/line/test'&&method==='POST')return testOwnerLinePush(env,db);if(path==='admin/shop'&&method==='POST')return setShop(request,env,db);if(path==='admin/orders'&&method==='GET')return json({orders:await getOrders(db)});if(path==='admin/orders'&&method==='PATCH')return updateOrder(request,db);if(path==='admin/menu'&&method==='GET')return listAdminMenu(db);if(path==='admin/menu'&&method==='PATCH')return updateMenu(request,db);if(path==='admin/menu'&&method==='POST')return createMenu(request,db);if(path==='admin/members'&&method==='GET')return listAdminMembers(db);if(path==='admin/redemptions'&&method==='GET')return listAdminRedemptions(db);if(path==='admin/redemptions/decision'&&method==='POST')return decideRedemption(request,db,s);if(path==='admin/rewards'&&method==='GET')return listAdminRewards(db);if(path==='admin/rewards'&&method==='POST')return createAdminReward(request,db);if(path==='admin/rewards'&&method==='PATCH')return updateAdminReward(request,db);if(path==='admin/legacy'&&method==='GET')return legacyList(db);if(path==='admin/legacy/assign'&&method==='POST')return assignLegacy(request,db,s)}return fail('ไม่พบ API',404)}catch(e){if(e instanceof Error&&['รูปแบบ JSON ไม่ถูกต้อง','คำขอใหญ่เกินกำหนด'].includes(e.message))return fail(e.message);return fail('ระบบมีปัญหาชั่วคราว',500)}}
+export async function onRequest({request,env}){const path=new URL(request.url).pathname.replace(/^\/api\/?/,'');const method=request.method.toUpperCase();const db=env.DB;if(!db)return fail('ยังไม่ได้ผูกฐานข้อมูล D1',503);if(!['GET','HEAD'].includes(method)){const origin=request.headers.get('Origin');if(origin&&origin!==new URL(request.url).origin)return fail('Origin ไม่ได้รับอนุญาต',403)}try{if(path==='health'&&method==='GET')return json({ok:true,service:'chongpan-ordering-v2',ordersEnabled:(await menu(db,env)).shopEnabled,db:true});if(path==='menu'&&method==='GET')return json(await menu(db,env));if(path==='loyalty/info'&&method==='GET')return json({liffId:env.LIFF_ID||'',policy:{bahtPerPoint:25,awardWhen:'completed',fractionalCarry:false}});if(path==='payment/config'&&method==='GET')return json(await paymentConfig(db,env));if(path==='auth/line'&&method==='POST')return authLine(request,env,db);const s=await session(request,env);if(path==='points'&&method==='GET'){if(!s)return fail('กรุณาเข้าสู่ LINE เพื่อดูแต้มสมาชิก',401);return pointHistory(db,s)}if(path==='me'&&method==='GET'){if(!s)return json({member:null});const m=await db.prepare('SELECT display_name,points FROM members WHERE line_user_id=?').bind(s.sub).first();return json({member:{name:m?.display_name||s.name,points:m?.points||0,isOwner:await isAdmin(s,env,db),isPrimaryOwner:primaryOwner(s,env)}})}if(path==='orders'&&method==='GET'){if(!s)return fail('กรุณาเข้าสู่ LINE',401);return json({orders:await getOrders(db,'WHERE line_user_id=?',[s.sub])})}if(path==='orders'&&method==='POST')return createOrder(request,env,db,s);if(path.startsWith('admin/')){if(!await isAdmin(s,env,db))return fail('เฉพาะผู้ดูแลร้าน',403);if(path==='admin/admins'){if(!primaryOwner(s,env))return fail('เฉพาะเจ้าของร้านเท่านั้นที่จัดการสิทธิ์แอดมินได้',403);if(method==='GET')return adminRoster(db,env);if(method==='POST')return addAdmin(request,db,s,env);if(method==='DELETE')return removeAdmin(request,db,env)}if(path==='admin/readiness'&&method==='GET')return json(await readiness(db,env));if(path==='admin/payment/config'&&method==='GET')return json(await paymentConfig(db,env));if(path==='admin/payment/config'&&method==='POST')return setPaymentConfig(request,db,env);if(path==='admin/orders/payment'&&method==='PATCH')return confirmPayment(request,db);if(path==='admin/line/test'&&method==='POST')return testOwnerLinePush(env,db);if(path==='admin/shop'&&method==='POST')return setShop(request,env,db);if(path==='admin/orders'&&method==='GET')return json({orders:await getOrders(db)});if(path==='admin/orders'&&method==='PATCH')return updateOrder(request,db);if(path==='admin/menu'&&method==='GET')return listAdminMenu(db);if(path==='admin/menu'&&method==='PATCH')return updateMenu(request,db);if(path==='admin/menu'&&method==='POST')return createMenu(request,db);if(path==='admin/members'&&method==='GET')return listAdminMembers(db);if(path==='admin/legacy'&&method==='GET')return legacyList(db);if(path==='admin/legacy/assign'&&method==='POST')return assignLegacy(request,db,s)}return fail('ไม่พบ API',404)}catch(e){if(e instanceof Error&&['รูปแบบ JSON ไม่ถูกต้อง','คำขอใหญ่เกินกำหนด'].includes(e.message))return fail(e.message);return fail('ระบบมีปัญหาชั่วคราว',500)}}
