@@ -176,9 +176,8 @@ async function importChefJeweFile(file){
 $("importChefJeweButton").addEventListener("click",()=>{if(!busy)$("importChefJeweFile").click();});
 $("importChefJeweFile").addEventListener("change",async event=>{
  const input=event.currentTarget,file=input.files?.[0];if(!file)return;
- setBusy(true);
  try{await importChefJeweFile(file);}catch(error){alert("นำเข้าไฟล์ไม่สำเร็จ: "+(error.message==="Unexpected end of JSON input"?"ไฟล์ JSON ไม่สมบูรณ์":error.message||"กรุณาตรวจสอบไฟล์"));}
- finally{input.value="";setBusy(false);}
+ finally{input.value="";}
 });
 $("exportChefJeweButton").addEventListener("click",()=>{
  const data=buildChefJeweBackup(currentState());
