@@ -217,3 +217,5 @@ dialog{max-width:calc(100vw - 20px);max-width:calc(100dvw - 20px)}
 .order-loyalty-card{margin:-7px 0 18px}
 @media(max-width:520px){.loyalty-card{padding:20px;min-height:242px}.loyalty-cup{top:85px;right:13px;font-size:48px}.loyalty-balance>span:first-child{font-size:46px}}
 @media(max-width:619px){.loyalty-card{padding:20px;min-width:0}}
+
+#checkoutHint.checkout-error{display:block;margin-top:12px;padding:12px 14px;border:1px solid #d8aaa3;border-radius:12px;background:#fff1ee;color:#842f2f;font-size:14px;font-weight:700;line-height:1.55}#checkoutHint[role=status]{display:block;margin-top:12px;padding:10px 12px;border-radius:10px;background:#f2f5eb;color:#425a35;font-weight:650}
