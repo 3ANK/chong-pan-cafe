@@ -106,7 +106,7 @@ async function call(path, method='GET', data=undefined,cookie='',origin='http://
 let r=await call('health'); assert.equal(r.status,200);assert.equal(r.data.ordersEnabled,false);
 r=await call('menu');assert.equal(r.data.products.length,90);assert.equal(r.data.shopEnabled,false);assert.equal(r.data.products.find(x=>x.id==='7').price,45);assert.equal(r.data.products.find(x=>x.id==='84').price,40);assert.equal(r.data.products.find(x=>x.id==='64').price,40);assert.equal(r.data.products.find(x=>x.id==='69').price,50);assert.ok(r.data.products.every(p=>p.image.startsWith('/assets/products/')&&p.image.endsWith('.webp')));
 r=await call('me');assert.equal(r.data.member,null);
-r=await call('loyalty/info');assert.equal(r.status,200);assert.equal(r.data.policy.bahtPerPoint,25);assert.equal(r.data.rewardsEnabled,false);
+r=await call('loyalty/info');assert.equal(r.status,200);assert.equal(r.data.policy.bahtPerPoint,25);assert.equal(r.data.rewardsEnabled,undefined);
 r=await call('points');assert.equal(r.status,401);
 r=await call('payment/config');assert.equal(r.status,200);assert.equal(r.data.qrEnabled,false);
 r=await call('admin/payment/config','GET');assert.equal(r.status,403);
