@@ -9,7 +9,16 @@ const unb64=s=>Uint8Array.from(atob(s.replace(/-/g,'+').replace(/_/g,'/')+'='.re
 async function hmac(secret,data){const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),{name:'HMAC',hash:'SHA-256'},false,['sign']);return b64(await crypto.subtle.sign('HMAC',key,new TextEncoder().encode(data)))}
 async function session(req,env){if(!env.SESSION_SECRET)return null;try{const token=parseCookie(req.headers.get('Cookie'),'chongpan_sid');const [payload,sig]=token.split('.');if(!payload||!sig||sig!==(await hmac(env.SESSION_SECRET,payload)))return null;const data=JSON.parse(new TextDecoder().decode(unb64(payload)));return typeof data.sub==='string'&&data.exp>Date.now()?data:null}catch{return null}}
 async function newCookie(env,data){const payload=b64(new TextEncoder().encode(JSON.stringify({...data,exp:Date.now()+7*86400000})));return `chongpan_sid=${payload}.${await hmac(env.SESSION_SECRET,payload)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=604800`}
-const owner=(s,env)=>!!s?.sub&&!!env.OWNER_LINE_USER_ID&&s.sub===env.OWNER_LINE_USER_ID;
+const primaryOwner=(s,env)=>!!s?.sub&&!!env.OWNER_LINE_USER_ID&&s.sub===env.OWNER_LINE_USER_ID;
+async function adminLineUserIds(db,env){
+ const rows=(await db.prepare('SELECT line_user_id FROM shop_admins ORDER BY created_at,line_user_id').all()).results||[];
+ return [...new Set([env.OWNER_LINE_USER_ID,...rows.map(r=>r.line_user_id)].filter(Boolean))];
+}
+async function isAdmin(s,env,db){
+ if(primaryOwner(s,env))return true;
+ if(!s?.sub)return false;
+ return !!await db.prepare('SELECT 1 AS ok FROM shop_admins WHERE line_user_id=?').bind(s.sub).first();
+}
 function eggPrice(s){return({fried:10,omelet:10,creamy:20})[s]??null}
 const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'};
 const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระเทียม']);
@@ -122,11 +131,18 @@ async function createOrder(req,env,db,s){
    ...(data.note?[`หมายเหตุ: ${safe(data.note,300)}`]:[]),
    ...lines].join('\n').slice(0,4350)+
    '\n\n📲 กดรับ / จัดการออเดอร์นี้:\nhttps://chongpan-ordering-v2.pages.dev/admin/?order='+encodeURIComponent(id);
-  const push=await fetch('https://api.line.me/v2/bot/message/push',{
-   method:'POST',headers:{Authorization:`Bearer ${env.LINE_MESSAGING_ACCESS_TOKEN}`,'Content-Type':'application/json'},
-   body:JSON.stringify({to:env.OWNER_LINE_USER_ID,messages:[{type:'text',text:msg}]})
-  });
-  alertOk=push.ok;
+  const recipients=await adminLineUserIds(db,env);
+  const results=await Promise.all(recipients.map(async to=>{
+   try{
+    const push=await fetch('https://api.line.me/v2/bot/message/push',{
+     method:'POST',headers:{Authorization:`Bearer ${env.LINE_MESSAGING_ACCESS_TOKEN}`,'Content-Type':'application/json'},
+     body:JSON.stringify({to,messages:[{type:'text',text:msg}]}),
+     signal:AbortSignal.timeout(8000)
+    });
+    return push.ok;
+   }catch{return false}
+  }));
+  alertOk=recipients.length>0&&results.every(Boolean);
  }catch{/* Order is in DB; emergency stop below prevents further silent orders. */}
  await db.prepare('INSERT INTO order_notifications(order_id,delivered) VALUES(?,?)').bind(id,alertOk?1:0).run();
  if(!alertOk){
@@ -142,6 +158,35 @@ function refreshPoints(db,userId){return db.prepare(`UPDATE members SET points =
 async function listAdminMembers(db){
  const r=await db.prepare('SELECT line_user_id,display_name,points FROM members ORDER BY points DESC,display_name').all();
  return json({members:(r.results||[]).map(m=>({...m,points:Number(m.points||0)}))});
+}
+async function adminRoster(db,env){
+ const root=await db.prepare('SELECT line_user_id,display_name FROM members WHERE line_user_id=?').bind(env.OWNER_LINE_USER_ID||'').first();
+ const extra=(await db.prepare('SELECT a.line_user_id,m.display_name,a.created_at FROM shop_admins a LEFT JOIN members m ON m.line_user_id=a.line_user_id ORDER BY a.created_at,a.line_user_id').all()).results||[];
+ const admins=[...(env.OWNER_LINE_USER_ID?[{line_user_id:env.OWNER_LINE_USER_ID,display_name:root?.display_name||'เจ้าของร้าน',primary:true}]:[]),...extra.map(a=>({...a,display_name:a.display_name||'สมาชิก LINE',primary:false}))];
+ const excluded=[...new Set([env.OWNER_LINE_USER_ID,...extra.map(a=>a.line_user_id)].filter(Boolean))];
+ const members=excluded.length
+  ?(await db.prepare('SELECT line_user_id,display_name FROM members WHERE line_user_id NOT IN ('+excluded.map(()=>'?').join(',')+') ORDER BY display_name').bind(...excluded).all()).results||[]
+  :(await db.prepare('SELECT line_user_id,display_name FROM members ORDER BY display_name').all()).results||[];
+ return json({admins,members,limit:25,canAdd:extra.length<25});
+}
+async function addAdmin(req,db,sessionData,env){
+ const d=await body(req),id=text(d.lineUserId);
+ if(!/^U[a-f0-9]{32}$/i.test(id))return fail('LINE User ID ไม่ถูกต้อง',400);
+ if(id===env.OWNER_LINE_USER_ID)return json({ok:true,alreadyPrimary:true});
+ const member=await db.prepare('SELECT line_user_id FROM members WHERE line_user_id=?').bind(id).first();
+ if(!member)return fail('ยังไม่พบสมาชิกนี้ ให้แอดมินคนนั้นเข้าสู่ระบบ LINE ในหน้าเมนูสั่งอาหารก่อน',404);
+ const current=await db.prepare('SELECT line_user_id FROM shop_admins WHERE line_user_id=?').bind(id).first();
+ if(current)return json({ok:true,alreadyAdmin:true});
+ const count=await db.prepare('SELECT COUNT(*) AS total FROM shop_admins').first();
+ if(Number(count?.total||0)>=25)return fail('เพิ่มแอดมินได้สูงสุด 25 คน ไม่นับเจ้าของร้าน',409);
+ await db.prepare('INSERT INTO shop_admins(line_user_id,added_by) VALUES(?,?)').bind(id,sessionData.sub).run();
+ return json({ok:true});
+}
+async function removeAdmin(req,db,env){
+ const d=await body(req),id=text(d.lineUserId);
+ if(!/^U[a-f0-9]{32}$/i.test(id)||id===env.OWNER_LINE_USER_ID)return fail('ระบุบัญชีแอดมินที่ต้องการนำออกให้ถูกต้อง',400);
+ await db.prepare('DELETE FROM shop_admins WHERE line_user_id=?').bind(id).run();
+ return json({ok:true});
 }
 async function legacyList(db){
   const [legacy,members]=await Promise.all([
@@ -200,15 +245,17 @@ async function updateMenu(req,db){
  await db.batch(steps);
  return json({ok:true,verified:verified===null?undefined:!!verified});
 }
-async function testOwnerLinePush(env){
- if(!env.LINE_MESSAGING_ACCESS_TOKEN||!env.OWNER_LINE_USER_ID)return fail('ยังไม่ได้ตั้งค่า LINE Messaging API หรือบัญชีเจ้าของร้าน',409);
+async function testOwnerLinePush(env,db){
+ if(!env.LINE_MESSAGING_ACCESS_TOKEN||!env.OWNER_LINE_USER_ID)return fail('ยังไม่ได้ตั้งค่า LINE Messaging API หรือบัญชีผู้รับ',409);
+ const recipients=await adminLineUserIds(db,env);
  const now=new Date().toLocaleString('th-TH',{timeZone:'Asia/Bangkok'});
  const message='ทดสอบระบบแจ้งออเดอร์ร้านชง&ปั่น\n'+now+'\nข้อความนี้เป็นการทดสอบ ไม่ใช่ออเดอร์จริง';
- try{
-  const res=await fetch('https://api.line.me/v2/bot/message/push',{method:'POST',headers:{Authorization:'Bearer '+env.LINE_MESSAGING_ACCESS_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({to:env.OWNER_LINE_USER_ID,messages:[{type:'text',text:message}]})});
-  if(!res.ok)return fail('LINE ตอบกลับ HTTP '+res.status+' กรุณาตรวจสอบ Token และบัญชีผู้รับ',502);
-  return json({ok:true,acceptedByLine:true,confirmOnPhone:true});
- }catch{return fail('ไม่สามารถเชื่อมต่อ LINE Messaging API ได้',502)}
+ const results=await Promise.all(recipients.map(async to=>{
+  try{return (await fetch('https://api.line.me/v2/bot/message/push',{method:'POST',headers:{Authorization:'Bearer '+env.LINE_MESSAGING_ACCESS_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({to,messages:[{type:'text',text:message}]}),signal:AbortSignal.timeout(8000)})).ok}catch{return false}
+ }));
+ const sent=results.filter(Boolean).length;
+ if(sent!==recipients.length)return fail('LINE รับข้อความทดสอบ '+sent+' จาก '+recipients.length+' บัญชี กรุณาตรวจว่าทุกแอดมินเพิ่มเพื่อน LINE OA แล้ว',502);
+ return json({ok:true,acceptedByLine:true,confirmOnPhone:true,recipients:sent});
 }
 async function setShop(req,env,db){
  const d=await body(req);
@@ -235,4 +282,4 @@ async function createMenu(req,db){
  ]);
  return json({ok:true,id,draft:true},201);
 }
-export async function onRequest({request,env}){const path=new URL(request.url).pathname.replace(/^\/api\/?/,'');const method=request.method.toUpperCase();const db=env.DB;if(!db)return fail('ยังไม่ได้ผูกฐานข้อมูล D1',503);if(!['GET','HEAD'].includes(method)){const origin=request.headers.get('Origin');if(origin&&origin!==new URL(request.url).origin)return fail('Origin ไม่ได้รับอนุญาต',403)}try{if(path==='health'&&method==='GET')return json({ok:true,service:'chongpan-ordering-v2',ordersEnabled:(await menu(db,env)).shopEnabled,db:true});if(path==='menu'&&method==='GET')return json(await menu(db,env));if(path==='loyalty/info'&&method==='GET')return json({liffId:env.LIFF_ID||'',policy:{bahtPerPoint:25,awardWhen:'completed',fractionalCarry:false},rewardsEnabled:false});if(path==='payment/config'&&method==='GET')return json(await paymentConfig(db,env));if(path==='auth/line'&&method==='POST')return authLine(request,env,db);const s=await session(request,env);if(path==='points'&&method==='GET'){if(!s)return fail('กรุณาเข้าสู่ LINE เพื่อดูแต้มสมาชิก',401);return pointHistory(db,s)}if(path==='me'&&method==='GET'){if(!s)return json({member:null});const m=await db.prepare('SELECT display_name,points FROM members WHERE line_user_id=?').bind(s.sub).first();return json({member:{name:m?.display_name||s.name,points:m?.points||0,isOwner:owner(s,env)}})}if(path==='orders'&&method==='GET'){if(!s)return fail('กรุณาเข้าสู่ LINE',401);return json({orders:await getOrders(db,'WHERE line_user_id=?',[s.sub])})}if(path==='orders'&&method==='POST')return createOrder(request,env,db,s);if(path.startsWith('admin/')){if(!owner(s,env))return fail('เฉพาะผู้ดูแลร้าน',403);if(path==='admin/readiness'&&method==='GET')return json(await readiness(db,env));if(path==='admin/payment/config'&&method==='GET')return json(await paymentConfig(db,env));if(path==='admin/payment/config'&&method==='POST')return setPaymentConfig(request,db,env);if(path==='admin/orders/payment'&&method==='PATCH')return confirmPayment(request,db);if(path==='admin/line/test'&&method==='POST')return testOwnerLinePush(env);if(path==='admin/shop'&&method==='POST')return setShop(request,env,db);if(path==='admin/orders'&&method==='GET')return json({orders:await getOrders(db)});if(path==='admin/orders'&&method==='PATCH')return updateOrder(request,db);if(path==='admin/menu'&&method==='GET')return listAdminMenu(db);if(path==='admin/menu'&&method==='PATCH')return updateMenu(request,db);if(path==='admin/menu'&&method==='POST')return createMenu(request,db);if(path==='admin/members'&&method==='GET')return listAdminMembers(db);if(path==='admin/legacy'&&method==='GET')return legacyList(db);if(path==='admin/legacy/assign'&&method==='POST')return assignLegacy(request,db,s)}return fail('ไม่พบ API',404)}catch(e){if(e instanceof Error&&['รูปแบบ JSON ไม่ถูกต้อง','คำขอใหญ่เกินกำหนด'].includes(e.message))return fail(e.message);return fail('ระบบมีปัญหาชั่วคราว',500)}}
+export async function onRequest({request,env}){const path=new URL(request.url).pathname.replace(/^\/api\/?/,'');const method=request.method.toUpperCase();const db=env.DB;if(!db)return fail('ยังไม่ได้ผูกฐานข้อมูล D1',503);if(!['GET','HEAD'].includes(method)){const origin=request.headers.get('Origin');if(origin&&origin!==new URL(request.url).origin)return fail('Origin ไม่ได้รับอนุญาต',403)}try{if(path==='health'&&method==='GET')return json({ok:true,service:'chongpan-ordering-v2',ordersEnabled:(await menu(db,env)).shopEnabled,db:true});if(path==='menu'&&method==='GET')return json(await menu(db,env));if(path==='loyalty/info'&&method==='GET')return json({liffId:env.LIFF_ID||'',policy:{bahtPerPoint:25,awardWhen:'completed',fractionalCarry:false},rewardsEnabled:false});if(path==='payment/config'&&method==='GET')return json(await paymentConfig(db,env));if(path==='auth/line'&&method==='POST')return authLine(request,env,db);const s=await session(request,env);if(path==='points'&&method==='GET'){if(!s)return fail('กรุณาเข้าสู่ LINE เพื่อดูแต้มสมาชิก',401);return pointHistory(db,s)}if(path==='me'&&method==='GET'){if(!s)return json({member:null});const m=await db.prepare('SELECT display_name,points FROM members WHERE line_user_id=?').bind(s.sub).first();return json({member:{name:m?.display_name||s.name,points:m?.points||0,isOwner:await isAdmin(s,env,db),isPrimaryOwner:primaryOwner(s,env)}})}if(path==='orders'&&method==='GET'){if(!s)return fail('กรุณาเข้าสู่ LINE',401);return json({orders:await getOrders(db,'WHERE line_user_id=?',[s.sub])})}if(path==='orders'&&method==='POST')return createOrder(request,env,db,s);if(path.startsWith('admin/')){if(!await isAdmin(s,env,db))return fail('เฉพาะผู้ดูแลร้าน',403);if(path==='admin/admins'){if(!primaryOwner(s,env))return fail('เฉพาะเจ้าของร้านเท่านั้นที่จัดการสิทธิ์แอดมินได้',403);if(method==='GET')return adminRoster(db,env);if(method==='POST')return addAdmin(request,db,s,env);if(method==='DELETE')return removeAdmin(request,db,env)}if(path==='admin/readiness'&&method==='GET')return json(await readiness(db,env));if(path==='admin/payment/config'&&method==='GET')return json(await paymentConfig(db,env));if(path==='admin/payment/config'&&method==='POST')return setPaymentConfig(request,db,env);if(path==='admin/orders/payment'&&method==='PATCH')return confirmPayment(request,db);if(path==='admin/line/test'&&method==='POST')return testOwnerLinePush(env,db);if(path==='admin/shop'&&method==='POST')return setShop(request,env,db);if(path==='admin/orders'&&method==='GET')return json({orders:await getOrders(db)});if(path==='admin/orders'&&method==='PATCH')return updateOrder(request,db);if(path==='admin/menu'&&method==='GET')return listAdminMenu(db);if(path==='admin/menu'&&method==='PATCH')return updateMenu(request,db);if(path==='admin/menu'&&method==='POST')return createMenu(request,db);if(path==='admin/members'&&method==='GET')return listAdminMembers(db);if(path==='admin/legacy'&&method==='GET')return legacyList(db);if(path==='admin/legacy/assign'&&method==='POST')return assignLegacy(request,db,s)}return fail('ไม่พบ API',404)}catch(e){if(e instanceof Error&&['รูปแบบ JSON ไม่ถูกต้อง','คำขอใหญ่เกินกำหนด'].includes(e.message))return fail(e.message);return fail('ระบบมีปัญหาชั่วคราว',500)}}
