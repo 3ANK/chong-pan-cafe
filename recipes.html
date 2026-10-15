@@ -226,7 +226,7 @@ function renderIngredientAliasRows(){
  }
 }
 function openIngredientAliasDialog(){
- renderIngredientAliasRows();$("ingredientAliasSearch").value="";
+ $("ingredientAliasSearch").value="";renderIngredientAliasRows();
  $("ingredientAliasDialog").showModal();$("ingredientAliasSearch").focus();
 }
 async function saveIngredientAliases(){
@@ -242,6 +242,7 @@ async function saveIngredientAliases(){
   detail.ingredients=detail.ingredients.map(line=>{const next=canonicalIngredientLine(line,aliases);if(next!==line)changed++;return next;});
  }
  state.ingredientAliases=aliases;
+ if(changed&&!confirm("กำลังจะปรับชื่อวัตถุดิบในสูตร "+changed+" รายการ ตรวจการจับคู่ให้ถูกต้องก่อนยืนยัน"))return;
  if(await persistState(state)){
   $("ingredientAliasDialog").close();
   $("saveStatus").textContent="ปรับชื่อมาตรฐานแล้ว · เปลี่ยนข้อความวัตถุดิบ "+changed+" รายการ";
