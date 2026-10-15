@@ -3,6 +3,7 @@
 const byId=id=>document.getElementById(id);
 const escapeHtml=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let liffId='',signedIn=false;
+const LIFF_REDIRECT_URI='https://chongpan-ordering-v2.pages.dev/member/';
 async function getJson(path,opts={}){
  const r=await fetch('/api/'+path,{credentials:'same-origin',headers:{'Content-Type':'application/json'},...opts});
  let data;try{data=await r.json()}catch{throw Error('เชื่อมต่อระบบสมาชิกไม่สำเร็จ')}
@@ -44,7 +45,7 @@ async function signIn(){
  const button=byId('memberLogin');button.disabled=true;
  try{
   await liff.init({liffId});
-  if(!liff.isLoggedIn()){liff.login({redirectUri:location.origin+'/member/'});return}
+  if(!liff.isLoggedIn()){liff.login({redirectUri:LIFF_REDIRECT_URI});return}
   const idToken=liff.getIDToken();if(!idToken)throw Error('ไม่พบ LINE ID Token กรุณาเข้าสู่ระบบ LINE อีกครั้ง');
   await getJson('auth/line',{method:'POST',body:JSON.stringify({idToken})});
   await readPoints();
