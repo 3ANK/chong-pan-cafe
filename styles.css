@@ -193,3 +193,8 @@ dialog{max-width:calc(100vw - 20px);max-width:calc(100dvw - 20px)}
 .order-history-actions button{flex:1 1 145px;min-height:46px;text-align:center;font-size:14px;white-space:normal}
 .order-history-actions .pay-slip-reopen{margin:0}
 .reorder-button{background:#596b35}
+
+/* Use the official square shop logo in the ordering header and LINE gate. */
+.line-gate-mark{display:block;object-fit:contain;width:132px;height:132px;margin:0 auto 22px;border-radius:18px;background:#fff}
+.order-topbar .mark.brand-logo{display:block;object-fit:cover;width:64px;height:64px;padding:0;border:1px solid #ffffff55;border-radius:12px;background:#fff}
+@media(max-width:420px){.order-topbar .mark.brand-logo{width:52px;height:52px}}
