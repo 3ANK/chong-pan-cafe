@@ -196,10 +196,7 @@ async function authenticate(userInitiated=false){
    new Promise((_,reject)=>setTimeout(()=>reject(Error('LINE เชื่อมต่อช้าเกินไป กรุณากดเชื่อมต่ออีกครั้ง')),18000))
   ]);
   if(!liff.isLoggedIn()){
-   if(!userInitiated){
-    gateStatus('เข้าสู่ระบบ LINE เพื่อเริ่มสั่ง หรือเพิ่มเพื่อนร้านก่อน',true);
-    return;
-   }
+   if(loginWasAttempted()&&!userInitiated)throw Error('ยังไม่ได้ยืนยันการเชื่อมต่อ LINE กรุณากดปุ่มด้านล่างเพื่อลองอีกครั้ง');
    markLoginAttempt();
    gateStatus('กำลังเปิดหน้าขออนุญาตเชื่อมต่อ LINE…');
    liff.login({redirectUri:location.origin+location.pathname});

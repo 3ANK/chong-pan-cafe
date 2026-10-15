@@ -199,7 +199,6 @@ dialog{max-width:calc(100vw - 20px);max-width:calc(100dvw - 20px)}
 .order-topbar .mark.brand-logo{display:block;object-fit:cover;width:64px;height:64px;padding:0;border:1px solid #ffffff55;border-radius:12px;background:#fff}
 @media(max-width:420px){.order-topbar .mark.brand-logo{width:52px;height:52px}}
 
-/* LINE OA friend add entry point */
-.line-add-friend{display:flex;align-items:center;justify-content:center;width:100%;min-height:46px;margin:0 0 8px;padding:10px 14px;border:1px solid #06c755;border-radius:13px;background:#fff;color:#087c38;text-decoration:none;font-size:14px;font-weight:800;line-height:1.35}
+/* LINE OA friend link on the authenticated ordering page */
 .line-add-friend:focus-visible,.line-add-friend-header:focus-visible{outline:3px solid #9fe2ae;outline-offset:2px}
 .order-topbar .line-add-friend-header{border-color:#cde8c8;color:#fff}
