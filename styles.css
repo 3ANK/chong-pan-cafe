@@ -202,3 +202,18 @@ dialog{max-width:calc(100vw - 20px);max-width:calc(100dvw - 20px)}
 /* LINE OA friend link on the authenticated ordering page */
 .line-add-friend:focus-visible,.line-add-friend-header:focus-visible{outline:3px solid #9fe2ae;outline-offset:2px}
 .order-topbar .line-add-friend-header{border-color:#cde8c8;color:#fff}
+
+/* Shared loyalty card design on the ordering page. */
+.loyalty-card{position:relative;overflow:hidden;border-radius:23px;padding:25px;background:linear-gradient(133deg,#263f2f,#596b35 70%,#889e58);color:#fff;min-height:260px;box-shadow:0 12px 30px #2d472b28}
+.loyalty-card:before{content:"";position:absolute;right:-50px;bottom:-95px;width:260px;height:260px;border-radius:50%;border:45px solid #ffffff12}
+.loyalty-head{display:flex;justify-content:space-between;font-size:12px;letter-spacing:1.5px;font-weight:800;position:relative}
+.loyalty-cup{position:absolute;right:23px;top:79px;font-size:64px;opacity:.9}
+.loyalty-name{font-size:19px;font-weight:800;max-width:80%;margin-top:48px;overflow-wrap:anywhere;position:relative}
+.loyalty-balance{display:flex;align-items:baseline;gap:12px;position:relative}
+.loyalty-balance>span:first-child{font-size:54px;line-height:1.25;font-weight:850}
+.loyalty-balance>span:last-child{font-weight:700}
+.loyalty-footer{font-size:11px;opacity:.9;position:relative;margin-top:10px}
+.loyalty-details-link{color:#fff;text-decoration:underline;text-underline-offset:3px;font-weight:750}
+.order-loyalty-card{margin:-7px 0 18px}
+@media(max-width:520px){.loyalty-card{padding:20px;min-height:242px}.loyalty-cup{top:85px;right:13px;font-size:48px}.loyalty-balance>span:first-child{font-size:46px}}
+@media(max-width:619px){.loyalty-card{padding:20px;min-width:0}}

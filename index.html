@@ -25,7 +25,13 @@
 <div class="shell" id="shopShell" hidden>
 <header class="hero"><div class="topbar order-topbar"><img class="mark brand-logo" src="/assets/chongpan-main-logo.webp" alt="โลโก้ร้านชง&ปั่น"><div class="brand"><strong>ชง&ปั่น</strong><small>CHONG & PAN • LINE ORDERING</small></div><div class="header-actions"><a id="adminShortcut" href="/admin/" hidden class="ghost">หลังบ้านเจ้าของร้าน ↗</a><a class="ghost line-add-friend-header" href="https://lin.ee/XbwMpX9" target="_blank" rel="noopener noreferrer">＋ เพิ่มเพื่อน LINE OA</a><button id="loginBtn" class="ghost">เข้าสู่ LINE</button></div></div><div class="hero-message"><span class="eyebrow">FRESHLY MADE FOR YOU</span><h1>วันนี้รับอะไรดีคะ?</h1><p>น้องชงปั่นยินดีต้อนรับค่ะ เลือกเมนูโปรดแล้วสั่งง่าย ๆ ผ่าน LINE</p></div><div id="statusBanner" class="notice">กำลังตรวจสอบระบบ…</div><div id="legacyCheckout" class="legacy-checkout"><span>ระหว่างเปลี่ยนระบบ กรุณาสั่งซื้อผ่านระบบเดิม</span><a class="legacy-order-link" href="https://chongpan-members.oakenzebra4.chatgpt.site/order" target="_blank" rel="noopener noreferrer">สั่งซื้อผ่านระบบเดิม ↗</a></div></header>
 <main>
-<section class="summary" aria-label="สถานะสมาชิก"><div><small>บัญชีสมาชิก</small><strong id="memberName">ยังไม่ได้เข้าสู่ระบบ</strong></div><div><small>แต้มสะสม</small><strong><span id="points">–</span> <span class="pts">แต้ม</span></strong><a class="summary-points-link" href="/member/">ดูบัตรสมาชิกและประวัติแต้ม →</a></div></section>
+<section class="loyalty-card order-loyalty-card" aria-label="บัตรสมาชิกของคุณ">
+<div class="loyalty-head"><span>CHONG &amp; PAN</span><span>MEMBER</span></div>
+<div class="loyalty-cup" aria-hidden="true">🥤</div>
+<div class="loyalty-name" id="memberName">ยังไม่ได้เข้าสู่ระบบ</div>
+<div class="loyalty-balance"><span id="points">–</span><span>แต้มสะสม</span></div>
+<div class="loyalty-footer"><a class="loyalty-details-link" href="/member/">ดูบัตรสมาชิกและประวัติแต้ม →</a></div>
+</section>
 <nav class="tabs" aria-label="เมนูหลัก"><button data-tab="menu" class="selected">เมนูอาหาร</button><a class="tab-link" href="/member/">บัตรสมาชิก / แต้มสะสม</a><button data-tab="history">ออเดอร์ของฉัน</button></nav>
 <section id="menuPanel" class="panel"><div class="search"><span>⌕</span><input id="search" type="search" placeholder="ค้นหาเครื่องดื่มและอาหาร…" aria-label="ค้นหาเมนู"></div><div id="menuExplorer" class="menu-explorer">
 <nav id="menuGroupTabs" class="menu-group-tabs" aria-label="เลือกประเภทเมนู">
