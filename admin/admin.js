@@ -14,14 +14,15 @@ async function request(path,options={}){
 function loginStatus(s,retry=false){$('adminLoginStatus').textContent=s;$('adminLoginRetry').hidden=!retry}
 function allowed(m){
  $('adminLogin').hidden=true;$('adminPrivate').hidden=false;
- $('ownerHello').textContent='เข้าสู่ระบบหลังบ้านแล้ว · '+(m.name||'เจ้าของร้าน');
+ $('ownerHello').textContent='เข้าสู่ระบบหลังบ้านแล้ว · '+(m.name||'แอดมินร้าน');
+ $('manageAdmins').hidden=!m.isPrimaryOwner;
  loadOrders();loadPaymentSettings();checkReadiness();
 }
 async function initAdmin(userInitiated=false){
  try{
   const {member}=await request('me');
   if(member?.isOwner){allowed(member);return}
-  if(member&&!member.isOwner){loginStatus('บัญชีนี้ไม่มีสิทธิ์เข้าหลังบ้าน กรุณาใช้ LINE ของเจ้าของร้าน',false);return}
+  if(member&&!member.isOwner){loginStatus('บัญชีนี้ไม่มีสิทธิ์เข้าหลังบ้าน กรุณาใช้ LINE ที่ได้รับสิทธิ์แอดมิน',false);return}
   if(!window.liff)throw Error('โหลด LINE Login ไม่สำเร็จ');
   const info=await request('loyalty/info');
   await liff.init({liffId:info.liffId});
@@ -124,6 +125,28 @@ async function checkReadiness(){
 $('refreshAdmin').addEventListener('click',loadOrders);
 $('checkReadiness').addEventListener('click',checkReadiness);
 $('manageCatalog').addEventListener('click',()=>window.openChongpanCatalog?.());
+$('manageAdmins').addEventListener('click',async()=>{
+ const panel=$('adminsPanel');panel.hidden=!panel.hidden;if(panel.hidden)return;
+ panel.scrollIntoView({behavior:'smooth',block:'start'});
+ await loadAdminRoster();
+});
+$('refreshAdmins').addEventListener('click',loadAdminRoster);
+$('adminCandidates').addEventListener('click',async e=>{
+ const b=e.target.closest('[data-add-admin]');if(!b)return;
+ const lineUserId=b.dataset.addAdmin;
+ if(!confirm('ให้ '+b.dataset.adminName+' รับแจ้งเตือนออเดอร์และเข้าหลังบ้านได้ใช่ไหม? ต้องเพิ่มเพื่อน LINE OA แล้ว'))return;
+ b.disabled=true;
+ try{await request('admin/admins',{method:'POST',body:JSON.stringify({lineUserId})});await loadAdminRoster();alert('เพิ่มสิทธิ์แอดมินแล้ว')}
+ catch(err){alert(err.message);b.disabled=false}
+});
+$('currentAdmins').addEventListener('click',async e=>{
+ const b=e.target.closest('[data-remove-admin]');if(!b)return;
+ if(!confirm('นำ '+b.dataset.adminName+' ออกจากแอดมิน? บัญชีนี้จะไม่ได้รับแจ้งเตือนใหม่และเข้าแอดมินไม่ได้'))return;
+ b.disabled=true;
+ try{await request('admin/admins',{method:'DELETE',body:JSON.stringify({lineUserId:b.dataset.removeAdmin})});await loadAdminRoster()}
+ catch(err){alert(err.message);b.disabled=false}
+});
+$('adminCandidateSearch').addEventListener('input',renderAdminRoster);
 $('testLineAlert').addEventListener('click',async()=>{
  if(!confirm('ส่งข้อความทดสอบไปยัง LINE เจ้าของร้าน?'))return;
  try{const r=await request('admin/line/test',{method:'POST',body:'{}'});if(r.acceptedByLine)alert('LINE รับคำขอแล้ว ตรวจมือถือเจ้าของร้านอีกครั้ง')}catch(e){alert(e.message)}
@@ -137,6 +160,19 @@ $('toggleShop').addEventListener('click',async()=>{
   await checkReadiness();
  }catch(e){alert(e.message)}
 });
+let adminRosterData={admins:[],members:[],limit:25};
+function renderAdminRoster(){
+ const q=$('adminCandidateSearch').value.trim().toLocaleLowerCase();
+ const candidates=adminRosterData.members.filter(m=>(m.display_name||'').toLocaleLowerCase().includes(q)||String(m.line_user_id||'').slice(-8).toLocaleLowerCase().includes(q));
+ $('adminRosterSummary').textContent='แอดมิน '+adminRosterData.admins.length+' คน · เพิ่มได้อีก '+Math.max(0,adminRosterData.limit-(adminRosterData.admins.length-1))+' คน';
+ $('currentAdmins').innerHTML=adminRosterData.admins.map(m=>'<article class="ordercard"><div class="adminrow"><strong>'+escapeText(m.display_name)+(m.primary?' · เจ้าของร้าน':'')+'</strong>'+(m.primary?'':'<button type="button" class="secondary" data-remove-admin="'+escapeText(m.line_user_id)+'" data-admin-name="'+escapeText(m.display_name)+'">นำออก</button>')+'</div><p class="caption">LINE ลงท้าย '+escapeText(String(m.line_user_id).slice(-8))+'</p></article>').join('')||'<p class="empty">ไม่พบข้อมูลแอดมิน</p>';
+ $('adminCandidates').innerHTML=candidates.length?candidates.map(m=>'<article class="ordercard"><div class="adminrow"><strong>'+escapeText(m.display_name||'สมาชิก LINE')+'</strong><button type="button" class="primary" data-add-admin="'+escapeText(m.line_user_id)+'" data-admin-name="'+escapeText(m.display_name||'สมาชิก LINE')+'" '+(adminRosterData.admins.length>adminRosterData.limit?'disabled':'')+'>ให้สิทธิ์แอดมิน</button></div><p class="caption">LINE ลงท้าย '+escapeText(String(m.line_user_id).slice(-8))+'</p></article>').join(''):'<p class="empty">'+(q?'ไม่พบสมาชิกที่ค้นหา':'ยังไม่มีสมาชิกที่เพิ่มเป็นแอดมินได้ · ให้แอดมินเข้าสู่ระบบ LINE ในหน้าเมนูสั่งอาหารก่อน')+'</p>';
+}
+async function loadAdminRoster(){
+ $('adminRosterSummary').textContent='กำลังโหลด…';$('currentAdmins').textContent='';$('adminCandidates').textContent='';
+ try{adminRosterData=await request('admin/admins');renderAdminRoster()}
+ catch(e){$('adminRosterSummary').textContent=e.message}
+}
 let customerPointMembers=[];
 function renderCustomerPoints(){
  const q=$('memberSearch').value.trim().toLocaleLowerCase();
