@@ -115,7 +115,7 @@ function normalizeUnit(unit){const u=String(unit||'').trim().toLowerCase().repla
 function parseIngredientRow(raw){
  const original=String(raw||'').trim(),base={name:original,min:'',max:'',actual:'',unit:'',note:'',original};
  // Only split one clearly identified amount; complex preparation instructions stay for review.
- const units='กิโลกรัม|มิลลิลิตร|ช้อนโต๊ะ|ช้อนกาแฟ|ช้อนแกง|ช้อนชา|กระป๋อง|กรัม|ลิตร|มล\\.?|ml|kg|oz|ออนซ์|ฟอง|ชิ้น|แผ่น|ขวด|ซอง|ถ้วย|ลูก|ใบ|กำ|ก้าน|ต้น|หัว|กลีบ|แพ็ค|ถุง|ดอก|แท่ง|เส้น|ก้อน|ชุด|จาน|ช้อน|g|l';
+ const units='ปลายช้อนชา\\s*\\(0\\.5g\\)|กิโลกรัม|มิลลิลิตร|ช้อนโต๊ะ|ช้อนกาแฟ|ช้อนแกง|ช้อนชา|กระป๋อง|กรัม|ลิตร|มล\\.?|ml|kg|oz|ออนซ์|ฟอง|ชิ้น|แผ่น|ขวด|ซอง|ถ้วย|ลูก|ใบ|กำ|ก้าน|ต้น|หัว|กลีบ|แพ็ค|ถุง|ดอก|แท่ง|เส้น|ก้อน|ชุด|จาน|ช้อน|g|l';
  const re=new RegExp('^(.+?)\\s*[:：]?\\s*(\\d+(?:[.,]\\d+)?)(?:\\s*[-–—ถึง]+\\s*(\\d+(?:[.,]\\d+)?))?\\s*('+units+')\\s*$','i'),m=original.match(re);
  if(!m||/[\d]/.test(m[1]))return base;
  const lo=Number(m[2].replace(',','.')),hi=m[3]?Number(m[3].replace(',','.')):null;
@@ -134,7 +134,7 @@ function renderStructuredIngredients(rows){
 function addStructuredIngredient(row=parseIngredientRow('')){
  const box=document.createElement('div');box.className='ingredient-entry';box.dataset.original=row.original||'';
  const nameWrap=document.createElement('div');box.append(nameWrap);
- function field(parent,key,label){const wrap=document.createElement('label');wrap.textContent=label;const input=key==='unit'?document.createElement('select'):document.createElement('input');input.dataset.field=key;input.value=row[key]??'';input.setAttribute('aria-label',label);if(key==='unit'){const current=normalizeUnit(row[key]??''),choices=[['กรัม','กรัม (g)'],['มล.','มิลลิลิตร (ml)'],['ลูก','ลูก']];const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='เลือกหน่วย';input.append(placeholder);if(current&&!choices.some(choice=>choice[0]===current)){const legacy=document.createElement('option');legacy.value=current;legacy.textContent='หน่วยเดิม: '+current;input.append(legacy);}for(const [value,text] of choices){const option=document.createElement('option');option.value=value;option.textContent=text;input.append(option);}input.value=current;}if(['min','max','actual'].includes(key)){input.type='number';input.min='0';input.step='any';input.inputMode='decimal';}if(key==='name')input.setAttribute('list','ingredientNames');wrap.append(input);parent.append(wrap);return input;}
+ function field(parent,key,label){const wrap=document.createElement('label');wrap.textContent=label;const input=key==='unit'?document.createElement('select'):document.createElement('input');input.dataset.field=key;input.value=row[key]??'';input.setAttribute('aria-label',label);if(key==='unit'){const current=normalizeUnit(row[key]??''),choices=[['กรัม','กรัม (g)'],['มล.','มิลลิลิตร (ml)'],['ลูก','ลูก'],['ปลายช้อนชา (0.5g)','ปลายช้อนชา (0.5g)']];const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='เลือกหน่วย';input.append(placeholder);if(current&&!choices.some(choice=>choice[0]===current)){const legacy=document.createElement('option');legacy.value=current;legacy.textContent='หน่วยเดิม: '+current;input.append(legacy);}for(const [value,text] of choices){const option=document.createElement('option');option.value=value;option.textContent=text;input.append(option);}input.value=current;}if(['min','max','actual'].includes(key)){input.type='number';input.min='0';input.step='any';input.inputMode='decimal';}if(key==='name')input.setAttribute('list','ingredientNames');wrap.append(input);parent.append(wrap);return input;}
  field(nameWrap,'name','ชื่อวัตถุดิบ');const amounts=document.createElement('div');amounts.className='amounts';box.append(amounts);
  field(amounts,'min','ปริมาณ / ต่ำสุด');field(amounts,'max','สูงสุด (ถ้ามีช่วง)');field(amounts,'unit','หน่วย');field(amounts,'actual','ปริมาณใช้จริงสำหรับต้นทุน');field(box,'note','หมายเหตุ');
  if(row.original){const original=document.createElement('small');original.textContent='ต้นฉบับ: '+row.original;box.append(original);}
@@ -145,7 +145,7 @@ function readStructuredIngredients(){
  if(!r.name)throw new Error('กรุณาระบุชื่อวัตถุดิบ หรือเอารายการว่างออก');
  for(const key of ['min','max','actual'])if(r[key]&&(!Number.isFinite(Number(r[key]))||Number(r[key])<=0))throw new Error('ปริมาณต้องมากกว่า 0');
  if(r.max&&(!r.min||Number(r.max)<Number(r.min)))throw new Error('ตรวจช่วงปริมาณต่ำสุด–สูงสุด');
- if((r.min||r.max||r.actual)&&!r.unit)throw new Error('กรุณาเลือกหน่วยกรัม (g), มิลลิลิตร (ml) หรือลูก');
+ if((r.min||r.max||r.actual)&&!r.unit)throw new Error('กรุณาเลือกหน่วยกรัม (g), มิลลิลิตร (ml), ลูก หรือปลายช้อนชา (0.5g)');
  if(r.actual&&r.min&&r.max&&(Number(r.actual)<Number(r.min)||Number(r.actual)>Number(r.max)))throw new Error('ปริมาณใช้จริงต้องอยู่ในช่วงที่กำหนด');
  return r;});
 }
