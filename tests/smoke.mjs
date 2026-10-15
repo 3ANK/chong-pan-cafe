@@ -20,6 +20,9 @@ function createD1(){
  db.exec(readFileSync(new URL('../migrations/010_loyverse_confirmed_prices.sql',import.meta.url),'utf8')); // idempotence
  db.exec(readFileSync(new URL('../migrations/011_order_payment_options.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/012_egg_quantity_per_plate.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/013_shop_admins.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/014_point_redemptions.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/015_order_points.sql',import.meta.url),'utf8'));
  return {
   raw:db,
   prepare(sql){const stmt=db.prepare(sql);let args=[];return {
@@ -75,7 +78,7 @@ assert.ok(adminJS.includes("card?.scrollIntoView({behavior:'smooth',block:'cente
 assert.ok(adminJS.includes("s==='accepted'?'รับออเดอร์'"));
 assert.ok(adminJS.includes("data-complete-order"));
 assert.ok(adminJS.includes("Math.floor(Math.max(0,Number(o.total)||0)/25)"));
-assert.ok(adminJS.includes("ส่งมอบแล้ว · เพิ่ม +"));
+assert.ok(adminJS.includes("(o.payment_method==='points'?'':' · เพิ่ม +'+reward+' แต้ม')"));
 assert.ok(adminJS.includes("if(b.dataset.completeOrder){"));
 assert.ok(adminJS.includes("status:'completed'"));
 assert.ok(adminJS.includes("o.pointsAwarded"));
@@ -87,7 +90,7 @@ assert.ok(appJS.includes("const link='https://line.me/R/oaMessage/'+encodeURICom
 assert.ok(!appJS.includes('encodeURIComponent(message)')&&!appJS.includes('แจ้งส่งสลิปชำระเงิน'));
 assert.ok(html.includes('ไม่มีข้อความเตรียมไว้หรือคัดลอกให้อัตโนมัติ'));
 
-assert.ok(appJS.includes('liff.login({redirectUri:location.origin+location.pathname})'));
+assert.ok(appJS.includes("liff.login({redirectUri:location.origin+location.pathname+(state.redeemMode?'?redeem=1':'')})"));
 assert.ok(appJS.includes("await request('auth/line'"));
 assert.ok(appJS.includes("await authenticate(false)"));
 
@@ -272,6 +275,20 @@ r=await call('auth/line','POST',{idToken:'slow-line-test-customer'});assert.equa
 const hungryCookie=r.cookie.split(';')[0];
 r=await call('me','GET',undefined,hungryCookie);assert.equal(r.data.member.name,'ลูกค้าหิวทดสอบ');assert.equal(r.data.member.isOwner,false);
 r=await call('admin/orders','GET',undefined,hungryCookie);assert.equal(r.status,403);
+// Menu redemption is a distinct all-points order, not a cash discount.
+db.raw.prepare("INSERT INTO points_adjustments(source_key,line_user_id,delta,reason) VALUES(?,?,?,'screenshot-migration')").run('smoke-redemption-seed',hungrySub,30);
+db.raw.prepare('UPDATE members SET points=30 WHERE line_user_id=?').run(hungrySub);
+const redemptionKey=crypto.randomUUID();
+r=await call('orders','POST',{paymentMethod:'points',redeemOnly:true,pointsToUse:25,items:[{id:'30',qty:2}],fulfillment:'pickup',requestKey:redemptionKey},hungryCookie);
+assert.equal(r.status,201);assert.equal(r.data.total,0);assert.equal(r.data.pointsUsed,25);assert.equal(r.data.pointsRemaining,5);assert.equal(r.data.paymentMethod,'points');
+assert.ok(lastOwnerOrderNotification.includes('ประเภท: แลกแต้มเป็นเมนู'));
+assert.ok(lastOwnerOrderNotification.includes('ใช้แลกเมนู: 25 แต้ม · ไม่ต้องรับเงิน'));
+const redemptionOrderId=r.data.orderId;
+r=await call('orders','POST',{paymentMethod:'cash',pointsToUse:25,items:[{id:'30',qty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},hungryCookie);
+assert.equal(r.status,400); // No discount endpoint remains.
+r=await call('admin/orders','PATCH',{id:redemptionOrderId,status:'cancelled'},cookie);
+assert.equal(r.status,200);assert.equal(r.data.pointsRefunded,25);
+r=await call('points','GET',undefined,hungryCookie);assert.equal(r.data.member.points,30);
 // The prior admin test marked a product unavailable; it must not block the other valid menus.
 r=await call('menu');assert.equal(r.data.shopEnabled,true);
 const hungryProducts=r.data.products;
@@ -340,7 +357,7 @@ assert.ok(html.includes('id="optionQuantityGroup"')&&html.includes('id="decrease
 assert.ok(html.includes('id="optionQuantity" aria-live="polite"'));
 assert.ok(appJS.includes('function setOptionQuantity(next)')&&appJS.includes('setOptionQuantity(1);'));
 assert.ok(appJS.includes("$('increaseOptionQty').disabled=optionQuantity>=20"));
-assert.ok(appJS.includes("const sum=fmt(lineSubtotal(draft));"));
+assert.ok(appJS.includes("const sum=costLabel(lineSubtotal(draft));"));
 assert.ok(appJS.includes('qty:optionQuantity')&&appJS.includes('other.qty+=item.qty'));
 assert.ok(appJS.includes('if(other.qty+item.qty>20)return toast('));
 assert.ok(appJS.includes("$('egg').addEventListener('change',()=>setOptionEggQuantity(1))"));
