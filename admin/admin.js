@@ -39,8 +39,9 @@ async function initAdmin(userInitiated=false){
   allowed(next.member);
  }catch(e){loginStatus(e.message,true)}
 }
+function isPointsRedemption(o){return !!o.isPointsRedemption||(Number(o.points_used||0)>0&&Number(o.total||0)===0)}
 function paymentText(o){
- if(o.payment_method==='points')return 'แลกแต้มเป็นเมนู · ไม่ต้องรับเงิน';
+ if(isPointsRedemption(o)||o.payment_method==='points')return 'แลกแต้มเป็นเมนู · ไม่ต้องรับเงิน';
  const method={cash:'เงินสด',qr:'สแกนจ่าย',legacy:'ออเดอร์ก่อนเพิ่มวิธีชำระเงิน'}[o.payment_method]||'ไม่ทราบวิธีจ่าย';
  const verified=o.payment_status==='verified';
  return method+' · '+(verified?'ร้านยืนยันรับเงินจริงแล้ว':o.payment_method==='qr'?'รอตรวจสลิปและยอดรับเงิน':'ยังไม่ได้ยืนยันรับเงิน');
@@ -54,7 +55,7 @@ function orderCard(o){
  // Points are credited by the server when an order is marked completed, never on cart creation.
  const reward=Math.floor(Math.max(0,Number(o.total)||0)/25);
  const credited=o.pointsAwarded==null?null:Number(o.pointsAwarded);
- const pointsInfo=o.payment_method==='points'
+ const pointsInfo=isPointsRedemption(o)||o.payment_method==='points'
    ?(o.status==='completed'?'เมนูแลกแต้มส่งมอบแล้ว · ใช้ '+Number(o.points_used||0)+' แต้ม':o.status==='cancelled'?'ออเดอร์แลกแต้มถูกยกเลิก · คืน '+Number(o.points_used||0)+' แต้ม':'รอส่งมอบเมนูที่แลก · ใช้ '+Number(o.points_used||0)+' แต้ม')
    :o.status==='completed'
    ?(credited===null?'ส่งมอบแล้ว · กำลังตรวจสอบแต้ม':'ให้แต้มลูกค้าแล้ว +'+credited+' แต้ม')
@@ -62,12 +63,12 @@ function orderCard(o){
    :'เมื่อลูกค้ารับสินค้าแล้ว จะได้ +'+reward+' แต้ม (ทุก 25 บาท = 1 แต้ม)';
  const canFinish=o.status==='ready';
  const payPending=o.payment_method==='qr'&&o.payment_status!=='verified';
- const pointsButton=canFinish?'<button type="button" class="primary award-points-button" data-complete-order="'+escapeText(o.id)+'" data-points="'+reward+'" '+(payPending?'disabled title="ต้องตรวจยอดเงินและยืนยันรับเงินก่อน"':'')+'>✓ ส่งมอบแล้ว'+(o.payment_method==='points'?'':' · เพิ่ม +'+reward+' แต้ม')+'</button>':'';
+ const pointsButton=canFinish?'<button type="button" class="primary award-points-button" data-complete-order="'+escapeText(o.id)+'" data-points="'+reward+'" '+(payPending?'disabled title="ต้องตรวจยอดเงินและยืนยันรับเงินก่อน"':'')+'>✓ ส่งมอบแล้ว'+(isPointsRedemption(o)||o.payment_method==='points'?'':' · เพิ่ม +'+reward+' แต้ม')+'</button>':'';
  const options=(nextStatuses[o.status]||[]).filter(s=>s!=='completed').map(s=>'<button class="secondary" type="button" data-status="'+s+'" data-order="'+escapeText(o.id)+'">'+escapeText(s==='accepted'?'รับออเดอร์':statuses[s]||s)+'</button>').join('');
  const payButton=o.payment_status!=='verified'&&o.status!=='cancelled'&&o.status!=='completed'?
  '<button type="button" class="primary payment-verify" data-confirm-pay="'+escapeText(o.id)+'">ยืนยันว่าได้รับเงินจริงแล้ว</button>':'';
  return '<article class="ordercard" data-order-id="'+escapeText(o.id)+'" tabindex="-1"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statuses[o.status]||o.status)+'</span></div>'+
- '<div class="admin-order-details"><p>'+items+'</p><p><strong>'+(o.payment_method==='points'?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม · ไม่มียอดชำระเป็นเงิน':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+(Number(o.points_used)>0&&o.payment_method!=='points'?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
+ '<div class="admin-order-details"><p>'+items+'</p><p><strong>'+(isPointsRedemption(o)||o.payment_method==='points'?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม · ไม่มียอดชำระเป็นเงิน':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+(Number(o.points_used)>0&&!isPointsRedemption(o)&&o.payment_method!=='points'?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
  '<p>ลูกค้า: '+escapeText(o.display_name||'')+' · '+escapeText(o.delivery_address||'')+'</p>'+
  '<p>หมายเหตุ: '+escapeText(o.note||'ไม่มี')+'</p></div>'+
  '<div class="payment-chip '+(o.payment_status==='verified'?'success':'warning')+'">'+escapeText(paymentText(o))+'</div>'+

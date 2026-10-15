@@ -78,7 +78,7 @@ assert.ok(adminJS.includes("card?.scrollIntoView({behavior:'smooth',block:'cente
 assert.ok(adminJS.includes("s==='accepted'?'รับออเดอร์'"));
 assert.ok(adminJS.includes("data-complete-order"));
 assert.ok(adminJS.includes("Math.floor(Math.max(0,Number(o.total)||0)/25)"));
-assert.ok(adminJS.includes("(o.payment_method==='points'?'':' · เพิ่ม +'+reward+' แต้ม')"));
+assert.ok(adminJS.includes("isPointsRedemption(o)||o.payment_method==='points'?'':' · เพิ่ม +'+reward+' แต้ม'"));
 assert.ok(adminJS.includes("if(b.dataset.completeOrder){"));
 assert.ok(adminJS.includes("status:'completed'"));
 assert.ok(adminJS.includes("o.pointsAwarded"));

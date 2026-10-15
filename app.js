@@ -274,7 +274,7 @@ function orderCard(o,admin=false){
  return '<div class="ordercard"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statusName(o.status))+'</span></div>'+
  '<p class="small">'+new Date(o.created_at).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})+'</p>'+
  '<p class="history-items">'+itemLines+'</p>'+
- '<p><strong>'+(o.payment_method==='points'?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+(Number(o.points_used)>0&&o.payment_method!=='points'?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
+ '<p><strong>'+(o.isPointsRedemption||o.payment_method==='points'?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+(Number(o.points_used)>0&&o.payment_method!=='points'?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
  '<p class="pay-label">'+escapeText(paymentLabel(o))+'</p>'+
  '<div class="order-history-actions">'+repeatButton+slipButton+'</div>'+adminTools+'</div>';
 }
@@ -350,7 +350,7 @@ async function loadHistory(){
 }
 
 function paymentLabel(o){
- if(o.payment_method==='points')return 'แลกเมนูด้วยแต้ม · ไม่ต้องจ่ายเงินเพิ่ม';
+ if(o.isPointsRedemption||o.payment_method==='points')return 'แลกเมนูด้วยแต้ม · ไม่ต้องจ่ายเงินเพิ่ม';
  const method={cash:'เงินสด · ชำระเมื่อรับสินค้า',qr:'สแกนจ่าย',legacy:'ออเดอร์ก่อนเพิ่มตัวเลือกชำระเงิน'}[o.payment_method]||'ยังไม่ระบุวิธีจ่าย';
  return method+' · '+(o.payment_status==='verified'?'ร้านยืนยันรับเงินแล้ว':o.payment_method==='qr'?'รอร้านตรวจสอบสลิป':'ยังไม่ยืนยันรับเงิน');
 }

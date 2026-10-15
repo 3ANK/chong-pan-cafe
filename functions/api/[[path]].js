@@ -31,7 +31,7 @@ async function getOrders(db,where='',args=[]){const q=`SELECT * FROM orders ${wh
 ]);
 const its=itemResult.results||[],grants=pointsResult.results||[];
 const awardedPoints=new Map(grants.map(x=>[x.order_id,Number(x.delta)]));
-return rows.map(o=>({...o,pointsAwarded:awardedPoints.has(o.id)?awardedPoints.get(o.id):null,
+return rows.map(o=>({...o,isPointsRedemption:Number(o.points_used||0)>0&&Number(o.total||0)===0,pointsAwarded:awardedPoints.has(o.id)?awardedPoints.get(o.id):null,
  items:its.filter(i=>i.order_id===o.id).map(i=>({id:i.catalog_id,name:i.name,qty:i.qty,price:i.unit_price,eggPrice:i.egg_price,sweetness:i.sweetness,egg:i.egg,eggQty:i.egg_qty,note:i.note}))}));}
 
 const safeQrPath=s=>/^\/assets\/payment\/[A-Za-z0-9_.-]+\.(?:png|jpe?g|webp|svg)$/i.test(s);
@@ -150,11 +150,11 @@ async function createOrder(req,env,db,s){
  if(subtotal<0||subtotal>200000)return fail('ยอดสั่งซื้อเกินกำหนด');
  const pointsUsed=redeemOnly?subtotal:0;
  const total=subtotal-pointsUsed,paymentSettings=await paymentConfig(db,env);
- const paymentMethod=redeemOnly?'points':requestedPayment;
+ const paymentMethod=redeemOnly?'points':requestedPayment,storedPaymentMethod=redeemOnly?'cash':requestedPayment;
  if(total>0&&paymentMethod==='qr'&&!paymentSettings.qrEnabled)return fail('ยังไม่เปิดสแกนจ่าย กรุณาเลือกเงินสด',409);
  const id=crypto.randomUUID(),name=safe(s.name||'สมาชิก LINE',80),note=safe(data.note,300);
  const orderInsert=db.prepare('INSERT INTO orders(id,request_key,line_user_id,display_name,fulfillment,delivery_address,note,total,points_used,status,payment_method,payment_status) SELECT ?,?,?,?,?,?,?,?,?,?,?,? WHERE ?=0 OR COALESCE((SELECT points FROM members WHERE line_user_id=?),0)>=?')
-  .bind(id,requestKey,s.sub,name,data.fulfillment,address,note,total,pointsUsed,'pending',paymentMethod,total===0?'verified':'unpaid',pointsUsed,s.sub,pointsUsed);
+  .bind(id,requestKey,s.sub,name,data.fulfillment,address,note,total,pointsUsed,'pending',storedPaymentMethod,total===0?'verified':'unpaid',pointsUsed,s.sub,pointsUsed);
  const steps=[
   orderInsert,
   db.prepare("INSERT OR IGNORE INTO points_adjustments(source_key,line_user_id,delta,reason) SELECT 'order-points:'||id,line_user_id,-points_used,'order-redemption' FROM orders WHERE id=? AND points_used>0").bind(id),
