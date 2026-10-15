@@ -8,9 +8,9 @@
 <title>บัตรสมาชิกและแต้มสะสม | ชง&ปั่น</title>
 <link rel="icon" href="/assets/chongpan-main-logo.webp" type="image/webp">
 <link rel="stylesheet" href="/styles.css">
-<link rel="stylesheet" href="/member/member.css?v=member-card-20261015g">
+<link rel="stylesheet" href="/member/member.css?v=member-card-20261015h">
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
-<script src="/member/member.js" defer></script>
+<script src="/member/member.js?v=redemption-20261015a" defer></script>
 </head>
 <body>
 <div class="shell">
@@ -52,7 +52,11 @@
   </section>
   <section class="member-reward-note">
    <h2>แลกของรางวัล</h2>
-   <p>ระบบแลกแต้มบนเว็บไซต์ใหม่ยังไม่เปิดใช้งาน แต้มสะสมของคุณยังคงแสดงและเก็บตามยอดที่ยืนยันแล้ว โปรดสอบถามร้านเรื่องสิทธิ์แลกแต้ม</p>
+   <p>เลือกของรางวัลแล้วส่งคำขอให้ร้าน แต้มนั้นจะถูกกันไว้ระหว่างรอแอดมิน หากร้านปฏิเสธ ระบบคืนแต้มที่กันไว้ให้อัตโนมัติ แอดมินยืนยันเมื่อมอบรางวัลแล้ว ระบบจึงหักแต้มจริง</p>
+   <p id="redemptionBalance" class="redeem-balance" aria-live="polite"></p>
+   <div id="rewardOptions" class="reward-options"></div>
+   <h3 class="redeem-subtitle">คำขอแลกล่าสุด</h3>
+   <div id="redemptionHistory" class="redemption-history" aria-live="polite"></div>
   </section>
   <p class="member-help">มีแต้มในระบบเดิมแต่ยังไม่ขึ้น? แจ้งร้านเพื่อตรวจสอบและจับคู่กับบัญชี LINE เดิมก่อนโอนแต้ม โดยไม่ต้องส่งรหัสผ่านให้ร้าน</p>
  </div>

@@ -48,3 +48,13 @@
 
 /* Primary logo in the admin page header. */
 .admin-mark{display:block;width:64px;min-width:64px;height:64px;object-fit:cover;border-radius:15px;background:#fff;padding:0;flex:0 0 64px}
+
+/* Loyalty reward and redemption controls. */
+#rewardForm{padding:14px;background:#f8f9f3;border:1px solid #e4e8dc;border-radius:14px}
+.redemption-status{display:inline-block;border-radius:999px;padding:4px 10px;background:#fff0d6;color:#78500b;font-size:12px;font-weight:800}
+.redemption-status.approved{background:#e4f2da;color:#2e6027}
+.redemption-status.rejected{background:#f8e7e3;color:#8a3b31}
+.reward-admin-row{display:flex;justify-content:space-between;gap:12px;align-items:center;flex-wrap:wrap}
+.redemption-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.redemption-actions button{flex:1 1 180px}
+.redemption-actions .reject-redemption{border-color:#b86b5e;color:#8d3c32}

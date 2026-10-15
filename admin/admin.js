@@ -173,6 +173,27 @@ async function loadAdminRoster(){
  try{adminRosterData=await request('admin/admins');renderAdminRoster()}
  catch(e){$('adminRosterSummary').textContent=e.message}
 }
+let redemptionRows=[],adminRewardRows=[];
+function redemptionLabel(status){return status==='pending'?'รอแอดมินยืนยัน':status==='approved'?'ยืนยันแล้ว · หักแต้มแล้ว':status==='rejected'?'ปฏิเสธ · คืนแต้มแล้ว':status}
+async function loadAdminRedemptions(){
+ $('redemptionsAdminContent').textContent='กำลังโหลดคำขอ…';
+ try{
+  const r=await request('admin/redemptions');redemptionRows=Array.isArray(r.redemptions)?r.redemptions:[];
+  const pending=redemptionRows.filter(x=>x.status==='pending').length;
+  $('redemptionsAdminSummary').textContent='รอพิจารณา '+pending+' รายการ · แสดงประวัติล่าสุด '+redemptionRows.length+' รายการ';
+  $('redemptionsAdminContent').innerHTML=redemptionRows.length?redemptionRows.map(x=>{
+   const status=x.status==='approved'?'approved':x.status==='rejected'?'rejected':'';
+   return '<article class="ordercard"><div class="reward-admin-row"><strong>'+escapeText(x.display_name||'สมาชิก LINE')+' · '+Number(x.points).toLocaleString('th-TH')+' แต้ม</strong><span class="redemption-status '+status+'">'+escapeText(redemptionLabel(x.status))+'</span></div><p><strong>'+escapeText(x.reward_name)+'</strong></p><p class="caption">LINE ลงท้าย '+escapeText(String(x.line_user_id||'').slice(-8))+' · '+escapeText(x.created_at||'')+'</p>'+(x.status==='pending'?'<div class="redemption-actions"><button type="button" class="primary" data-redemption-decision="approve" data-redemption-id="'+escapeText(x.id)+'">ยืนยันมอบรางวัลและหักแต้ม</button><button type="button" class="secondary reject-redemption" data-redemption-decision="reject" data-redemption-id="'+escapeText(x.id)+'">ปฏิเสธและคืนแต้ม</button></div>':'')+'</article>';
+  }).join(''):'<p class="empty">ยังไม่มีคำขอแลกแต้ม</p>';
+ }catch(e){$('redemptionsAdminSummary').textContent=e.message;$('redemptionsAdminContent').textContent='โหลดคำขอไม่สำเร็จ'}
+}
+async function loadAdminRewards(){
+ $('rewardAdminContent').textContent='กำลังโหลดของรางวัล…';
+ try{
+  const r=await request('admin/rewards');adminRewardRows=Array.isArray(r.rewards)?r.rewards:[];
+  $('rewardAdminContent').innerHTML=adminRewardRows.length?adminRewardRows.map(x=>'<article class="ordercard"><div class="reward-admin-row"><strong>'+escapeText(x.name)+' · '+Number(x.points).toLocaleString('th-TH')+' แต้ม</strong><button type="button" class="'+(x.active?'secondary':'primary')+'" data-reward-toggle="'+escapeText(x.id)+'" data-active="'+(x.active?'true':'false')+'">'+(x.active?'ปิดแลก':'เปิดแลก')+'</button></div>'+(x.description?'<p>'+escapeText(x.description)+'</p>':'')+'<p class="caption">มีคำขอทั้งหมด '+Number(x.redemptionCount||0)+' รายการ</p></article>').join(''):'<p class="empty">ยังไม่มีของรางวัล เพิ่มรายการจากแบบฟอร์มด้านบน</p>';
+ }catch(e){$('rewardAdminContent').textContent=e.message}
+}
 let customerPointMembers=[];
 function renderCustomerPoints(){
  const q=$('memberSearch').value.trim().toLocaleLowerCase();
@@ -197,6 +218,34 @@ $('manageMembers').addEventListener('click',async()=>{
 });
 $('refreshMembers').addEventListener('click',loadCustomerPoints);
 $('memberSearch').addEventListener('input',renderCustomerPoints);
+$('manageRedemptions').addEventListener('click',async()=>{
+ const panel=$('redemptionsPanel');panel.hidden=!panel.hidden;if(panel.hidden)return;
+ panel.scrollIntoView({behavior:'smooth',block:'start'});
+ await Promise.all([loadAdminRedemptions(),loadAdminRewards()]);
+});
+$('refreshRedemptions').addEventListener('click',()=>Promise.all([loadAdminRedemptions(),loadAdminRewards()]));
+$('redemptionsAdminContent').addEventListener('click',async e=>{
+ const b=e.target.closest('[data-redemption-decision]');if(!b)return;
+ const decision=b.dataset.redemptionDecision,id=b.dataset.redemptionId;
+ const confirmText=decision==='approve'?'ยืนยันว่ามอบของรางวัลให้ลูกค้าแล้ว และหักแต้มตามรายการนี้?':'ปฏิเสธคำขอ และคืนแต้มที่กันไว้ให้ลูกค้า?';
+ if(!confirm(confirmText))return;
+ b.disabled=true;
+ try{await request('admin/redemptions/decision',{method:'POST',body:JSON.stringify({id,decision})});await loadAdminRedemptions();await loadAdminRewards()}
+ catch(e){alert(e.message);b.disabled=false}
+});
+$('rewardForm').addEventListener('submit',async e=>{
+ e.preventDefault();const status=$('rewardFormStatus');status.textContent='กำลังบันทึก…';
+ const payload={name:$('rewardName').value.trim(),description:$('rewardDescription').value.trim(),points:Number($('rewardPoints').value)};
+ try{await request('admin/rewards',{method:'POST',body:JSON.stringify(payload)});$('rewardName').value='';$('rewardDescription').value='';$('rewardPoints').value='';status.textContent='เพิ่มของรางวัลแล้ว';await loadAdminRewards()}
+ catch(err){status.textContent=err.message}
+});
+$('rewardAdminContent').addEventListener('click',async e=>{
+ const b=e.target.closest('[data-reward-toggle]');if(!b)return;
+ b.disabled=true;
+ try{await request('admin/rewards',{method:'PATCH',body:JSON.stringify({id:b.dataset.rewardToggle,active:b.dataset.active!=='true'})});await loadAdminRewards()}
+ catch(err){alert(err.message);b.disabled=false}
+});
+
 $('manageLegacy').addEventListener('click',async()=>{
  const panel=$('legacyPanel');panel.hidden=!panel.hidden;if(panel.hidden)return;
  const el=$('legacyContent');el.textContent='กำลังโหลดสมาชิกเก่า…';

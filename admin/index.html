@@ -4,9 +4,9 @@
 <meta name="theme-color" content="#596b35"><meta name="robots" content="noindex,nofollow">
 <title>หลังบ้านชง&ปั่น | เจ้าของร้าน</title>
 <link rel="icon" href="/assets/chongpan-main-logo.webp" type="image/webp">
-<link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/admin/admin.css">
+<link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/admin/admin.css?v=redemption-20261015a">
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
-<script src="/admin/admin.js" defer></script><script src="/catalog-admin.js" defer></script>
+<script src="/admin/admin.js?v=redemption-20261015a" defer></script><script src="/catalog-admin.js" defer></script>
 </head><body>
 <div class="admin-wrap">
 <header class="admin-hero"><div class="admin-title"><img class="admin-mark" src="/assets/chongpan-main-logo.webp" alt="โลโก้ร้านชง&ปั่น"><div><h1>หลังบ้านร้านชง&ปั่น</h1><p>ระบบจัดการออเดอร์ · เฉพาะเจ้าของร้าน</p></div></div><a href="/order" class="admin-back">← หน้าเมนูลูกค้า</a></header>
@@ -18,6 +18,7 @@
 <button id="manageCatalog" class="secondary" type="button">จัดการเมนู</button>
 <button id="manageLegacy" class="secondary" type="button">ย้ายแต้มสมาชิกเก่า</button>
 <button id="manageMembers" class="secondary" type="button">ดูแต้มลูกค้า</button>
+<button id="manageRedemptions" class="secondary" type="button">จัดการแลกแต้ม</button>
 <button id="manageAdmins" class="secondary" type="button" hidden>จัดการแอดมิน</button>
 <button id="checkReadiness" class="secondary" type="button">ตรวจความพร้อม</button>
 <button id="testLineAlert" class="secondary" type="button">ทดสอบแจ้งเตือน LINE</button>
@@ -38,6 +39,23 @@
  <label>ค้นหาลูกค้า<input id="memberSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อหรือเลขท้าย LINE"></label>
  <p id="membersSummary" class="caption" role="status" aria-live="polite"></p>
  <div id="membersContent" class="admin-list"></div>
+</section>
+<section id="redemptionsPanel" class="admin-section" hidden>
+ <div class="admin-section-head"><h2>คำขอแลกแต้ม</h2><button id="refreshRedemptions" class="secondary" type="button">อัปเดต</button></div>
+ <p class="caption">ตรวจสอบคำขอ แล้วกดยืนยันเมื่อมอบของรางวัลให้ลูกค้า ระบบจึงตัดแต้มจริง หากปฏิเสธ แต้มที่กันไว้จะคืนให้ลูกค้าอัตโนมัติ</p>
+ <div id="redemptionsAdminSummary" class="admin-info" role="status" aria-live="polite"></div>
+ <div id="redemptionsAdminContent" class="admin-list"></div>
+ <hr>
+ <h2>ตั้งค่าของรางวัล</h2>
+ <p class="caption">เพิ่มชื่อของรางวัลและจำนวนแต้มที่ใช้แลก ลูกค้าจะเห็นเฉพาะรายการที่เปิดแลก</p>
+ <form id="rewardForm">
+  <label>ชื่อของรางวัล<input id="rewardName" maxlength="80" required placeholder="เช่น เครื่องดื่มฟรี 1 แก้ว"></label>
+  <label>รายละเอียด (ถ้ามี)<input id="rewardDescription" maxlength="180" placeholder="เช่น เลือกเมนูราคาไม่เกิน 40 บาท"></label>
+  <label>แต้มที่ใช้แลก<input id="rewardPoints" type="number" min="1" max="100000" step="1" required placeholder="เช่น 40"></label>
+  <button class="primary" type="submit">เพิ่มของรางวัล</button>
+  <p id="rewardFormStatus" class="caption" role="status"></p>
+ </form>
+ <div id="rewardAdminContent" class="admin-list"></div>
 </section>
 <section id="readinessReport" class="readiness-report" hidden></section>
 <section class="admin-section"><div class="admin-section-head"><h2>ออเดอร์ล่าสุด</h2><a href="https://manager.line.biz/" target="_blank" rel="noopener noreferrer">เปิด LINE OA เพื่อดูสลิป ↗</a></div>
