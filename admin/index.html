@@ -17,10 +17,20 @@
 <button id="manageCatalog" class="secondary" type="button">จัดการเมนู</button>
 <button id="manageLegacy" class="secondary" type="button">ย้ายแต้มสมาชิกเก่า</button>
 <button id="manageMembers" class="secondary" type="button">ดูแต้มลูกค้า</button>
+<button id="manageAdmins" class="secondary" type="button" hidden>จัดการแอดมิน</button>
 <button id="checkReadiness" class="secondary" type="button">ตรวจความพร้อม</button>
 <button id="testLineAlert" class="secondary" type="button">ทดสอบแจ้งเตือน LINE</button>
 <button id="toggleShop" class="secondary" type="button">เปิด / ปิดรับออเดอร์</button>
 </div>
+<section id="adminsPanel" class="admin-section" hidden>
+ <div class="admin-section-head"><h2>จัดการแอดมิน</h2><button id="refreshAdmins" class="secondary" type="button">อัปเดต</button></div>
+ <p id="adminRosterSummary" class="caption" role="status"></p>
+ <p class="caption">แอดมินทุกคนจะได้รับแจ้งเตือนออเดอร์และเข้าหลังบ้านได้ ให้ผู้ที่จะเพิ่มเปิดหน้าเมนูสั่งอาหารและเข้าสู่ระบบ LINE อย่างน้อยหนึ่งครั้ง พร้อมเพิ่มเพื่อน LINE OA ของร้านก่อน</p>
+ <h3>ผู้ดูแลที่ได้รับแจ้งเตือน</h3><div id="currentAdmins" class="admin-list"></div>
+ <h3>เพิ่มจากสมาชิก LINE</h3>
+ <label>ค้นหาสมาชิก<input id="adminCandidateSearch" type="search" autocomplete="off" placeholder="ค้นหาชื่อหรือเลขท้าย LINE"></label>
+ <div id="adminCandidates" class="admin-list"></div>
+</section>
 <section id="membersPanel" class="admin-section" hidden>
  <div class="admin-section-head"><h2>รายชื่อลูกค้าและแต้ม</h2><button id="refreshMembers" class="secondary" type="button">อัปเดต</button></div>
  <p class="caption">แสดงลูกค้าที่เข้าสู่ระบบด้วย LINE แล้ว ค้นหาด้วยชื่อหรือเลขท้าย LINE</p>
