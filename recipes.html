@@ -122,7 +122,7 @@ function parseIngredientRow(raw){
  return {...base,name:m[1].replace(/[:：]\s*$/,'').trim(),min:String(lo),max:hi===null?'':String(hi),actual:hi===null?String(lo):'',unit:normalizeUnit(m[4])};
 }
 function parseChefJeweLine(line){const row=parseIngredientRow(line),quantity=actualQuantity(row);return quantity>0&&row.unit?{name:row.name,quantity,unit:row.unit}:null;}
-function actualQuantity(row){const n=Number(row.actual);return String(row.actual??'').trim()&&Number.isFinite(n)&&n>0?n:null;}
+function actualQuantity(row){const value=String(row.actual??'').trim()||(!String(row.max??'').trim()?String(row.min??'').trim():'');const n=Number(value);return value&&Number.isFinite(n)&&n>0?n:null;}
 function getDetailRows(detail){return Array.isArray(detail.ingredientRows)?detail.ingredientRows.map(r=>({...r})): (detail.ingredients||[]).map(parseIngredientRow);}
 function formatIngredientRow(r){return [r.name,r.min?(r.max?r.min+'–'+r.max:r.min):(r.actual||''),r.unit,r.actual&&r.max?'(ใช้จริง '+r.actual+' '+r.unit+')':'',r.note].filter(Boolean).join(' ');}
 function renderStructuredIngredients(rows){
