@@ -383,8 +383,10 @@ document.querySelectorAll('[data-menu-group]').forEach(b=>b.addEventListener('cl
 $('nextStepButton').addEventListener('click',()=>setMenuGroup(nextStepTarget));
 $('nextStepDismiss').addEventListener('click',hideNextStep);document.querySelectorAll('[data-tab]').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));$('loginBtn').addEventListener('click',()=>authenticate(true));
 $('lineGateRetry').addEventListener('click',async()=>{
- if(!state.ready){
-  gateStatus('กำลังโหลดระบบสั่งซื้ออีกครั้ง…');
+ const retryStatus=$('lineGateStatus').textContent||'';
+ if(!state.ready||/Invalid LIFF ID/i.test(retryStatus)){
+  state.ready=false;
+  gateStatus('กำลังโหลดค่า LINE ล่าสุด…');
   await Promise.all([bootMenu(),bootPayments()]);
   if(!state.ready){
    gateStatus('เชื่อมต่อร้านไม่สำเร็จ กรุณาตรวจอินเทอร์เน็ตแล้วกดลองใหม่',true);
