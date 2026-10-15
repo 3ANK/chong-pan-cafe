@@ -149,3 +149,12 @@
  .loyalty-name{left:7%;bottom:7%;width:32%;max-width:32%;font-size:clamp(9px,3vw,12px)}
  .loyalty-balance{left:7%;bottom:17%}
 }
+
+/* Correctly anchor the live-data inset to the lower-left data area. */
+.loyalty-card:before{
+  inset:auto;
+  top:auto;right:auto;left:5%;bottom:4.5%;width:35%;height:32%;
+}
+@media(max-width:520px){
+  .loyalty-card:before{inset:auto;top:auto;right:auto;left:5%;bottom:4.5%;width:36%;height:33%}
+}
