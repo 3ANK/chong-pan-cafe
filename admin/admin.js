@@ -144,6 +144,7 @@ $('manageLegacy').addEventListener('click',async()=>{
   const {legacy,members}=await request('admin/legacy');
   const options='<option value="">เลือกสมาชิก LINE ที่ตรวจสอบตัวตนแล้ว</option>'+members.map(m=>'<option value="'+escapeText(m.line_user_id)+'">'+escapeText(m.display_name)+' · '+Number(m.points)+' แต้ม</option>').join('');
   el.innerHTML=legacy.map(a=>'<div class="ordercard"><strong>'+escapeText(a.display_name)+' · '+Number(a.snapshot_points)+' แต้ม</strong><p>รหัสเก่า #'+escapeText(a.legacy_code)+'</p>'+(a.claimed_line_user_id?'<p>โอนแล้ว ✓</p>':'<select data-old="'+escapeText(a.legacy_code)+'">'+options+'</select><button type="button" class="secondary" data-legacy="'+escapeText(a.legacy_code)+'">ยืนยันโอนแต้ม</button>')+'</div>').join('');
+  requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
   el.querySelectorAll('[data-legacy]').forEach(b=>b.addEventListener('click',async()=>{
    const code=b.dataset.legacy,id=el.querySelector('[data-old="'+code+'"]')?.value;
    if(!id)return alert('เลือกบัญชี LINE ก่อน');
