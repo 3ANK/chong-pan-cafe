@@ -80,3 +80,34 @@
  .loyalty-head{letter-spacing:1px}
  .loyalty-balance{gap:6px}
 }
+
+/* Match the selected premium card direction more closely. */
+.loyalty-card{
+  background-color:#153b2d;
+  background-image:
+    radial-gradient(ellipse 92% 150% at -4% 50%,#f5e9d1 0 67%,#d7bf8f 67.3%,#f5e9d1 68%,transparent 68.5%),
+    radial-gradient(ellipse at 98% 8%,#66834855 0 10%,transparent 44%),
+    linear-gradient(145deg,#102f24,#1d4c35 62%,#123526);
+  border-color:#c6ab73;
+}
+.loyalty-card:before{
+  inset:6px;border:1px solid #b7965d88;border-radius:16px;
+  background:linear-gradient(145deg,transparent 0 48%,#d5bc8130 48.2%,transparent 48.6%);
+}
+.loyalty-card:after{right:-2%;bottom:-1%;width:61%;height:99%}
+.loyalty-head{top:8%;left:7%;right:6%}
+.loyalty-head .loyalty-brand{color:#21452f;letter-spacing:0}
+.loyalty-brand b{display:block;font-size:clamp(17px,5vw,25px);line-height:1.05;font-weight:850;letter-spacing:.2px}
+.loyalty-brand small{display:block;margin-top:4px;font-size:clamp(7px,2vw,9px);line-height:1.1;letter-spacing:1.7px;color:#735f3c}
+.loyalty-head span:last-child{color:#f7f1dd}
+.loyalty-name{top:auto;bottom:38%;left:7%;width:48%;max-width:48%;font-size:clamp(13px,4vw,18px)}
+.loyalty-balance{left:7%;bottom:18%;max-width:54%}
+.loyalty-footer{left:7%;bottom:8%;max-width:55%}
+@media(max-width:520px){
+ .loyalty-card:before{inset:5px;border-radius:14px}
+ .loyalty-card:after{right:-2%;width:60%;height:98%}
+ .loyalty-head{top:9%;left:7%}
+ .loyalty-name{bottom:39%;max-width:49%}
+ .loyalty-balance{bottom:18%;max-width:56%}
+ .loyalty-footer{bottom:8%;max-width:55%}
+}
