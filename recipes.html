@@ -46,15 +46,13 @@ let selectedRecipeDomain='drinks';
 function groupDomain(group){return group.domain==='food'||/^อาหาร(?:$|[ ·])/u.test(group.category)?'food':'drinks';}
 function refreshCategories(){
  const selected=$('category').value,categories=[...new Set(recipes.filter(g=>groupDomain(g)===selectedRecipeDomain).map(g=>g.category))];
- if(selectedRecipeDomain==='drinks'&&!categories.includes('ต้นทุน'))categories.push('ต้นทุน');
  $('category').replaceChildren(new Option('ทุกหมวดย่อย',''),...categories.map(c=>new Option(c,c)));
  $('category').value=categories.includes(selected)?selected:'';
  refreshFormCategories();
 }
 function refreshFormCategories(){
- const domain=$('newRecipeDomain').value,groups=recipes.filter(g=>groupDomain(g)===domain);
- if(domain==='drinks'&&!groups.some(g=>g.category==='ต้นทุน'))groups.push({category:'ต้นทุน'});
- $('recipeCategories').replaceChildren(...groups.map(g=>{const o=document.createElement('option');o.value=g.category;return o;}));
+ const domain=$('newRecipeDomain').value;
+ $('recipeCategories').replaceChildren(...recipes.filter(g=>groupDomain(g)===domain).map(g=>{const o=document.createElement('option');o.value=g.category;return o;}));
  $('drinkSizeFields').hidden=domain==='food';
 }
 document.querySelectorAll('[data-domain]').forEach(button=>button.addEventListener('click',()=>{
@@ -129,8 +127,6 @@ function render(){
   function addSection(label,items,isFavorite=false){const wrapper=document.createElement('details');wrapper.className='recipe-category';wrapper.open=isFavorite||!!q||!!category||openRecipeCategories.has(label);const summary=document.createElement('summary'),text=document.createElement('span'),heading=document.createElement('b'),count=document.createElement('small');heading.textContent=label;count.textContent='ดูสูตร '+items.length+' รายการ';text.append(heading,count);summary.append(text);wrapper.append(summary);const body=document.createElement('div');body.className='category-recipes';for(const item of items)body.append(createRecipeCard(item.group,item.name));wrapper.append(body);wrapper.addEventListener('toggle',()=>{if(q||category||isFavorite)return;if(wrapper.open)openRecipeCategories.add(label);else openRecipeCategories.delete(label);});$('cards').append(wrapper);}
   const favorites=entries.filter(item=>favoriteRecipes.includes(item.key));if(favorites.length)addSection('ใช้บ่อย ★',favorites,true);
   const groups=new Map();for(const entry of entries){if(!groups.has(entry.group.category))groups.set(entry.group.category,[]);groups.get(entry.group.category).push(entry);}for(const [label,items] of groups)addSection(label,items);
-  if(!entries.length&&!q&&category==='ต้นทุน')$('noResults').textContent='หมวดต้นทุนยังไม่มีสูตร · กด “+ เพิ่มสูตรใหม่” เพื่อเริ่มเพิ่มรายการ';
-  else $('noResults').textContent='ไม่พบเมนูที่ค้นหา';
   $('noResults').hidden=!!entries.length;
 }
 
