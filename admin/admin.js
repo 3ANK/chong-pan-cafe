@@ -51,8 +51,8 @@ function orderCard(o){
  const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'};
  const items=(o.items||[]).map(i=>{
   const modifiers=[i.sweetness||'',i.egg?(eggNames[i.egg]||'')+' '+(i.eggQty??1)+' ฟอง/จาน'+(Number(i.eggPrice)>0?' +'+Number(i.eggPrice)+' บาท/จาน':''):'',i.note||''].filter(Boolean);
-  return escapeText(i.name)+' ×'+Number(i.qty)+(modifiers.length?' ('+modifiers.map(escapeText).join(' · ')+')':'');
- }).join(' · ');
+  return '<li style="margin:0 0 .55rem;line-height:1.5"><div style="display:flex;align-items:baseline;gap:.75rem;justify-content:space-between"><span>'+escapeText(i.name)+'</span><strong style="white-space:nowrap">×'+Number(i.qty)+'</strong></div>'+(modifiers.length?'<div class="caption">'+modifiers.map(escapeText).join(' · ')+'</div>':'')+'</li>';
+ }).join('');
  // Points are credited by the server when an order is marked completed, never on cart creation.
  const reward=Math.floor(Math.max(0,Number(o.total)||0)/25);
  const credited=o.pointsAwarded==null?null:Number(o.pointsAwarded);
@@ -69,7 +69,7 @@ function orderCard(o){
  const payButton=!isPointsRedemption(o)&&o.payment_method!=='points'&&Number(o.total)>0&&o.payment_status!=='verified'&&o.status!=='cancelled'?
  '<button type="button" class="primary payment-verify" data-confirm-pay="'+escapeText(o.id)+'" data-payment-method="'+escapeText(o.payment_method)+'">ยืนยันว่าได้รับเงินจริงแล้ว</button>':'';
  return '<article class="ordercard" data-order-id="'+escapeText(o.id)+'" tabindex="-1"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statuses[o.status]||o.status)+'</span></div>'+
- '<div class="admin-order-details"><p>'+items+'</p><p><strong>'+(isPointsRedemption(o)||o.payment_method==='points'?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม · ไม่มียอดชำระเป็นเงิน':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+(Number(o.points_used)>0&&!isPointsRedemption(o)&&o.payment_method!=='points'?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
+ '<div class="admin-order-details"><ul style="list-style:none;padding:0;margin:1rem 0">'+items+'</ul><p><strong>'+(isPointsRedemption(o)||o.payment_method==='points'?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม · ไม่มียอดชำระเป็นเงิน':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+(Number(o.points_used)>0&&!isPointsRedemption(o)&&o.payment_method!=='points'?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
  '<p>ลูกค้า: '+escapeText(o.display_name||'')+' · '+escapeText(o.delivery_address||'')+'</p>'+
  '<p>หมายเหตุ: '+escapeText(o.note||'ไม่มี')+'</p></div>'+
  '<div class="payment-chip '+(o.payment_status==='verified'?'success':'warning')+'">'+escapeText(paymentText(o))+'</div>'+
