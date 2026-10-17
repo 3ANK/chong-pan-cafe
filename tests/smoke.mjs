@@ -2,6 +2,7 @@
 import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import assert from 'node:assert/strict';
+import './admin-payment.mjs';
 import { onRequest } from '../functions/api/[[path]].js';
 
 function createD1(){
@@ -165,6 +166,16 @@ for(const status of ['accepted','preparing','ready','completed']){r=await call('
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,3);
 r=await call('admin/orders','GET',undefined,cookie);
 assert.equal(r.data.orders.find(o=>o.id===orderId).pointsAwarded,3);
+assert.equal(r.data.orders.find(o=>o.id===orderId).payment_status,'verified');
+// Reproduce an old completed cash order: payment confirmation repairs only payment status.
+db.raw.prepare("UPDATE orders SET payment_status='unpaid' WHERE id=?").run(orderId);
+const ledgerBefore=db.raw.prepare('SELECT COUNT(*) AS n FROM points_ledger WHERE order_id=?').get(orderId).n;
+r=await call('admin/orders/payment','PATCH',{id:orderId,confirmed:true},cookie);assert.equal(r.status,200);
+r=await call('admin/orders/payment','PATCH',{id:orderId,confirmed:true},cookie);assert.equal(r.status,200);assert.equal(r.data.alreadyVerified,true);
+assert.equal(db.raw.prepare('SELECT status,payment_status FROM orders WHERE id=?').get(orderId).status,'completed');
+assert.equal(db.raw.prepare('SELECT payment_status FROM orders WHERE id=?').get(orderId).payment_status,'verified');
+assert.equal(db.raw.prepare('SELECT COUNT(*) AS n FROM points_ledger WHERE order_id=?').get(orderId).n,ledgerBefore);
+
 r=await call('points','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.member.points,3);assert.ok(r.data.history.some(x=>x.kind==='order'&&x.delta===3));
 r=await call('admin/orders','PATCH',{id:orderId,status:'completed'},cookie);assert.equal(r.status,409);
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,3);
@@ -284,10 +295,12 @@ assert.equal(r.status,201);assert.equal(r.data.total,0);assert.equal(r.data.poin
 assert.ok(lastOwnerOrderNotification.includes('ประเภท: แลกแต้มเป็นเมนู'));
 assert.ok(lastOwnerOrderNotification.includes('ใช้แลกเมนู: 25 แต้ม · ไม่ต้องรับเงิน'));
 const redemptionOrderId=r.data.orderId;
+r=await call('admin/orders/payment','PATCH',{id:redemptionOrderId,confirmed:true},cookie);assert.equal(r.status,409);
 r=await call('orders','POST',{paymentMethod:'cash',pointsToUse:25,items:[{id:'30',qty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},hungryCookie);
 assert.equal(r.status,400); // No discount endpoint remains.
 r=await call('admin/orders','PATCH',{id:redemptionOrderId,status:'cancelled'},cookie);
 assert.equal(r.status,200);assert.equal(r.data.pointsRefunded,25);
+r=await call('admin/orders/payment','PATCH',{id:redemptionOrderId,confirmed:true},cookie);assert.equal(r.status,409);
 r=await call('points','GET',undefined,hungryCookie);assert.equal(r.data.member.points,30);
 // The prior admin test marked a product unavailable; it must not block the other valid menus.
 r=await call('menu');assert.equal(r.data.shopEnabled,true);

@@ -65,8 +65,8 @@ function orderCard(o){
  const payPending=o.payment_method==='qr'&&o.payment_status!=='verified';
  const pointsButton=canFinish?'<button type="button" class="primary award-points-button" data-complete-order="'+escapeText(o.id)+'" data-points="'+reward+'" '+(payPending?'disabled title="ต้องตรวจยอดเงินและยืนยันรับเงินก่อน"':'')+'>✓ ส่งมอบแล้ว'+(isPointsRedemption(o)||o.payment_method==='points'?'':' · เพิ่ม +'+reward+' แต้ม')+'</button>':'';
  const options=(nextStatuses[o.status]||[]).filter(s=>s!=='completed').map(s=>'<button class="secondary" type="button" data-status="'+s+'" data-order="'+escapeText(o.id)+'">'+escapeText(s==='accepted'?'รับออเดอร์':statuses[s]||s)+'</button>').join('');
- const payButton=o.payment_status!=='verified'&&o.status!=='cancelled'&&o.status!=='completed'?
- '<button type="button" class="primary payment-verify" data-confirm-pay="'+escapeText(o.id)+'">ยืนยันว่าได้รับเงินจริงแล้ว</button>':'';
+ const payButton=!isPointsRedemption(o)&&o.payment_method!=='points'&&Number(o.total)>0&&o.payment_status!=='verified'&&o.status!=='cancelled'?
+ '<button type="button" class="primary payment-verify" data-confirm-pay="'+escapeText(o.id)+'" data-payment-method="'+escapeText(o.payment_method)+'">ยืนยันว่าได้รับเงินจริงแล้ว</button>':'';
  return '<article class="ordercard" data-order-id="'+escapeText(o.id)+'" tabindex="-1"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statuses[o.status]||o.status)+'</span></div>'+
  '<div class="admin-order-details"><p>'+items+'</p><p><strong>'+(isPointsRedemption(o)||o.payment_method==='points'?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม · ไม่มียอดชำระเป็นเงิน':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+(Number(o.points_used)>0&&!isPointsRedemption(o)&&o.payment_method!=='points'?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
  '<p>ลูกค้า: '+escapeText(o.display_name||'')+' · '+escapeText(o.delivery_address||'')+'</p>'+
@@ -87,7 +87,8 @@ async function loadOrders(){
    if(focused){
     const card=Array.from(el.querySelectorAll('[data-order-id]')).find(node=>node.dataset.orderId===selectedOrderId);
     card?.classList.add('focus-order');
-    status.textContent='ออเดอร์ #'+focused.id.slice(0,8).toUpperCase()+' · '+(statuses[focused.status]||focused.status)+' — ตรวจรายละเอียด แล้วกดรับออเดอร์ด้านล่าง';
+    const instruction=focused.status==='completed'?(focused.payment_status!=='verified'&&!isPointsRedemption(focused)&&Number(focused.total)>0?'ตรวจยอดเงินจริง แล้วกดยืนยันรับเงินด้านล่าง':'ส่งมอบเรียบร้อยแล้ว'):focused.status==='cancelled'?'ออเดอร์ถูกยกเลิกแล้ว':'ตรวจรายละเอียด แล้วเลือกดำเนินการด้านล่าง';
+    status.textContent='ออเดอร์ #'+focused.id.slice(0,8).toUpperCase()+' · '+(statuses[focused.status]||focused.status)+' — '+instruction;
     requestAnimationFrame(()=>card?.scrollIntoView({behavior:'smooth',block:'center'}));
    }else status.textContent='ไม่พบออเดอร์ที่เปิดจาก LINE ในรายการล่าสุด กรุณารีเฟรชหรือตรวจหมายเลขออเดอร์';
   }
@@ -111,7 +112,8 @@ $('adminContent').addEventListener('click',async e=>{
   return;
  }
  if(b.dataset.confirmPay){
-  if(!confirm('คุณตรวจสอบสลิปใน LINE OA และตรวจยอดเงินจริงเข้าร้านแล้วใช่หรือไม่? ห้ามกดยืนยันจากภาพสลิปอย่างเดียวหากยอดไม่เข้า'))return;
+  const prompt=b.dataset.paymentMethod==='qr'?'คุณตรวจสอบสลิปใน LINE OA และตรวจยอดเงินจริงเข้าร้านแล้วใช่หรือไม่? ห้ามกดยืนยันจากภาพสลิปอย่างเดียวหากยอดไม่เข้า':'ยืนยันว่าได้รับเงินจริงครบตามยอดออเดอร์แล้วใช่หรือไม่?\nการยืนยันรับเงินจะไม่เพิ่มแต้มซ้ำ';
+  if(!confirm(prompt))return;
   b.disabled=true;
   try{await request('admin/orders/payment',{method:'PATCH',body:JSON.stringify({id,confirmed:true})});await loadOrders()}catch(err){alert(err.message);b.disabled=false}
  }else{

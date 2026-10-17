@@ -1,0 +1,16 @@
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
+import assert from 'node:assert/strict';
+const source=readFileSync(new URL('../admin/admin.js',import.meta.url),'utf8').split("$('adminContent').addEventListener")[0];
+const context={URLSearchParams,location:{search:''}};
+runInNewContext(source,context);
+const base={id:'completed-cash',status:'completed',payment_method:'cash',payment_status:'unpaid',total:85,pointsAwarded:3,items:[]};
+const html=o=>context.orderCard({...base,...o});
+assert.match(html({}),/data-confirm-pay="completed-cash"/);
+assert.match(html({}),/data-payment-method="cash"/);
+assert.match(html({}),/ให้แต้มลูกค้าแล้ว \+3 แต้ม/);
+assert.doesNotMatch(html({}),/data-complete-order=/);
+for(const status of ['pending','accepted','preparing','ready','completed'])assert.match(html({status}),/data-confirm-pay=/);
+for(const change of [{payment_status:'verified'},{status:'cancelled'},{payment_method:'points'},{total:0,points_used:85},{total:0}])assert.doesNotMatch(html(change),/data-confirm-pay=/);
+assert.match(html({payment_method:'qr'}),/data-payment-method="qr"/);
+console.log('ADMIN PAYMENT: completed unpaid orders retain confirmation; paid/cancelled/redemption orders hide it PASSED');
