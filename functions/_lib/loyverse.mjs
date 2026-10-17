@@ -8,7 +8,7 @@ async function encrypt(value,env){const iv=crypto.getRandomValues(new Uint8Array
 async function tokenFor(db,env){if(env.LOYVERSE_ACCESS_TOKEN)return env.LOYVERSE_ACCESS_TOKEN;const raw=await setting(db,'loyverse_token_encrypted');if(!raw)return '';const v=JSON.parse(raw);return new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:new Uint8Array(v.iv)},await cryptKey(env),new Uint8Array(v.data)))}
 async function api(token,path,body){
  const r=await fetch(BASE+path,{method:body?'POST':'GET',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(12000)});
- if(!r.ok){const e=Error(r.status===401||r.status===403?'สิทธิ์ Loyverse ไม่พร้อม กรุณาตรวจ Access Token และสิทธิ์ API':'Loyverse ตอบกลับ HTTP '+r.status);e.http=r.status;throw e}
+ if(!r.ok){let diagnostic='';if(r.status===400){try{const data=await r.json();diagnostic=(data.errors||[]).map(x=>[x.code,x.field].filter(Boolean).join(':')).join(', ').replace(/[^a-zA-Z0-9_.,:\[\] /-]/g,'').slice(0,300)}catch{}}const e=Error(r.status===401||r.status===403?'สิทธิ์ Loyverse ไม่พร้อม กรุณาตรวจ Access Token และสิทธิ์ API':'Loyverse ตอบกลับ HTTP '+r.status+(diagnostic?' · '+diagnostic:''));e.http=r.status;throw e}
  return r.json();
 }
 async function list(token,path,key){let rows=[],cursor='';for(let n=0;n<20;n++){const data=await api(token,path+'?limit=250'+(cursor?'&cursor='+encodeURIComponent(cursor):''));rows.push(...(data[key]||[]));cursor=data.cursor;if(!cursor)return rows.filter(x=>!x.deleted_at)}throw Error('รายการ Loyverse มีมากเกินขอบเขต กรุณาติดต่อผู้ดูแล')}
