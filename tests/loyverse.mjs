@@ -6,7 +6,7 @@ function database(){const raw=new DatabaseSync(':memory:');raw.exec(`CREATE TABL
 const config={enabled:true,storeId:uid(1),cashId:uid(2),qrId:uid(3),discountId:uid(4),mappings:{coffee:uid(5),bread:uid(6)},eggMappings:{fried:uid(7)}};
 const order={id:uid(10),status:'completed',payment_status:'verified',payment_method:'cash',total:85,points_used:0,created_at:'2026-10-17 03:00:00',completed_at:'2026-10-17 03:10:00',fulfillment:'pickup'};
 const lines=[{catalog_id:'coffee',name:'มอคค่า',qty:2,unit_price:35,egg:'',sweetness:'หวาน50'},{catalog_id:'bread',name:'ปัง',qty:1,unit_price:15,egg:''}];
-const p=buildReceipt(order,lines,config);assert.equal(p.payments[0].money_amount,85);assert.equal(p.line_items[0].price,35);assert.equal(p.line_items[0].line_note,'หวาน50');assert.equal(p.order,'CHONGPAN-'+order.id);
+const p=buildReceipt(order,lines,config);assert.equal(p.payments[0].money_amount,85);assert.equal(p.line_items[0].price,35);assert.equal(p.line_items[0].line_note,'หวาน50');assert.equal(p.order,'CP'+order.id.replace(/-/g,'').slice(0,18));assert.equal(p.order.length,20);
 assert.throws(()=>buildReceipt({...order,status:'ready'},lines,config));assert.throws(()=>buildReceipt({...order,payment_status:'unpaid'},lines,config));assert.throws(()=>buildReceipt({...order,points_used:5},lines,config));
 assert.throws(()=>buildReceipt(order,lines,{...config,mappings:{}}));
 const discounted=buildReceipt({...order,total:80},lines,config);assert.equal(discounted.total_discounts[0].money_amount,5);
@@ -37,7 +37,7 @@ globalThis.fetch=async(url,opts={})=>{
  if(path==='receipts'&&opts.method==='POST'){
   posted++;const payload=JSON.parse(opts.body);assert.equal(payload.payments[0].money_amount,85);
   if(failMode==='reject')return Response.json({error:'bad input'},{status:400});
-  const receipt={receipt_number:'1-'+posted,order:payload.order,store_id:config.storeId,total_money:85};receipts.push(receipt);
+  const receipt={receipt_number:'1-'+posted,order:payload.order,note:payload.note,store_id:config.storeId,total_money:85};receipts.push(receipt);
   if(failMode==='timeout')throw Error('timeout after accepted');return Response.json(receipt);
  }
  if(path==='receipts')return Response.json({receipts});

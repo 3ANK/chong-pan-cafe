@@ -1,3 +1,4 @@
+const orderReference=id=>'CP'+String(id).replace(/-/g,'').slice(0,18);
 const BASE='https://api.loyverse.com/v1.0/';
 const uuid=s=>typeof s==='string'&&/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(s);
 const response=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'}});
@@ -66,7 +67,16 @@ export function buildReceipt(order,items,config){
  if(discount<0||!Number.isFinite(discount)||!lines.length)throw Error('ยอดรายการไม่ตรงกับยอดออเดอร์');
  if(discount>0&&!uuid(config.discountId))throw Error('ออเดอร์มีส่วนลด ต้องจับคู่ส่วนลดจำนวนเงินก่อน');
  const date=new Date(String(order.completed_at||order.created_at).replace(' ','T')+(String(order.completed_at||order.created_at).endsWith('Z')?'':'Z')).toISOString();
- return {store_id:config.storeId,order:'CHONGPAN-'+order.id,source:'ChongPan LINE',receipt_date:date,note:'ออเดอร์เว็บ #'+order.id+' · '+(order.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน'),line_items:lines,...(discount>0?{total_discounts:[{id:config.discountId,scope:'RECEIPT',money_amount:discount}]}:{}),payments:[{payment_type_id:payment,money_amount:Number(order.total),paid_at:date}]};
+ return {store_id:config.storeId,order:orderReference(order.id),source:'ChongPan LINE',receipt_date:date,note:'ออเดอร์เว็บ #'+order.id+' · '+(order.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน'),line_items:lines,...(discount>0?{total_discounts:[{id:config.discountId,scope:'RECEIPT',money_amount:discount}]}:{}),payments:[{payment_type_id:payment,money_amount:Number(order.total),paid_at:date}]};
+}
+async function receiptLookup(token,id,storeId){
+ const rows=[];
+ // Search both references so an older uncertain attempt can never be resent.
+ for(const ref of [orderReference(id),'CHONGPAN-'+id]){
+  const data=await api(token,'receipts?order='+encodeURIComponent(ref)+'&store_id='+encodeURIComponent(storeId)+'&limit=250');
+  rows.push(...(data.receipts||[]).filter(x=>x.order===ref&&x.store_id===storeId));
+ }
+ return [...new Map(rows.map(x=>[x.receipt_number,x])).values()];
 }
 export async function syncLoyverse(db,env,id){
  const order=await db.prepare('SELECT * FROM orders WHERE id=?').bind(id).first();
@@ -79,9 +89,8 @@ export async function syncLoyverse(db,env,id){
  if(!token||!config.enabled){if(['sending','unknown','preparing'].includes(saved.status))return saved;return update('blocked','รอเชื่อมต่อและเปิดใช้งาน Loyverse')}
  // An unresolved POST can only be reconciled by looking up its stable external order reference.
  if(['sending','unknown','preparing'].includes(saved.status)){
-  try{const found=(await api(token,'receipts?order='+encodeURIComponent('CHONGPAN-'+id)+'&store_id='+encodeURIComponent(config.storeId)+'&limit=250')).receipts||[];
-   const matches=found.filter(x=>x.order==='CHONGPAN-'+id&&x.store_id===config.storeId);
-   if(matches.length===1&&Math.abs(Number(matches[0].total_money)-Number(order.total))<0.01)return update('synced','',matches[0].receipt_number);
+  try{const matches=await receiptLookup(token,id,config.storeId);
+   if(matches.length===1&&String(matches[0].note||'').includes(id)&&Math.abs(Number(matches[0].total_money)-Number(order.total))<0.01)return update('synced','',matches[0].receipt_number);
    return {status:'unknown',message:'ยังยืนยันผลไม่ได้ ตรวจใบเสร็จใน Loyverse ก่อน ห้ามส่งซ้ำ'};
   }catch{return {status:'unknown',message:'ตรวจใบเสร็จใน Loyverse ไม่สำเร็จ ยังไม่ส่งซ้ำ'}}
  }
@@ -93,9 +102,8 @@ export async function syncLoyverse(db,env,id){
   const eggs=(await db.prepare("SELECT id,name FROM catalog WHERE name IN ('ไข่ดาว','ไข่เจียว','ไข่ข้น')").all()).results||[];
   config.eggMappings=Object.fromEntries(['fried','omelet','creamy'].map((k,n)=>[k,config.mappings?.[eggs.find(x=>x.name===['ไข่ดาว','ไข่เจียว','ไข่ข้น'][n])?.id]]));
   const payload=buildReceipt(order,rows,config);
-  const existing=(await api(token,'receipts?order='+encodeURIComponent(payload.order)+'&store_id='+encodeURIComponent(config.storeId)+'&limit=250')).receipts||[];
-  const matches=existing.filter(x=>x.order===payload.order&&x.store_id===config.storeId);
-  if(matches.length){if(matches.length===1&&Math.abs(Number(matches[0].total_money)-Number(order.total))<0.01)return update('synced','',matches[0].receipt_number);return update('review','พบใบเสร็จซ้ำหรือยอดไม่ตรง กรุณาตรวจ Loyverse')}
+  const matches=await receiptLookup(token,id,config.storeId);
+  if(matches.length){if(matches.length===1&&String(matches[0].note||'').includes(id)&&Math.abs(Number(matches[0].total_money)-Number(order.total))<0.01)return update('synced','',matches[0].receipt_number);return update('review','พบใบเสร็จซ้ำหรือยอดไม่ตรง กรุณาตรวจ Loyverse')}
   await update('sending','กำลังส่ง กรุณาอย่าบันทึกยอดซ้ำใน POS');
   let receipt;
   attempted=true;
