@@ -143,3 +143,15 @@ Main marketing website: https://ชงปั่น.com . Its NEW menu links go t
 - Exactly one mismatch was found: catalog ID 7 กาแฟโตนด old web 40 THB vs Loyverse 45 THB; owner explicitly confirmed **45 THB** on 2026-10-15.
 - Apply `migrations/010_loyverse_confirmed_prices.sql` to `chongpan-orders-v2` only; it sets ID 7 to 45 and marks verified only those catalog IDs whose name, price, and saleability exactly match the 90-row Loyverse reconciliation. No bulk-unverified blanket approval.
 - Safety: No shop flag is toggled; actual checkout remains disabled pending live pilot and owner's explicit start, and points/member data are unchanged.
+
+### Loyverse integration (2026-10-17)
+- Apply `migrations/016_loyverse_sync.sql` only to the ordering database before deploying.
+- Primary owner: admin → เชื่อม Loyverse → enter an access token in the password field over HTTPS. Never paste credentials in source or chat.
+- Required API scopes: ITEMS_READ, STORES_READ, PAYMENT_TYPES_READ, RECEIPTS_READ, RECEIPTS_WRITE. `ITEMS_READ` covers discounts used in promotions.
+- Tokens entered in owner settings are encrypted with AES-GCM using a key derived from SESSION_SECRET before D1 storage; APIs never return the token. Optional server-side LOYVERSE_ACCESS_TOKEN overrides stored credentials. Rotating SESSION_SECRET requires reconnecting the stored token.
+- Choose store and cash/QR payment types, review catalog variant mapping, optionally select a VARIABLE_AMOUNT discount for bread promotions, then enable automatic sync.
+- Only money orders that are completed and payment-verified are sent. Points redemptions remain excluded, and no Loyverse customer is attached (web loyalty remains independent).
+- Old orders require explicit action: “ส่งเข้า Loyverse”. Verify they were not manually entered into POS first.
+- Every export uses `CHONGPAN-<full order UUID>`, and existing receipts are searched by that reference/store. Persistent D1 claims prevent concurrent creation. Ambiguous timeouts only reconcile the prior receipt; never blindly repeat POST.
+- Unknown/review rows require checking Loyverse. Do not clear sync records to force retries. Receipt total mismatch is marked for review and is never resent automatically.
+- Automated API tests use a mock service, not the merchant's live sales account. A live owner token and reviewed mappings are still required to activate.

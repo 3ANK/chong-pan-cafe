@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import assert from 'node:assert/strict';
 import './admin-payment.mjs';
+import './loyverse.mjs';
 import { onRequest } from '../functions/api/[[path]].js';
 
 function createD1(){
@@ -24,6 +25,7 @@ function createD1(){
  db.exec(readFileSync(new URL('../migrations/013_shop_admins.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/014_point_redemptions.sql',import.meta.url),'utf8'));
  db.exec(readFileSync(new URL('../migrations/015_order_points.sql',import.meta.url),'utf8'));
+ db.exec(readFileSync(new URL('../migrations/016_loyverse_sync.sql',import.meta.url),'utf8'));
  return {
   raw:db,
   prepare(sql){const stmt=db.prepare(sql);let args=[];return {

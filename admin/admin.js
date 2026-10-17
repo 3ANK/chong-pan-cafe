@@ -16,6 +16,7 @@ function allowed(m){
  $('adminLogin').hidden=true;$('adminPrivate').hidden=false;
  $('ownerHello').textContent='เข้าสู่ระบบหลังบ้านแล้ว · '+(m.name||'แอดมินร้าน');
  $('manageAdmins').hidden=!m.isPrimaryOwner;
+ $('manageLoyverse').hidden=!m.isPrimaryOwner;
  loadOrders();loadPaymentSettings();checkReadiness();
 }
 async function initAdmin(userInitiated=false){
@@ -73,6 +74,7 @@ function orderCard(o){
  '<p>หมายเหตุ: '+escapeText(o.note||'ไม่มี')+'</p></div>'+
  '<div class="payment-chip '+(o.payment_status==='verified'?'success':'warning')+'">'+escapeText(paymentText(o))+'</div>'+
  '<div class="loyalty-points '+(o.status==='completed'&&credited!==null?'awarded':'')+'">'+escapeText(pointsInfo)+'</div>'+
+ (typeof window.renderLoyverseStatus==='function'?window.renderLoyverseStatus(o):'')+
  '<div>'+payButton+'</div><div>'+pointsButton+'</div><div class="inline">'+options+'</div></article>';
 }
 async function loadOrders(){

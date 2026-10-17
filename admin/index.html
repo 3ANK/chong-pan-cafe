@@ -6,7 +6,8 @@
 <link rel="icon" href="/assets/chongpan-main-logo.webp" type="image/webp">
 <link rel="stylesheet" href="/styles.css"><link rel="stylesheet" href="/admin/admin.css?v=menu-points-20261015">
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
-<script src="/admin/admin.js?v=payment-confirm-20261017" defer></script><script src="/catalog-admin.js" defer></script>
+<script src="/admin/admin.js?v=loyverse-20261017" defer></script><script src="/catalog-admin.js" defer></script>
+<script src="/admin/loyverse.js?v=20261017" defer></script>
 </head><body>
 <div class="admin-wrap">
 <header class="admin-hero"><div class="admin-title"><img class="admin-mark" src="/assets/chongpan-main-logo.webp" alt="โลโก้ร้านชง&ปั่น"><div><h1>หลังบ้านร้านชง&ปั่น</h1><p>ระบบจัดการออเดอร์ · เฉพาะเจ้าของร้าน</p></div></div><a href="/order" class="admin-back">← หน้าเมนูลูกค้า</a></header>
@@ -15,6 +16,7 @@
 <div id="ownerHello" class="admin-info"></div>
 <div class="admin-actions">
 <button id="refreshAdmin" class="secondary" type="button">รีเฟรชออเดอร์</button>
+<button id="manageLoyverse" class="secondary" type="button" hidden>เชื่อม Loyverse</button>
 <button id="manageCatalog" class="secondary" type="button">จัดการเมนู</button>
 <button id="manageLegacy" class="secondary" type="button">ย้ายแต้มสมาชิกเก่า</button>
 <button id="manageMembers" class="secondary" type="button">ดูแต้มลูกค้า</button>
@@ -23,6 +25,7 @@
 <button id="testLineAlert" class="secondary" type="button">ทดสอบแจ้งเตือน LINE</button>
 <button id="toggleShop" class="secondary" type="button">เปิด / ปิดรับออเดอร์</button>
 </div>
+<section id="loyversePanel" class="admin-section" hidden><h2>เชื่อม Loyverse</h2><div id="loyverseSettings"></div></section>
 <section id="adminsPanel" class="admin-section" hidden>
  <div class="admin-section-head"><h2>จัดการแอดมิน</h2><button id="refreshAdmins" class="secondary" type="button">อัปเดต</button></div>
  <p id="adminRosterSummary" class="caption" role="status"></p>

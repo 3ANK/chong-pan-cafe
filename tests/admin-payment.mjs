@@ -2,7 +2,7 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import assert from 'node:assert/strict';
 const source=readFileSync(new URL('../admin/admin.js',import.meta.url),'utf8').split("$('adminContent').addEventListener")[0];
-const context={URLSearchParams,location:{search:''}};
+const context={URLSearchParams,location:{search:''},window:{}};
 runInNewContext(source,context);
 const base={id:'completed-cash',status:'completed',payment_method:'cash',payment_status:'unpaid',total:85,pointsAwarded:3,items:[]};
 const html=o=>context.orderCard({...base,...o});

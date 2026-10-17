@@ -5,6 +5,7 @@ on:
       - chongpan-ordering-v2
     paths:
       - 'app.js'
+      - 'admin/**'
       - 'catalog-admin.js'
       - 'functions/**'
       - 'migrations/**'
@@ -25,6 +26,9 @@ jobs:
         run: |
           node --check app.js
           node --check catalog-admin.js
+          node --check admin/admin.js
+          node --check admin/loyverse.js
+          node --check functions/_lib/loyverse.mjs
           node --check 'functions/api/[[path]].js'
           node --check tests/smoke.mjs
       - name: Run ordering and points smoke tests
