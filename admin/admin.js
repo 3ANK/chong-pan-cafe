@@ -233,7 +233,7 @@ $('paymentSettingsForm').addEventListener('submit',async e=>{
  catch(err){alert(err.message)}finally{b.disabled=false}
 });
 $('logoutAdmin').addEventListener('click',async()=>{
- try{await request('auth/logout',{method:'POST',body:'{}'});if(window.liff?.isLoggedIn())liff.logout();location.replace('/admin/')}
+ try{await request('auth/logout',{method:'POST',body:'{}'});if(window.liff){const info=await request('loyalty/info');await liff.init({liffId:info.liffId});if(liff.isLoggedIn())liff.logout();}location.replace('/admin/')}
  catch(e){alert('ออกจากระบบไม่สำเร็จ: '+e.message)}
 });
 $('adminLoginRetry').addEventListener('click',()=>initAdmin(true));
