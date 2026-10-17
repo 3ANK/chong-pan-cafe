@@ -12,6 +12,19 @@ assert.throws(()=>buildReceipt(order,lines,{...config,mappings:{}}));
 const discounted=buildReceipt({...order,total:80},lines,config);assert.equal(discounted.total_discounts[0].money_amount,5);
 assert.throws(()=>buildReceipt({...order,total:80},lines,{...config,discountId:''}));
 const egg=buildReceipt({...order,total:55},[{...lines[0],qty:1,egg:'fried',egg_qty:2,egg_price:20}],config);assert.equal(egg.line_items[1].quantity,2);assert.equal(egg.line_items[1].price,10);
+// Real order: rice49 + pandan2(35) + Thai tea1(20) + butter2(25).
+const breadConfig={...config,discountId:'',mappings:{rice:uid(8),'30':uid(30),'31':uid(31),'32':uid(32)}};
+const breadItems=[{catalog_id:'rice',name:'ข้าวหมูกระเทียม',qty:1,unit_price:49},{catalog_id:'32',name:'ปังสังขยาใบเตย',qty:2,unit_price:20},{catalog_id:'31',name:'ปังสังขยาชาไทย',qty:1,unit_price:20},{catalog_id:'30',name:'ปังเนยนม',qty:2,unit_price:15}];
+const breadReceipt=buildReceipt({...order,total:129},breadItems,breadConfig);
+assert.equal(breadReceipt.line_items.reduce((n,l)=>n+l.quantity*l.price,0),129);
+assert.equal(breadReceipt.total_discounts,undefined);
+assert.equal(breadReceipt.line_items.filter(l=>l.variant_id===uid(30)).reduce((n,l)=>n+l.quantity,0),2);
+for(const [id,price,pair] of [['30',15,25],['31',20,35],['32',20,35]])for(let qty=1;qty<=20;qty++){
+ const total=Math.floor(qty/2)*pair+(qty%2)*price;
+ const receipt=buildReceipt({...order,total},[{catalog_id:id,name:'ปัง',qty,unit_price:price}],breadConfig);
+ assert.equal(receipt.line_items.reduce((n,l)=>n+l.quantity,0),qty);
+ assert.equal(receipt.line_items.reduce((n,l)=>n+l.quantity*l.price,0),total);
+}
 const db=database();db.raw.prepare('INSERT INTO orders VALUES(?,?,?,?,?,?,?,?,?)').run(order.id,order.status,order.payment_status,order.payment_method,85,0,order.created_at,order.completed_at,order.fulfillment);
 for(const l of lines)db.raw.prepare('INSERT INTO order_items(order_id,catalog_id,name,qty,unit_price,egg,sweetness) VALUES(?,?,?,?,?,?,?)').run(order.id,l.catalog_id,l.name,l.qty,l.unit_price,l.egg,l.sweetness||'');
 const saveConfig=c=>db.raw.prepare("INSERT INTO shop_settings VALUES('loyverse_config',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(JSON.stringify(c));saveConfig(config);
