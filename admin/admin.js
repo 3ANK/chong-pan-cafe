@@ -232,5 +232,9 @@ $('paymentSettingsForm').addEventListener('submit',async e=>{
  try{const s=await request('admin/payment/config',{method:'POST',body:JSON.stringify({oaId:$('oaId').value.trim(),qrPath:$('qrPath').value.trim()})});$('paymentSettingsStatus').textContent=s.qrEnabled?'บันทึกแล้ว: สแกนจ่ายพร้อมแสดง QR':'บันทึกแล้ว: สแกนจ่ายยังปิดอยู่จนกว่ารูป QR และ LINE OA ID จะครบ'}
  catch(err){alert(err.message)}finally{b.disabled=false}
 });
+$('logoutAdmin').addEventListener('click',async()=>{
+ try{await request('auth/logout',{method:'POST',body:'{}'});if(window.liff?.isLoggedIn())liff.logout();location.replace('/admin/')}
+ catch(e){alert('ออกจากระบบไม่สำเร็จ: '+e.message)}
+});
 $('adminLoginRetry').addEventListener('click',()=>initAdmin(true));
 initAdmin();
