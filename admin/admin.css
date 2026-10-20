@@ -58,3 +58,15 @@
 .redemption-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .redemption-actions button{flex:1 1 180px}
 .redemption-actions .reject-redemption{border-color:#b86b5e;color:#8d3c32}
+
+/* Product photo editor in the owner catalogue. */
+.admin-image-control{display:grid;grid-template-columns:1fr;gap:8px;margin:12px 0;padding:12px;background:#f8f9f3;border:1px solid #e4e8dc;border-radius:12px}
+.admin-image-control>strong{color:#405a32}
+.admin-image-preview{width:132px;height:132px;border-radius:12px;overflow:hidden;background:#eeeede;display:grid;place-items:center;color:#64734e;font-size:12px;text-align:center}
+.admin-image-preview img{width:100%;height:100%;object-fit:cover}
+.admin-image-picker{display:block;width:fit-content;max-width:100%;padding:10px 14px;border-radius:10px;background:#405a32;color:#fff;font-weight:700;cursor:pointer}
+.admin-image-picker input{display:block;width:100%;max-width:260px;margin-top:8px;color:#fff}
+.admin-image-clear{display:flex;gap:8px;align-items:center;font-size:13px;color:#823f35}
+.admin-image-status{color:#596b35;line-height:1.5}
+.admin-image-clear input{width:auto;display:inline-block;margin:0}
+@media(max-width:520px){.admin-image-preview{width:112px;height:112px}}

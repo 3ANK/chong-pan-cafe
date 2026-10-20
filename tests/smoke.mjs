@@ -263,9 +263,18 @@ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfi
  r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'1',qty:1,eggQty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,400);
 
 
-r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.products.length,90);
-r=await call('admin/menu','PATCH',{id:'7',price:50,available:false},cookie);assert.equal(r.status,200);
-r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.data.products.find(x=>x.id==='7').verified,0);
+r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.products.length,90);assert.equal(r.data.canEditImages,true);
+const testMenuImage='data:image/jpeg;base64,'+'A'.repeat(128);
+r=await call('admin/menu','PATCH',{id:'7',price:50,available:false,image:testMenuImage},cookie);assert.equal(r.status,200);assert.equal(r.data.imageUpdated,true);
+r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.data.products.find(x=>x.id==='7').verified,0);assert.equal(r.data.products.find(x=>x.id==='7').image,testMenuImage);
+r=await call('admin/menu','PATCH',{id:'7',price:50,available:false,image:'https://untrusted.example/photo.jpg'},cookie);assert.equal(r.status,400);
+const originalOwnerId=env.OWNER_LINE_USER_ID;
+db.raw.prepare('INSERT INTO shop_admins(line_user_id,added_by) VALUES(?,?)').run(originalOwnerId,'test-owner');
+env.OWNER_LINE_USER_ID='U'+'b'.repeat(32);
+r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.canEditImages,false);
+r=await call('admin/menu','PATCH',{id:'7',price:50,available:false,image:testMenuImage},cookie);assert.equal(r.status,403);
+env.OWNER_LINE_USER_ID=originalOwnerId;
+db.raw.prepare('DELETE FROM shop_admins WHERE line_user_id=?').run(originalOwnerId);
 r=await call('admin/menu','PATCH',{id:'84',price:0,available:true,verified:true},cookie);assert.equal(r.status,400);
 r=await call('admin/menu','POST',{name:'เมนูทดสอบ',category:'น้ำปั่น',price:42,drink:true},cookie);assert.equal(r.status,201);
 r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.data.products.length,91);
