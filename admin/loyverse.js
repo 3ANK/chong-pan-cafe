@@ -4,8 +4,9 @@
  const names={synced:'บันทึกเข้า Loyverse แล้ว',blocked:'รอเชื่อมต่อ / ตรวจคู่เมนู',pending:'รอส่งเข้า Loyverse',preparing:'กำลังเตรียมยอดขาย',sending:'กำลังส่งยอดขาย',unknown:'รอตรวจผลใน Loyverse',error:'ส่งไม่สำเร็จ',review:'ต้องตรวจใบเสร็จใน Loyverse'};
  window.renderLoyverseStatus=o=>{
   if(o.status!=='completed'||o.payment_status!=='verified'||Number(o.total)<=0||Number(o.points_used)>0)return '';
-  const s=o.loyverse||{status:'pending'};
-  return '<div class="loyalty-points"><strong>Loyverse: '+esc(names[s.status]||'รอตรวจสอบ')+'</strong>'+(s.receipt_number?'<p>ใบเสร็จ '+esc(s.receipt_number)+'</p>':'')+(s.message?'<p>'+esc(s.message)+'</p>':'')+(!['synced','review'].includes(s.status)?'<button type="button" class="secondary" data-sync-loyverse="'+esc(o.id)+'">'+(['sending','preparing','unknown'].includes(s.status)?'ตรวจผลการส่ง Loyverse':'ส่งเข้า Loyverse')+'</button>':'')+'</div>';
+  const status=o.loyverse||{status:'pending'};
+  const title=names[status.status]||'รอตรวจสอบ';
+  return '<details class="loyverse-compact"><summary>Loyverse · '+esc(title)+'</summary><div class="loyverse-details">'+(status.receipt_number?'<p>ใบเสร็จ '+esc(status.receipt_number)+'</p>':'')+(status.message?'<p>'+esc(status.message)+'</p>':'')+(!['synced','review'].includes(status.status)?'<button type="button" class="secondary" data-sync-loyverse="'+esc(o.id)+'">'+(['sending','preparing','unknown'].includes(status.status)?'ตรวจผลการส่ง':'ส่งเข้า Loyverse')+'</button>':'')+'</div></details>';
  };
  function select(id,label,rows,value){return '<label>'+esc(label)+'<select id="'+id+'"><option value="">เลือก…</option>'+rows.map(x=>'<option value="'+esc(x.id)+'" '+(x.id===value?'selected':'')+'>'+esc(x.name+(x.options?' · '+x.options:''))+'</option>').join('')+'</select></label>'}
  function paint(){
