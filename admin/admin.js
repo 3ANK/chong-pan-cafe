@@ -3,8 +3,8 @@
 const $=id=>document.getElementById(id);
 const escapeText=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=n=>'฿'+Number(n||0).toLocaleString('th-TH');
-const statuses={pending:'รอร้านรับ',accepted:'ร้านรับแล้ว',preparing:'กำลังทำ',ready:'พร้อมรับ/ส่ง',completed:'ส่งมอบแล้ว',cancelled:'ยกเลิก'};
-const nextStatuses={pending:['accepted','cancelled'],accepted:['preparing','ready','cancelled'],preparing:['ready','cancelled'],ready:['completed','cancelled']};
+const statuses={pending:'รอร้านรับ',accepted:'ร้านรับแล้ว',preparing:'กำลังทำ',ready:'พร้อมส่ง',completed:'ส่งมอบแล้ว',cancelled:'ยกเลิก'};
+const nextStatuses={pending:['accepted','cancelled'],accepted:['preparing','cancelled'],preparing:['ready','cancelled'],ready:['completed','cancelled']};
 const deepLinkOrderId=new URLSearchParams(location.search).get('order');
 const selectedOrderId=deepLinkOrderId&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(deepLinkOrderId)?deepLinkOrderId:null;
 async function request(path,options={}){
@@ -44,8 +44,9 @@ function isPointsRedemption(o){return !!o.isPointsRedemption||(Number(o.points_u
 function paymentText(o){
  if(isPointsRedemption(o)||o.payment_method==='points')return 'แลกแต้มเป็นเมนู · ไม่ต้องรับเงิน';
  const method={cash:'เงินสด',qr:'สแกนจ่าย',legacy:'ออเดอร์ก่อนเพิ่มวิธีชำระเงิน'}[o.payment_method]||'ไม่ทราบวิธีจ่าย';
- const verified=o.payment_status==='verified';
- return method+' · '+(verified?'ร้านยืนยันรับเงินจริงแล้ว':o.payment_method==='qr'?'รอตรวจสลิปและยอดรับเงิน':'ยังไม่ได้ยืนยันรับเงิน');
+ if(o.payment_method==='cash'&&o.payment_status!=='verified')return method+' · รับเงินตอนส่งมอบ';
+ if(o.payment_method==='qr'&&o.payment_status!=='verified')return method+' · ตรวจสลิปก่อนรับออเดอร์';
+ return method+' · ยืนยันยอดแล้ว';
 }
 function orderItemSubtotal(i){
  const qty=Math.max(0,Number(i.qty)||0),price=Math.max(0,Number(i.price)||0);
@@ -58,37 +59,27 @@ function orderCard(o){
  const items=(o.items||[]).map(i=>{
   const egg=i.egg?'เพิ่ม'+(eggNames[i.egg]||'ไข่')+' '+(i.eggQty??1)+' ฟอง (+'+Number(i.eggPrice||0)+' บาท)':'';
   const modifiers=[i.sweetness||'',egg,i.note||''].filter(Boolean);
-  const priceInfo=isPointsRedemption(o)||o.payment_method==='points'
-   ?'รายการแลกแต้ม'
-   :'ราคา '+fmt(i.price)+' × '+Number(i.qty)+' รายการ';
-  const totalInfo=isPointsRedemption(o)||o.payment_method==='points'
-   ?'แลกแต้ม'
-   :'รวม '+fmt(orderItemSubtotal(i));
+  const priceInfo=isPointsRedemption(o)||o.payment_method==='points'?'รายการแลกแต้ม':'ราคา '+fmt(i.price)+' × '+Number(i.qty)+' รายการ';
+  const totalInfo=isPointsRedemption(o)||o.payment_method==='points'?'แลกแต้ม':'รวม '+fmt(orderItemSubtotal(i));
   return '<li style="margin:0 0 .7rem;line-height:1.5"><div style="display:flex;align-items:baseline;gap:.75rem;justify-content:space-between"><span>'+escapeText(i.name)+'</span><strong style="white-space:nowrap">×'+Number(i.qty)+'</strong></div>'+(modifiers.length?'<div class="caption">'+modifiers.map(escapeText).join(' · ')+'</div>':'')+'<div style="display:flex;justify-content:space-between;gap:.75rem;font-size:.9em;color:#58654b"><span>'+escapeText(priceInfo)+'</span><strong style="white-space:nowrap">'+escapeText(totalInfo)+'</strong></div></li>';
  }).join('');
- // Points are credited by the server when an order is marked completed, never on cart creation.
- const reward=Math.floor(Math.max(0,Number(o.total)||0)/25);
- const credited=o.pointsAwarded==null?null:Number(o.pointsAwarded);
- const pointsInfo=isPointsRedemption(o)||o.payment_method==='points'
-   ?(o.status==='completed'?'เมนูแลกแต้มส่งมอบแล้ว · ใช้ '+Number(o.points_used||0)+' แต้ม':o.status==='cancelled'?'ออเดอร์แลกแต้มถูกยกเลิก · คืน '+Number(o.points_used||0)+' แต้ม':'รอส่งมอบเมนูที่แลก · ใช้ '+Number(o.points_used||0)+' แต้ม')
-   :o.status==='completed'
-   ?(credited===null?'ส่งมอบแล้ว · กำลังตรวจสอบแต้ม':'ให้แต้มลูกค้าแล้ว +'+credited+' แต้ม')
-   :o.status==='cancelled'?'ออเดอร์ยกเลิก · ไม่ได้รับแต้ม'+(Number(o.points_used)>0?' · คืนแต้ม '+Number(o.points_used):'')
-   :'เมื่อลูกค้ารับสินค้าแล้ว จะได้ +'+reward+' แต้ม (ทุก 25 บาท = 1 แต้ม)';
- const canFinish=o.status==='ready';
+ const reward=Math.floor(Math.max(0,Number(o.total)||0)/25),credited=o.pointsAwarded==null?null:Number(o.pointsAwarded);
+ const redeem=isPointsRedemption(o)||o.payment_method==='points';
+ const pointsInfo=redeem?(o.status==='completed'?'ใช้ '+Number(o.points_used||0)+' แต้ม · ส่งมอบแล้ว':o.status==='cancelled'?'ยกเลิก · คืน '+Number(o.points_used||0)+' แต้ม':'ใช้ '+Number(o.points_used||0)+' แต้ม · รอส่งมอบ')
+   :o.status==='completed'?(credited===null?'แต้มกำลังตรวจสอบ':'ได้รับ +'+credited+' แต้มแล้ว')
+   :o.status==='cancelled'?'ยกเลิก · ไม่ได้รับแต้ม'+(Number(o.points_used)>0?' · คืน '+Number(o.points_used)+' แต้ม':'')
+   :'รับ +'+reward+' แต้มเมื่อส่งมอบ';
  const payPending=o.payment_method==='qr'&&o.payment_status!=='verified';
- const pointsButton=canFinish?'<button type="button" class="primary award-points-button" data-complete-order="'+escapeText(o.id)+'" data-points="'+reward+'" '+(payPending?'disabled title="ต้องตรวจยอดเงินและยืนยันรับเงินก่อน"':'')+'>✓ ส่งมอบแล้ว'+(isPointsRedemption(o)||o.payment_method==='points'?'':' · เพิ่ม +'+reward+' แต้ม')+'</button>':'';
- const options=(nextStatuses[o.status]||[]).filter(s=>s!=='completed').map(s=>'<button class="secondary" type="button" data-status="'+s+'" data-order="'+escapeText(o.id)+'">'+escapeText(s==='accepted'?'รับออเดอร์':statuses[s]||s)+'</button>').join('');
- const payButton=!isPointsRedemption(o)&&o.payment_method!=='points'&&Number(o.total)>0&&o.payment_status!=='verified'&&o.status!=='cancelled'?
- '<button type="button" class="primary payment-verify" data-confirm-pay="'+escapeText(o.id)+'" data-payment-method="'+escapeText(o.payment_method)+'">ยืนยันว่าได้รับเงินจริงแล้ว</button>':'';
+ const pointsButton=o.status==='ready'?'<button type="button" class="primary award-points-button" data-complete-order="'+escapeText(o.id)+'" data-points="'+reward+'" '+(payPending?'disabled title="ต้องตรวจยอดเงินก่อนส่งมอบ"':'')+'>ส่งมอบแล้ว</button>':'';
+ const actions=(nextStatuses[o.status]||[]).filter(s=>s!=='completed').map(s=>'<button type="button" class="'+(s==='cancelled'?'secondary order-cancel':'primary order-next')+'" data-status="'+s+'" data-order="'+escapeText(o.id)+'" data-payment-method="'+escapeText(o.payment_method)+'">'+escapeText(s==='accepted'?'รับออเดอร์':s==='preparing'?'เริ่มทำ':s==='ready'?'พร้อมส่ง':statuses[s]||s)+'</button>').join('');
  return '<article class="ordercard" data-order-id="'+escapeText(o.id)+'" tabindex="-1"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statuses[o.status]||o.status)+'</span></div>'+
- '<div class="admin-order-details"><ul style="list-style:none;padding:0;margin:1rem 0">'+items+'</ul><p><strong>'+(isPointsRedemption(o)||o.payment_method==='points'?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม · ไม่มียอดชำระเป็นเงิน':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+(Number(o.points_used)>0&&!isPointsRedemption(o)&&o.payment_method!=='points'?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
+ '<div class="admin-order-details"><ul style="list-style:none;padding:0;margin:1rem 0">'+items+'</ul><p><strong>'+(redeem?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม · ไม่มียอดชำระเป็นเงิน':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+(Number(o.points_used)>0&&!redeem?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
  '<p>ลูกค้า: '+escapeText(o.display_name||'')+' · '+escapeText(o.delivery_address||'')+'</p>'+
  '<p>หมายเหตุ: '+escapeText(o.note||'ไม่มี')+'</p></div>'+
  '<div class="payment-chip '+(o.payment_status==='verified'?'success':'warning')+'">'+escapeText(paymentText(o))+'</div>'+
  '<div class="loyalty-points '+(o.status==='completed'&&credited!==null?'awarded':'')+'">'+escapeText(pointsInfo)+'</div>'+
  (typeof window.renderLoyverseStatus==='function'?window.renderLoyverseStatus(o):'')+
- '<div>'+payButton+'</div><div>'+pointsButton+'</div><div class="inline">'+options+'</div></article>';
+ '<div class="order-actions">'+pointsButton+actions+'</div></article>';
 }
 async function loadOrders(){
  const el=$('adminContent');el.textContent='กำลังโหลดออเดอร์…';
@@ -110,33 +101,31 @@ async function loadOrders(){
  }catch(e){el.textContent=e.message}
 }
 $('adminContent').addEventListener('click',async e=>{
- const b=e.target.closest('[data-confirm-pay], [data-complete-order], [data-status]');if(!b)return;
- const id=b.dataset.confirmPay||b.dataset.completeOrder||b.dataset.order;
+ const b=e.target.closest('[data-complete-order], [data-status]');if(!b)return;
+ const id=b.dataset.completeOrder||b.dataset.order;
  if(b.dataset.completeOrder){
   const expected=Number(b.dataset.points)||0;
-  if(!confirm('ยืนยันว่าได้ส่งมอบสินค้าและรับเงินแล้ว?\n\nระบบจะปิดออเดอร์และเพิ่ม +'+expected+' แต้มให้ลูกค้าอัตโนมัติ (ทุก 25 บาท = 1 แต้ม)\nแต้มจะได้รับเพียงครั้งเดียวต่อออเดอร์'))return;
+  if(!confirm('ยืนยันส่งมอบสินค้าและรับเงินแล้วใช่ไหม?'+(expected>0?' ระบบจะเพิ่ม +'+expected+' แต้มให้ลูกค้า':'')+' แต้มจะได้รับเพียงครั้งเดียวต่อออเดอร์'))return;
   b.disabled=true;
   try{
    const result=await request('admin/orders',{method:'PATCH',body:JSON.stringify({id,status:'completed'})});
    await loadOrders();
-   alert('ส่งมอบสำเร็จ และเพิ่ม +'+Number(result.pointsAdded||0)+' แต้มให้ลูกค้าเรียบร้อย');
+   if(Number(result.pointsAdded)>0)alert('ส่งมอบสำเร็จ และเพิ่ม +'+Number(result.pointsAdded)+' แต้มให้ลูกค้าแล้ว');
   }catch(err){
-   alert('ยังยืนยันผลการให้แต้มไม่ได้: '+err.message+'\nระบบจะโหลดสถานะล่าสุดเพื่อป้องกันการกดซ้ำ');
+   alert('ยังยืนยันผลการส่งมอบไม่ได้: '+err.message+'\\nระบบจะโหลดสถานะล่าสุดเพื่อป้องกันการกดซ้ำ');
    await loadOrders();
   }
   return;
  }
- if(b.dataset.confirmPay){
-  const prompt=b.dataset.paymentMethod==='qr'?'คุณตรวจสอบสลิปใน LINE OA และตรวจยอดเงินจริงเข้าร้านแล้วใช่หรือไม่? ห้ามกดยืนยันจากภาพสลิปอย่างเดียวหากยอดไม่เข้า':'ยืนยันว่าได้รับเงินจริงครบตามยอดออเดอร์แล้วใช่หรือไม่?\nการยืนยันรับเงินจะไม่เพิ่มแต้มซ้ำ';
-  if(!confirm(prompt))return;
-  b.disabled=true;
-  try{await request('admin/orders/payment',{method:'PATCH',body:JSON.stringify({id,confirmed:true})});await loadOrders()}catch(err){alert(err.message);b.disabled=false}
- }else{
-  const status=b.dataset.status;
-  if(status==='cancelled'&&!confirm('ยืนยันยกเลิกออเดอร์นี้?'))return;
-  b.disabled=true;
-  try{await request('admin/orders',{method:'PATCH',body:JSON.stringify({id,status})});await loadOrders()}catch(err){alert(err.message);b.disabled=false}
- }
+ const status=b.dataset.status;
+ if(status==='cancelled'&&!confirm('ยืนยันยกเลิกออเดอร์นี้?'))return;
+ if(status==='accepted'&&b.dataset.paymentMethod==='qr'&&!confirm('ตรวจสอบสลิปใน LINE OA และยอดเงินจริงเข้าร้านแล้วใช่ไหม? กดยืนยันแล้วระบบจะรับออเดอร์'))return;
+ b.disabled=true;
+ try{
+  if(status==='accepted'&&b.dataset.paymentMethod==='qr')await request('admin/orders/payment',{method:'PATCH',body:JSON.stringify({id,confirmed:true})});
+  await request('admin/orders',{method:'PATCH',body:JSON.stringify({id,status})});
+  await loadOrders();
+ }catch(err){alert(err.message);await loadOrders()}
 });
 async function checkReadiness(){
  const el=$('readinessReport');el.hidden=false;el.textContent='กำลังตรวจ…';
