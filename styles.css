@@ -299,3 +299,6 @@ select,dialog select{
 
 /* Food category filters wrap cleanly and use plain chips instead of repeated mascots. */
 .categories.food-categories{flex-wrap:wrap;overflow:visible;scrollbar-width:none}
+.categories.food-categories .food-category-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:100%}
+.categories.food-categories .food-rice-subcategories{padding:8px 0 0 12px;border-left:3px solid var(--green)}
+.categories.food-categories .food-rice-subcategories small{width:100%;color:var(--muted);font-size:12px}
