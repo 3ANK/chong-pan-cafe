@@ -255,7 +255,7 @@ dialog{max-width:calc(100vw - 20px);max-width:calc(100dvw - 20px)}
   position:absolute;
   right:0;
   bottom:0;
-  width:min(48%,390px);
+  width:min(70%,390px);
   height:calc(100% - 14px);
   object-fit:contain;
   object-position:right bottom;
@@ -275,7 +275,7 @@ dialog{max-width:calc(100vw - 20px);max-width:calc(100dvw - 20px)}
 .order-loyalty-card .loyalty-footer{max-width:51%}
 @media(max-width:520px){
   .order-loyalty-card{min-height:242px;padding:20px}
-  .order-loyalty-card .loyalty-mascot{width:49%;height:calc(100% - 12px);right:-1%}
+  .order-loyalty-card .loyalty-mascot{width:70%;height:calc(100% - 12px);right:-1%}
   .order-loyalty-card .loyalty-name{max-width:51%;margin-top:36px}
   .order-loyalty-card .loyalty-balance{max-width:53%;gap:7px;flex-wrap:nowrap}
   .order-loyalty-card .loyalty-balance>span:first-child{font-size:44px}
