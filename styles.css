@@ -284,3 +284,15 @@ dialog{max-width:calc(100vw - 20px);max-width:calc(100dvw - 20px)}
 }
 
 .points-payment-box [hidden]{display:none!important}.points-payment-box{margin:14px 0;padding:15px;border:1px solid #d7ddca;border-radius:16px;background:#f7f8f0}.points-payment-box .points-toggle{display:flex;align-items:center;gap:10px;font-weight:700}.points-payment-box input[type=checkbox]{width:20px;height:20px;accent-color:#586c37}.points-payment-box>label[for=pointsToUse]{display:block;margin-top:10px}.points-payment-box input[type=number]{display:block;width:100%;min-height:44px;margin-top:6px;padding:8px 12px;border:1px solid #d7ddca;border-radius:10px;background:#fff;color:#292d25;font:inherit}.points-payment-box input:disabled{opacity:.55}.points-payment-box .caption{margin:7px 0;color:#68715f;font-size:.9rem}.points-payment-box .totalrow{display:flex;justify-content:space-between;gap:12px;padding-top:10px}.points-payment-box .points-payable-row{border-top:1px solid #d7ddca;margin-top:8px;font-size:1.05em}.points-payment-box .points-discount-row strong{color:#47642f}
+
+/* Make the sweetness selector arrow visible in the matcha palette. */
+#sweetness{
+  -webkit-appearance:none;
+  appearance:none;
+  background-color:#fff;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23596b35' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 14px center;
+  background-size:20px 20px;
+  padding-right:44px;
+}
