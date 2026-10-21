@@ -1,7 +1,7 @@
 /* Chong & Pan ordering v2 — no real orders until SHOP_ENABLED is configured server-side. */
 'use strict';
 const $=id=>document.getElementById(id);
-const state={products:[],categories:[],basket:[],orders:[],paymentConfig:{qrEnabled:false,qrImage:'',oaId:''},member:null,pointsToUse:0,usePoints:false,redeemMode:new URLSearchParams(location.search).get('redeem')==='1',ready:false,canOrder:false,selectedCategory:'ทั้งหมด',selectedGroup:'food',selectedProduct:null,liffId:'',admin:false};
+const state={products:[],categories:[],basket:[],orders:[],paymentConfig:{qrEnabled:false,qrImage:'',oaId:''},member:null,pointsToUse:0,usePoints:false,redeemMode:new URLSearchParams(location.search).get('redeem')==='1',ready:false,canOrder:false,selectedCategory:'ทั้งหมด',selectedRiceCategory:'ทั้งหมด',selectedGroup:'food',selectedProduct:null,liffId:'',admin:false};
 const fmt=n=>'฿'+Number(n||0).toLocaleString('th-TH');
 const costLabel=n=>state.redeemMode?Number(n||0).toLocaleString('th-TH')+' แต้ม':fmt(n);
 const escapeText=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -39,9 +39,9 @@ function subTotal(){return state.basket.reduce((sum,it)=>sum+lineSubtotal(it),0)
 function saveBasket(){try{localStorage.setItem('chongpan-v2-basket',JSON.stringify(state.basket))}catch{}}
 function restoreBasket(){try{const v=JSON.parse(localStorage.getItem('chongpan-v2-basket')||'[]');if(Array.isArray(v))state.basket=v.filter(it=>it&&Number.isInteger(it.qty)&&it.qty>0).slice(0,70)}catch{}}
 // Every catalog item belongs to exactly one main group. New categories fall back by product type.
-const riceCategories=new Set(['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม']);
-const riceCategoryOrder=['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม'];
-const otherFoodCategory='__other_food__';
+const riceCategories=new Set(['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ข้าวสั่งแยก']);
+const riceCategoryOrder=['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ข้าวสั่งแยก'];
+const riceGroupCategory='__rice__';
 const menuGroupCategories={
  food:new Set(['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ไข่สั่งแยก','ข้าวสั่งแยก','ส้มตำ','สปาเก็ตตี้']),
  drinks:new Set(['กาแฟ','ชาและนม','มัทฉะ','ผลไม้สดปั่น','โซดา','น้ำผลไม้','น้ำปั่น','ท็อปปิง','น้ำเปล่า/น้ำอัดลม']),
@@ -58,7 +58,9 @@ function menuGroups(){
  const valid=state.products.filter(p=>{
   if(!(q?p.name.toLowerCase().includes(q):groupForProduct(p)===state.selectedGroup))return false;
   if(state.selectedCategory==='ทั้งหมด')return true;
-  if(state.selectedGroup==='food'&&state.selectedCategory===otherFoodCategory)return !riceCategories.has(p.category);
+  if(state.selectedGroup==='food'&&state.selectedCategory===riceGroupCategory){
+   return riceCategories.has(p.category)&&(state.selectedRiceCategory==='ทั้งหมด'||p.category===state.selectedRiceCategory);
+  }
   return p.category===state.selectedCategory;
  });
  const groups={};for(const p of valid)(groups[p.category]||=[]).push(p);
@@ -71,17 +73,22 @@ function paintMenuGroupTabs(){
   b.classList.toggle('selected',selected);
   b.setAttribute('aria-pressed',String(selected));
  });
- $('categoryHint').textContent=searching?'ผลการค้นหาทุกหมวด':state.selectedGroup==='food'?'หมวดข้าวและเมนูอื่น':'เลือกหมวดย่อย';
+ $('categoryHint').textContent=searching?'ผลการค้นหาทุกหมวด':state.selectedGroup==='food'
+  ?state.selectedCategory===riceGroupCategory?'เลือกเมนูย่อยในหมวดข้าว':'เลือกหมวดอาหาร'
+  :'เลือกหมวดย่อย';
 }
 function paintCategories(){
  const q=$('search').value.trim().toLowerCase();
  const products=state.products.filter(p=>q?p.name.toLowerCase().includes(q):groupForProduct(p)===state.selectedGroup);
  const availableCategories=[...new Set(products.map(p=>p.category))];
  const isFood=state.selectedGroup==='food'&&!q;
- const rice=riceCategoryOrder.filter(c=>availableCategories.includes(c));
- const hasOther=availableCategories.some(c=>!riceCategories.has(c));
- const cs=isFood?['ทั้งหมด',...rice,...(hasOther?[otherFoodCategory]:[])]:['ทั้งหมด',...availableCategories];
- if(!cs.includes(state.selectedCategory))state.selectedCategory='ทั้งหมด';
+ const riceSubs=riceCategoryOrder.filter(c=>availableCategories.includes(c));
+ const otherFood=availableCategories.filter(c=>!riceCategories.has(c));
+ const mainCategories=isFood
+  ?['ทั้งหมด',...(riceSubs.length?[riceGroupCategory]:[]),...otherFood]
+  :['ทั้งหมด',...availableCategories];
+ if(!mainCategories.includes(state.selectedCategory))state.selectedCategory='ทั้งหมด';
+ if(state.selectedCategory===riceGroupCategory&&!riceSubs.includes(state.selectedRiceCategory))state.selectedRiceCategory='ทั้งหมด';
  const mascotPoses={'กาแฟ':0,'ชาและนม':1,'มัทฉะ':2,'ผลไม้สดปั่น':3,'กะเพรา':4,'ส้มตำ':5,'สปาเก็ตตี้':4,'ข้าวกระเทียม':4,'ข้าวไข่':4,'ไข่สั่งแยก':4,'ข้าวสั่งแยก':4,'ขนมปัง':6,'ดิปสังขยา':6,'ท็อปปิง':6,'โซดา':7,'น้ำผลไม้':7,'น้ำปั่น':3};
  const mascotFor=category=>{
   if(Object.prototype.hasOwnProperty.call(mascotPoses,category))return mascotPoses[category];
@@ -95,14 +102,32 @@ function paintCategories(){
   if(/อาหาร|กะเพรา|สปาเก็ตตี้|ข้าว|ไข่/.test(category))return 4;
   return -1;
  };
+ const button=(category,label,selected,mascot=true)=>{
+  const pose=mascot?mascotFor(category):-1,icon=pose<0?'':`<span class="category-mascot pose-${pose}" aria-hidden="true"></span>`;
+  return `<button type="button" data-cat="${escapeText(category)}" class="${selected?'selected':''}" aria-pressed="${selected}">${icon}<span>${escapeText(label)}</span></button>`;
+ };
  $('categories').classList.toggle('food-categories',isFood);
- $('categories').innerHTML=cs.map(c=>{
-  const label=c===otherFoodCategory?'เมนูอื่น':c;
-  const pose=isFood?-1:mascotFor(c),mascot=pose<0?'':`<span class="category-mascot pose-${pose}" aria-hidden="true"></span>`;
-  return `<button type="button" data-cat="${escapeText(c)}" class="${c===state.selectedCategory?'selected':''}" aria-pressed="${c===state.selectedCategory}">${mascot}<span>${escapeText(label)}</span></button>`;
- }).join('');
- $('categories').querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>{
-  state.selectedCategory=b.dataset.cat;paintCategories();paintCatalog();
+ if(isFood){
+  const main=mainCategories.map(c=>button(c,c===riceGroupCategory?'ข้าว':c,c===state.selectedCategory,false)).join('');
+  const sub=state.selectedCategory===riceGroupCategory
+   ?`<div class="food-category-row food-rice-subcategories"><small>เมนูข้าว</small>${button('ทั้งหมด','ทั้งหมด',state.selectedRiceCategory==='ทั้งหมด',false)}${riceSubs.map(c=>button(c,c,c===state.selectedRiceCategory,false)).join('')}</div>`
+   :'';
+  $('categories').innerHTML=`<div class="food-category-row">${main}</div>${sub}`;
+ }else{
+  $('categories').innerHTML=mainCategories.map(c=>{
+   const pose=c==='ทั้งหมด'?-1:mascotFor(c),icon=pose<0?'':`<span class="category-mascot pose-${pose}" aria-hidden="true"></span>`;
+   return `<button type="button" data-cat="${escapeText(c)}" class="${c===state.selectedCategory?'selected':''}" aria-pressed="${c===state.selectedCategory}">${icon}<span>${escapeText(c)}</span></button>`;
+  }).join('');
+ }
+ $('categories').querySelectorAll('button[data-cat]').forEach(b=>b.addEventListener('click',()=>{
+  const category=b.dataset.cat;
+  if(isFood&&b.closest('.food-rice-subcategories')){
+   state.selectedRiceCategory=category;
+  }else{
+   state.selectedCategory=category;
+   state.selectedRiceCategory='ทั้งหมด';
+  }
+  paintMenuGroupTabs();paintCategories();paintCatalog();
  }));
 }
 function setMenuGroup(group,scroll=true){
