@@ -56,7 +56,7 @@ function orderItemSubtotal(i){
 function orderCard(o){
  const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'};
  const items=(o.items||[]).map(i=>{
-  const egg=i.egg?(eggNames[i.egg]||'ไข่')+' '+(i.eggQty??1)+' ฟอง (+฿'+Number(i.eggPrice||0)+' บาท)':'';
+  const egg=i.egg?'เพิ่ม'+(eggNames[i.egg]||'ไข่')+' '+(i.eggQty??1)+' ฟอง (+'+Number(i.eggPrice||0)+' บาท)':'';
   const modifiers=[i.sweetness||'',egg,i.note||''].filter(Boolean);
   const priceInfo=isPointsRedemption(o)||o.payment_method==='points'
    ?'รายการแลกแต้ม'
