@@ -5,8 +5,14 @@
  const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  let records=[],filter='',canEditImages=false;
  async function api(method,path,payload){
-  const res=await fetch('/api/'+path,{method,credentials:'same-origin',headers:{'Content-Type':'application/json'},...(payload?{body:JSON.stringify(payload)}:{})});
-  const data=await res.json();if(!res.ok)throw Error(data.error||'ไม่สามารถบันทึกข้อมูล');return data;
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
+  try{
+   const res=await fetch('/api/'+path,{method,credentials:'same-origin',headers:{'Content-Type':'application/json'},...(payload?{body:JSON.stringify(payload)}:{}),signal:controller.signal});
+   let data;try{data=await res.json()}catch{throw Error('ระบบตอบกลับไม่ถูกต้อง กรุณาลองใหม่')}
+   if(!res.ok)throw Error(data.error||'ไม่สามารถบันทึกข้อมูล');
+   return data;
+  }catch(e){if(e?.name==='AbortError')throw Error('การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองบันทึกอีกครั้ง');throw e}
+  finally{clearTimeout(timeout)}
  }
  const stat=()=>`<p class="admin-summary">สินค้า ${records.length} รายการ · รอยืนยันราคา ${records.filter(p=>!p.verified).length} · ไม่มีภาพ ${records.filter(p=>!p.image).length} · ยังไม่เปิดขาย ${records.filter(p=>!p.available).length}</p>`;
  const header=()=>`<div class="admin-editor-header"><h3>จัดการราคาและสินค้า</h3><button class="secondary" type="button" id="closeAdminCatalog">ปิด</button></div>
