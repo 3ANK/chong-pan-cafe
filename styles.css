@@ -199,16 +199,15 @@ dialog{max-width:calc(100vw - 20px);max-width:calc(100dvw - 20px)}
 .order-topbar .mark.brand-logo{display:block;object-fit:cover;width:64px;height:64px;padding:0;border:1px solid #ffffff55;border-radius:12px;background:#fff}
 @media(max-width:420px){.order-topbar .mark.brand-logo{width:52px;height:52px}}
 
-/* LINE OA friend link on the authenticated ordering page */
-.line-add-friend:focus-visible{outline:3px solid #9fe2ae;outline-offset:2px}
-.order-topbar .line-add-friend-header{gap:10px;min-height:54px;padding:8px 14px;background:#06c755;border:1px solid #06c755;border-radius:16px;color:#fff;text-align:left;white-space:normal;box-shadow:0 5px 16px #173b1c55;transition:transform .15s ease,filter .15s ease,box-shadow .15s ease}
-.order-topbar .line-add-friend-header:hover{filter:brightness(1.06);transform:translateY(-1px);box-shadow:0 7px 18px #173b1c66}
+/* LINE OA friend link: prominent matcha green, aligned with the shop palette */
+.order-topbar .line-add-friend-header{gap:10px;min-height:56px;padding:8px 14px;background:linear-gradient(135deg,#7c8c48 0%,#596b35 100%);border:1px solid #93a365;border-radius:18px;color:#fff;text-align:left;white-space:normal;box-shadow:0 5px 16px #263b2250;transition:transform .15s ease,filter .15s ease,box-shadow .15s ease}
+.order-topbar .line-add-friend-header:hover{filter:brightness(1.07);transform:translateY(-1px);box-shadow:0 7px 18px #263b2266}
 .order-topbar .line-add-friend-header:active{transform:translateY(0)}
-.order-topbar .line-add-friend-header:focus-visible{outline:3px solid #fff;outline-offset:3px}
-.friend-cta-symbol{display:grid;place-items:center;flex:none;width:29px;height:29px;border-radius:50%;background:#fff;color:#06c755;font-size:22px;line-height:1}
+.order-topbar .line-add-friend-header:focus-visible{outline:3px solid #e5edc9;outline-offset:3px}
+.friend-cta-symbol{display:grid;place-items:center;flex:none;width:30px;height:30px;border-radius:50%;background:#f7f4e7;color:#596b35;font-size:22px;line-height:1}
 .friend-cta-copy{display:flex;flex-direction:column;min-width:0;line-height:1.25}
 .friend-cta-copy strong{font-size:14px;font-weight:850}
-.friend-cta-copy small{margin-top:2px;color:#f1fff4;font-size:10px;font-weight:500;letter-spacing:0;line-height:1.35}
+.friend-cta-copy small{margin-top:2px;color:#f2f4e8;font-size:10px;font-weight:500;letter-spacing:0;line-height:1.35}
 .friend-cta-arrow{flex:none;font-size:14px;font-weight:800;opacity:.95}
 
 /* Shared loyalty card design on the ordering page. */
