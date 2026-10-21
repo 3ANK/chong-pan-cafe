@@ -9,10 +9,26 @@ const deepLinkOrderId=new URLSearchParams(location.search).get('order');
 const selectedOrderId=deepLinkOrderId&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(deepLinkOrderId)?deepLinkOrderId:null;
 let orderRefreshTimer=null,orderVisibilityBound=false;
 async function request(path,options={}){
- const r=await fetch('/api/'+path,{credentials:'same-origin',headers:{'Content-Type':'application/json'},...options});
- const d=await r.json();if(!r.ok)throw Error(d.error||'เกิดข้อผิดพลาด');return d;
+ const controller=new AbortController();
+ const timeout=setTimeout(()=>controller.abort(),options.method&&options.method!=='GET'?20000:15000);
+ try{
+  const r=await fetch('/api/'+path,{credentials:'same-origin',headers:{'Content-Type':'application/json'},...options,signal:controller.signal});
+  let d;try{d=await r.json()}catch{throw Error('ระบบตอบกลับไม่ถูกต้อง กรุณาลองใหม่')}
+  if(!r.ok){
+   if(path.startsWith('admin/')&&r.status===403&&d.error==='เฉพาะผู้ดูแลร้าน')showAdminReconnect();
+   throw Error(d.error||'เกิดข้อผิดพลาด');
+  }
+  return d;
+ }catch(e){
+  if(e?.name==='AbortError')throw Error('การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองใหม่');
+  throw e;
+ }finally{clearTimeout(timeout)}
 }
 function loginStatus(s,retry=false){$('adminLoginStatus').textContent=s;$('adminLoginRetry').hidden=!retry}
+function showAdminReconnect(){
+ $('adminPrivate').hidden=true;$('adminLogin').hidden=false;
+ loginStatus('การเข้าสู่ระบบหลังบ้านหมดอายุหรือถูกตัดการเชื่อมต่อ กรุณาเชื่อมต่อ LINE ใหม่',true);
+}
 function allowed(m){
  $('adminLogin').hidden=true;$('adminPrivate').hidden=false;
  $('ownerHello').textContent='เข้าสู่ระบบหลังบ้านแล้ว · '+(m.name||'แอดมินร้าน');
