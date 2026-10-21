@@ -83,7 +83,8 @@ function paintCategories(){
  const availableCategories=[...new Set(products.map(p=>p.category))];
  const isFood=state.selectedGroup==='food'&&!q;
  const riceSubs=riceCategoryOrder.filter(c=>availableCategories.includes(c));
- const otherFood=availableCategories.filter(c=>!riceCategories.has(c));
+ const preferredFoodOrder=['สปาเก็ตตี้','ส้มตำ'];
+ const otherFood=[...preferredFoodOrder.filter(c=>availableCategories.includes(c)),...availableCategories.filter(c=>!riceCategories.has(c)&&!preferredFoodOrder.includes(c))];
  const mainCategories=isFood
   ?['ทั้งหมด',...(riceSubs.length?[riceGroupCategory]:[]),...otherFood]
   :['ทั้งหมด',...availableCategories];
