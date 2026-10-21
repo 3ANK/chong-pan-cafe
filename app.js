@@ -19,7 +19,7 @@ async function request(path,opts={}){
   let j;try{j=await r.json()}catch{throw Error('ระบบตอบกลับไม่ถูกต้อง')}
   if(!r.ok)throw Error(j.error||'ระบบขัดข้อง');
   return j;
- }catch(e){if(e?.name==='AbortError')throw Error('การเชื่อมต่อช้าเกินไป กรุณาลองอีกครั้ง');throw e}
+ }catch(e){if(e?.name==='AbortError')throw Error('การเชื่อมต่อช้าเกินไป กรุณาลองอีกครั้ง');if(e instanceof TypeError)throw Error(navigator.onLine===false?'ไม่มีอินเทอร์เน็ต กรุณาเชื่อมต่อแล้วลองอีกครั้ง':'เชื่อมต่อระบบไม่ได้ กรุณาตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง');throw e}
  finally{clearTimeout(timeout)}
 }
 const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระเทียม']);
