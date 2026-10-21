@@ -397,11 +397,12 @@ async function placeOrder(){
  let previous=null;try{previous=JSON.parse(localStorage.getItem(pendingKeyName)||'null')}catch{}
  const reqKey=previous?.fingerprint===payloadFingerprint&&/^[0-9a-f-]{36}$/i.test(previous.key)?previous.key:crypto.randomUUID();
  try{localStorage.setItem(pendingKeyName,JSON.stringify({key:reqKey,fingerprint:payloadFingerprint}))}catch{}
+ try{sessionStorage.setItem('chongpan-v2-pending-checkout-details',JSON.stringify({key:reqKey,fingerprint:payloadFingerprint,savedAt:Date.now(),payload:{items,fulfillment,deliveryAddress,paymentMethod,redeemOnly,pointsToUse,note:$('orderNote').value.trim()},basket:state.basket}))}catch{}
  checkoutMessageOverride='กำลังส่งคำสั่งซื้อ กรุณารอสักครู่และอย่ากดซ้ำ';
  checkoutStatus(checkoutMessageOverride);$('placeOrder').disabled=true;
  try{
   const r=await request('orders',{method:'POST',body:JSON.stringify({items,fulfillment,deliveryAddress,paymentMethod,redeemOnly,pointsToUse,note:$('orderNote').value.trim(),requestKey:reqKey})});
-  try{localStorage.removeItem(pendingKeyName)}catch{}
+  try{localStorage.removeItem(pendingKeyName);sessionStorage.removeItem('chongpan-v2-pending-checkout-details')}catch{}
   checkoutMessageOverride='';
   state.basket=[];state.usePoints=false;state.pointsToUse=0;
   if(state.member&&Number.isFinite(Number(r.pointsRemaining)))state.member.points=Number(r.pointsRemaining);
@@ -418,6 +419,27 @@ async function placeOrder(){
  }catch(e){checkoutMessageOverride='ส่งออเดอร์ยังไม่สำเร็จ: '+e.message+'. หากไม่แน่ใจว่าระบบได้รับออเดอร์หรือไม่ ให้ลองกดอีกครั้งด้วยรายการเดิม ระบบจะตรวจคำขอเดิมและป้องกันการสร้างซ้ำ';}
  finally{$('placeOrder').disabled=!state.canOrder;paintBasket();if(checkoutMessageOverride)checkoutStatus(checkoutMessageOverride,true)}
 }
+function restorePendingCheckout(){
+ try{
+  const raw=sessionStorage.getItem('chongpan-v2-pending-checkout-details');if(!raw)return false;
+  const x=JSON.parse(raw),p=x?.payload;
+  if(!p||!Array.isArray(p.items)||!Array.isArray(x.basket)||!/^([0-9a-f-]{36})$/i.test(x.key||''))return false;
+  const expected=JSON.stringify({items:p.items,fulfillment:p.fulfillment,deliveryAddress:p.deliveryAddress,paymentMethod:p.paymentMethod,redeemOnly:p.redeemOnly,pointsToUse:p.pointsToUse,note:p.note});
+  if(x.fingerprint!==expected)return false;
+  const basket=x.basket.filter(it=>it&&typeof it.id==='string'&&Number.isInteger(it.qty)&&it.qty>0&&typeof it.name==='string'&&Number.isFinite(Number(it.price))).slice(0,70);
+  if(!basket.length)return false;
+  state.basket=basket;
+  if(['pickup','delivery'].includes(p.fulfillment))$('fulfillment').value=p.fulfillment;
+  $('deliveryAddress').value=String(p.deliveryAddress||'').slice(0,500);
+  $('orderNote').value=String(p.note||'').slice(0,300);
+  const method=document.querySelector('input[name="paymentMethod"][value="'+(p.paymentMethod==='qr'?'qr':'cash')+'"]');
+  if(method)method.checked=true;
+  show('addressLabel',$('fulfillment').value==='delivery');
+  if(state.member)paintMember();else paintBasket();
+  toast('กู้คืนรายการสั่งซื้อที่ส่งค้างไว้แล้ว · กรุณาเปิดตะกร้าเพื่อลองส่งรายการเดิม');
+  return true;
+ }catch{return false}
+}
 async function bootMenu(){try{const r=await request('menu');state.products=r.products;
   // The stored cart is an untrusted snapshot: use the current catalogue name and price.
   const current=new Map(state.products.map(p=>[p.id,p]));
@@ -426,6 +448,7 @@ async function bootMenu(){try{const r=await request('menu');state.products=r.pro
    if(!p||!p.available||p.price<=0)return null;
    return {...it,name:p.name,price:p.price,egg:supportsEgg(p)?it.egg:'',sweetness:p.drink?it.sweetness:''};
   }).filter(Boolean);saveBasket();
+  restorePendingCheckout();saveBasket();
   state.liffId=r.liffId||'';state.canOrder=!!r.shopEnabled;show('legacyCheckout',!state.canOrder);$('statusBanner').className='notice '+(state.canOrder?'ok':'warn');$('statusBanner').textContent=state.canOrder?'พร้อมรับออเดอร์ผ่าน LINE':'ระบบใหม่อยู่ระหว่างทดสอบ · ยังไม่รับออเดอร์จริง · ราคาอ้างอิงจากข้อมูลเดิม';state.ready=true;paintMenuGroupTabs();paintCategories();paintCatalog();paintBasket();return true}catch(e){$('statusBanner').className='notice warn';$('statusBanner').textContent='เชื่อมต่อเมนูไม่สำเร็จ';$('catalog').innerHTML='<p class="empty">'+escapeText(e.message)+'</p>';return false}}
 $('search').addEventListener('input',()=>{state.selectedCategory='ทั้งหมด';paintMenuGroupTabs();paintCategories();paintCatalog()});
 document.querySelectorAll('[data-menu-group]').forEach(b=>b.addEventListener('click',()=>setMenuGroup(b.dataset.menuGroup)));
