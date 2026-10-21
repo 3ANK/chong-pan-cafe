@@ -337,8 +337,12 @@ async function repeatOrder(id,button){
  }catch(e){toast('สั่งซ้ำไม่สำเร็จ · '+(e.message||'กรุณาลองใหม่'))}
  finally{button.disabled=false}
 }
-async function loadHistory(){
+let historyLoading=false;
+async function loadHistory({silent=false}={}){
  if(!state.member){$('orderHistory').textContent='กรุณาเข้าสู่ระบบ LINE เพื่อดูประวัติ';return}
+ if(historyLoading)return;
+ if(silent&&$('orderHistory').contains(document.activeElement))return;
+ historyLoading=true;
  try{
   const r=await request('orders');state.orders=r.orders;
   $('orderHistory').innerHTML=r.orders.length?r.orders.map(x=>orderCard(x)).join(''):'<div class="empty">ยังไม่มีประวัติออเดอร์</div>';
@@ -346,7 +350,8 @@ async function loadHistory(){
    const o=state.orders.find(x=>x.id===b.dataset.resendSlip);if(o)showQrPayment(o.id,o.total);
   }));
   $('orderHistory').querySelectorAll('[data-repeat-order]').forEach(b=>b.addEventListener('click',()=>repeatOrder(b.dataset.repeatOrder,b)));
- }catch(e){$('orderHistory').textContent=e.message}
+ }catch(e){if(!silent)$('orderHistory').textContent=e.message}
+ finally{historyLoading=false}
 }
 
 function paymentLabel(o){
@@ -456,6 +461,8 @@ $('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventL
 $('placeOrder').addEventListener('click',placeOrder);$('closePaymentDialog').addEventListener('click',()=>$('paymentDialog').close());
 $('donePaymentDialog').addEventListener('click',()=>$('paymentDialog').close());
 restoreBasket();
+setInterval(()=>{if(!document.hidden&&!$('historyPanel').hidden)loadHistory({silent:true})},20000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('historyPanel').hidden)loadHistory({silent:true})});
 (async()=>{
  await Promise.all([bootMenu(),bootPayments()]);
  if(!state.ready){
