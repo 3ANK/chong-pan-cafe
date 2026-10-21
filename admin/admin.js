@@ -47,11 +47,24 @@ function paymentText(o){
  const verified=o.payment_status==='verified';
  return method+' · '+(verified?'ร้านยืนยันรับเงินจริงแล้ว':o.payment_method==='qr'?'รอตรวจสลิปและยอดรับเงิน':'ยังไม่ได้ยืนยันรับเงิน');
 }
+function orderItemSubtotal(i){
+ const qty=Math.max(0,Number(i.qty)||0),price=Math.max(0,Number(i.price)||0);
+ const eggExtra=i.egg?Math.max(0,Number(i.eggPrice)||0)*Math.max(0,Number(i.eggQty??1)||0):0;
+ const pair=!i.egg&&((String(i.id)==='30'&&price===15)?25:((String(i.id)==='31'||String(i.id)==='32')&&price===20)?35:null):null;
+ return pair===null?(price+eggExtra)*qty:Math.floor(qty/2)*pair+(qty%2)*price;
+}
 function orderCard(o){
  const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'};
  const items=(o.items||[]).map(i=>{
-  const modifiers=[i.sweetness||'',i.egg?(eggNames[i.egg]||'')+' '+(i.eggQty??1)+' ฟอง/จาน'+(Number(i.eggPrice)>0?' +'+Number(i.eggPrice)+' บาท/จาน':''):'',i.note||''].filter(Boolean);
-  return '<li style="margin:0 0 .55rem;line-height:1.5"><div style="display:flex;align-items:baseline;gap:.75rem;justify-content:space-between"><span>'+escapeText(i.name)+'</span><strong style="white-space:nowrap">×'+Number(i.qty)+'</strong></div>'+(modifiers.length?'<div class="caption">'+modifiers.map(escapeText).join(' · ')+'</div>':'')+'</li>';
+  const egg=i.egg?(eggNames[i.egg]||'ไข่')+' '+(i.eggQty??1)+' ฟอง (+฿'+Number(i.eggPrice||0)+' บาท)':'';
+  const modifiers=[i.sweetness||'',egg,i.note||''].filter(Boolean);
+  const priceInfo=isPointsRedemption(o)||o.payment_method==='points'
+   ?'รายการแลกแต้ม'
+   :'ราคา '+fmt(i.price)+' × '+Number(i.qty)+' รายการ';
+  const totalInfo=isPointsRedemption(o)||o.payment_method==='points'
+   ?'แลกแต้ม'
+   :'รวม '+fmt(orderItemSubtotal(i));
+  return '<li style="margin:0 0 .7rem;line-height:1.5"><div style="display:flex;align-items:baseline;gap:.75rem;justify-content:space-between"><span>'+escapeText(i.name)+'</span><strong style="white-space:nowrap">×'+Number(i.qty)+'</strong></div>'+(modifiers.length?'<div class="caption">'+modifiers.map(escapeText).join(' · ')+'</div>':'')+'<div style="display:flex;justify-content:space-between;gap:.75rem;font-size:.9em;color:#58654b"><span>'+escapeText(priceInfo)+'</span><strong style="white-space:nowrap">'+escapeText(totalInfo)+'</strong></div></li>';
  }).join('');
  // Points are credited by the server when an order is marked completed, never on cart creation.
  const reward=Math.floor(Math.max(0,Number(o.total)||0)/25);
