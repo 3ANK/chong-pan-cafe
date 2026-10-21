@@ -50,7 +50,7 @@ function paymentText(o){
 function orderItemSubtotal(i){
  const qty=Math.max(0,Number(i.qty)||0),price=Math.max(0,Number(i.price)||0);
  const eggExtra=i.egg?Math.max(0,Number(i.eggPrice)||0)*Math.max(0,Number(i.eggQty??1)||0):0;
- const pair=!i.egg&&((String(i.id)==='30'&&price===15)?25:((String(i.id)==='31'||String(i.id)==='32')&&price===20)?35:null):null;
+ const pair=!i.egg?(String(i.id)==='30'&&price===15?25:((String(i.id)==='31'||String(i.id)==='32')&&price===20?35:null)):null;
  return pair===null?(price+eggExtra)*qty:Math.floor(qty/2)*pair+(qty%2)*price;
 }
 function orderCard(o){
