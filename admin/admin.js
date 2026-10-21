@@ -21,6 +21,7 @@ async function request(path,options={}){
   return d;
  }catch(e){
   if(e?.name==='AbortError')throw Error('การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองใหม่');
+  if(e instanceof TypeError)throw Error(navigator.onLine===false?'ไม่มีอินเทอร์เน็ต กรุณาเชื่อมต่อแล้วลองใหม่':'เชื่อมต่อระบบไม่ได้ กรุณาตรวจอินเทอร์เน็ตแล้วลองใหม่');
   throw e;
  }finally{clearTimeout(timeout)}
 }
