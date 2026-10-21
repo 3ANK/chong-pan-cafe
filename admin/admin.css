@@ -37,9 +37,18 @@
 .admin-list .ordercard.focus-order [data-status="accepted"]{background:#416a2a;color:#fff;font-weight:800}
 
 /* Clearly show 25 THB = 1 point, with one-step fulfillment and idempotent award. */
-.loyalty-points{background:#f6f2dc;color:#4c5a2e;font-weight:750;font-size:14px;margin:11px 0;padding:11px 13px;border:1px solid #e5dbab;border-radius:12px;overflow-wrap:anywhere}
+.loyalty-points{display:inline-flex;align-items:center;background:#f6f2dc;color:#4c5a2e;font-weight:700;font-size:12px;margin:6px 0;padding:5px 9px;border:1px solid #e5dbab;border-radius:999px;overflow-wrap:anywhere}
 .loyalty-points.awarded{background:#e2f0d9;border-color:#bedaaf;color:#245923}
-.award-points-button{display:block;width:100%;margin:10px 0 12px;padding:14px;font-size:15px;font-weight:800;line-height:1.4}
+.order-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:10px}
+.order-actions button{flex:1 1 145px;min-height:48px;font-weight:750}
+.order-actions .order-cancel{background:#fff;color:#596b35;border:1px solid #89946f}
+.award-points-button{display:block;width:auto;flex:1 1 145px;margin:0;padding:12px;font-size:15px;font-weight:800;line-height:1.4}
+.loyverse-compact{margin:7px 0;border:1px solid #e1e5d9;border-radius:10px;background:#f8f9f5;color:#43513a;font-size:12px}
+.loyverse-compact summary{padding:8px 10px;cursor:pointer;font-weight:750}
+.loyverse-compact[open] summary{border-bottom:1px solid #e1e5d9}
+.loyverse-details{padding:7px 10px}
+.loyverse-details p{margin:3px 0}
+.loyverse-details button{margin:5px 0 2px;padding:7px 10px;font-size:12px}
 .award-points-button:disabled{opacity:.5;cursor:not-allowed}
 
 #manageAdmins[hidden]{display:none!important}
