@@ -11,7 +11,7 @@
    let data;try{data=await res.json()}catch{throw Error('ระบบตอบกลับไม่ถูกต้อง กรุณาลองใหม่')}
    if(!res.ok)throw Error(data.error||'ไม่สามารถบันทึกข้อมูล');
    return data;
-  }catch(e){if(e?.name==='AbortError')throw Error('การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองบันทึกอีกครั้ง');throw e}
+  }catch(e){if(e?.name==='AbortError')throw Error('การเชื่อมต่อใช้เวลานานเกินไป กรุณาลองบันทึกอีกครั้ง');if(e instanceof TypeError)throw Error(navigator.onLine===false?'ไม่มีอินเทอร์เน็ต กรุณาเชื่อมต่อแล้วลองบันทึก':'เชื่อมต่อระบบไม่ได้ กรุณาตรวจอินเทอร์เน็ตแล้วลองบันทึก');throw e}
   finally{clearTimeout(timeout)}
  }
  const stat=()=>`<p class="admin-summary">สินค้า ${records.length} รายการ · รอยืนยันราคา ${records.filter(p=>!p.verified).length} · ไม่มีภาพ ${records.filter(p=>!p.image).length} · ยังไม่เปิดขาย ${records.filter(p=>!p.available).length}</p>`;
