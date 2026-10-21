@@ -82,7 +82,7 @@ assert.ok(adminJS.includes("card?.scrollIntoView({behavior:'smooth',block:'cente
 assert.ok(adminJS.includes("s==='accepted'?'รับออเดอร์'"));
 assert.ok(adminJS.includes("data-complete-order"));
 assert.ok(adminJS.includes("Math.floor(Math.max(0,Number(o.total)||0)/25)"));
-assert.ok(adminJS.includes("isPointsRedemption(o)||o.payment_method==='points'?'':' · เพิ่ม +'+reward+' แต้ม'"));
+assert.ok(adminJS.includes("'>ส่งมอบแล้ว</button>'"));
 assert.ok(adminJS.includes("if(b.dataset.completeOrder){"));
 assert.ok(adminJS.includes("status:'completed'"));
 assert.ok(adminJS.includes("o.pointsAwarded"));
@@ -187,9 +187,10 @@ r=await call('orders','POST',{paymentMethod:'qr',items:[{id:'7',qty:1}],fulfillm
 assert.equal(r.status,201);const qrOrderId=r.data.orderId;
 r=await call('orders','GET',undefined,cookie);assert.ok(r.data.orders.some(x=>x.id===qrOrderId&&x.payment_method==='qr'&&x.payment_status==='unpaid'));
 assert.equal(r.data.orders.find(x=>x.id===qrOrderId).pointsAwarded,null);
-for(const status of ['accepted','preparing','ready']){const x=await call('admin/orders','PATCH',{id:qrOrderId,status},cookie);assert.equal(x.status,200)}
+r=await call('admin/orders','PATCH',{id:qrOrderId,status:'accepted'},cookie);assert.equal(r.status,409); // QR funds must be verified before accepting.
 r=await call('admin/orders','PATCH',{id:qrOrderId,status:'completed'},cookie);assert.equal(r.status,409);
 r=await call('admin/orders/payment','PATCH',{id:qrOrderId,confirmed:true},cookie);assert.equal(r.status,200);
+for(const status of ['accepted','preparing','ready']){const x=await call('admin/orders','PATCH',{id:qrOrderId,status},cookie);assert.equal(x.status,200)}
 r=await call('admin/orders','PATCH',{id:qrOrderId,status:'completed'},cookie);assert.equal(r.status,200);
 r=await call('admin/orders','GET',undefined,cookie);
 assert.equal(r.data.orders.find(x=>x.id===qrOrderId).pointsAwarded,Math.floor(45/25));
