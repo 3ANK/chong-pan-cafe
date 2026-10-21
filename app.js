@@ -108,7 +108,30 @@ function suggestNextStep(product){
  $('nextStepButton').textContent=nextStepTarget==='drinks'?'🥤 เลือกเครื่องดื่มต่อ →':'🍞 เลือกขนมต่อ →';
  show('nextStepBar',true);
 }
-function paintCatalog(){const g=menuGroups();const html=Object.entries(g).map(([cat,products])=>`<div class="sectiontitle"><h2>${escapeText(cat)}</h2><small>${products.length} รายการ</small></div>${products.map(p=>`<article class="item"><div class="productart">${p.image?`<img loading="lazy" src="${escapeText(p.image)}" alt="${escapeText(p.name)}">`:escapeText(p.emoji||'🥤')}</div><div class="itembody"><div class="itemtitle">${escapeText(p.name)}</div><div class="price">${p.price>0?costLabel(p.price):'รอยืนยันราคา'}</div><div class="small">${p.price<=0?'รอกำหนดราคา':!p.available?'ยังไม่เปิดขาย':state.redeemMode?'ราคาที่แสดงคือแต้มที่ใช้แลก':'เลือกตัวเลือกได้'}${(p.id==='30'&&p.price===15?' · 2 ชิ้น '+(state.redeemMode?'25 แต้ม':'25 บาท'):(p.id==='31'||p.id==='32')&&p.price===20?' · 2 ชิ้น '+(state.redeemMode?'35 แต้ม':'35 บาท'):'')}</div></div><button class="add" data-add="${escapeText(p.id)}" ${!p.available||p.price<=0?'disabled':''}>${state.redeemMode?'เลือกเมนู':'เพิ่ม +'}</button></article>`).join('')}`).join('');$('catalog').innerHTML=html||'<p class="empty">ไม่พบเมนูที่ค้นหา</p>';$('catalog').querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>openOption(b.dataset.add)))}
+function paintCatalog(){
+ const groups=menuGroups();
+ const html=Object.entries(groups).map(([category,products])=>{
+  const cards=products.map(p=>{
+   const hint=p.price<=0?'รอกำหนดราคา'
+    :!p.available?'ยังไม่เปิดขาย'
+    :state.redeemMode?'ราคาที่แสดงคือแต้มที่ใช้แลก'
+    :p.drink?'เลือกระดับความหวานได้'
+    :supportsEgg(p)?'เพิ่มไข่ดาว ไข่เจียว หรือไข่ข้นได้':'';
+   const deal=p.id==='30'&&p.price===15
+    ?'2 ชิ้น '+(state.redeemMode?'25 แต้ม':'25 บาท')
+    :((p.id==='31'||p.id==='32')&&p.price===20)
+     ?'2 ชิ้น '+(state.redeemMode?'35 แต้ม':'35 บาท'):'';
+   const details=[hint,deal].filter(Boolean).join(' · ');
+   const image=p.image
+    ?`<img loading="lazy" src="${escapeText(p.image)}" alt="${escapeText(p.name)}">`
+    :escapeText(p.emoji||'🥤');
+   return `<article class="item"><div class="productart">${image}</div><div class="itembody"><div class="itemtitle">${escapeText(p.name)}</div><div class="price">${p.price>0?costLabel(p.price):'รอยืนยันราคา'}</div>${details?`<div class="small">${escapeText(details)}</div>`:''}</div><button class="add" data-add="${escapeText(p.id)}" ${!p.available||p.price<=0?'disabled':''}>${state.redeemMode?'เลือกเมนู':'เพิ่ม +'}</button></article>`;
+  }).join('');
+  return `<div class="sectiontitle"><h2>${escapeText(category)}</h2><small>${products.length} รายการ</small></div>${cards}`;
+ }).join('');
+ $('catalog').innerHTML=html||'<p class="empty">ไม่พบเมนูที่ค้นหา</p>';
+ $('catalog').querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>openOption(b.dataset.add)));
+}
 let optionQuantity=1;
 let optionEggQuantity=1;
 function selectedOptionItem(){
