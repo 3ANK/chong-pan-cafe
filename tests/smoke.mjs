@@ -204,7 +204,7 @@ r=await call('points','GET',undefined,cookie);assert.equal(r.data.member.points,
 r=await call('admin/legacy/assign','POST',{legacyCode:'ABCDEF12',lineUserId:env.OWNER_LINE_USER_ID,ownerVerified:true},cookie);assert.equal(r.status,409);
 const req2=crypto.randomUUID();
 r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:req2},cookie);assert.equal(r.status,201);
-for(const status of ['accepted','ready','completed']) {const x=await call('admin/orders','PATCH',{id:r.data.orderId,status},cookie);assert.equal(x.status,200)}
+for(const status of ['accepted','preparing','ready','completed']) {const x=await call('admin/orders','PATCH',{id:r.data.orderId,status},cookie);assert.equal(x.status,200)}
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,10);
 // Bread and milk bundle must be calculated on server, not only visual cart.
 r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,25);
