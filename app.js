@@ -41,7 +41,7 @@ function restoreBasket(){try{const v=JSON.parse(localStorage.getItem('chongpan-v
 // Every catalog item belongs to exactly one main group. New categories fall back by product type.
 const menuGroupCategories={
  food:new Set(['กะเพรา','ส้มตำ','สปาเก็ตตี้','ข้าวกระเทียม','ข้าวไข่','ไข่สั่งแยก','ข้าวสั่งแยก']),
- drinks:new Set(['กาแฟ','ชาและนม','มัทฉะ','ผลไม้สดปั่น','โซดา','น้ำผลไม้','น้ำปั่น','ท็อปปิง']),
+ drinks:new Set(['กาแฟ','ชาและนม','มัทฉะ','ผลไม้สดปั่น','โซดา','น้ำผลไม้','น้ำปั่น','ท็อปปิง','น้ำเปล่า/น้ำอัดลม']),
  dessert:new Set(['ขนมปัง','ดิปสังขยา'])
 };
 function groupForProduct(p){
