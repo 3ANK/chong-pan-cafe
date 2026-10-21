@@ -7,6 +7,7 @@ const statuses={pending:'รอร้านรับ',accepted:'ร้านร�
 const nextStatuses={pending:['accepted','cancelled'],accepted:['preparing','cancelled'],preparing:['ready','cancelled'],ready:['completed','cancelled']};
 const deepLinkOrderId=new URLSearchParams(location.search).get('order');
 const selectedOrderId=deepLinkOrderId&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(deepLinkOrderId)?deepLinkOrderId:null;
+let orderRefreshTimer=null,orderVisibilityBound=false;
 async function request(path,options={}){
  const r=await fetch('/api/'+path,{credentials:'same-origin',headers:{'Content-Type':'application/json'},...options});
  const d=await r.json();if(!r.ok)throw Error(d.error||'เกิดข้อผิดพลาด');return d;
@@ -18,6 +19,8 @@ function allowed(m){
  $('manageAdmins').hidden=!m.isPrimaryOwner;
  $('manageLoyverse').hidden=!m.isPrimaryOwner;
  loadOrders();loadPaymentSettings();checkReadiness();
+ if(!orderRefreshTimer)orderRefreshTimer=setInterval(()=>{if(!document.hidden&&!$('adminPrivate').hidden&&!$('adminContent').querySelector('.order-actions button:disabled'))loadOrders({silent:true})},15000);
+ if(!orderVisibilityBound){document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('adminPrivate').hidden)loadOrders({silent:true})});orderVisibilityBound=true}
 }
 async function initAdmin(userInitiated=false){
  try{
@@ -81,11 +84,15 @@ function orderCard(o){
  (typeof window.renderLoyverseStatus==='function'?window.renderLoyverseStatus(o):'')+
  '<div class="order-actions">'+pointsButton+actions+'</div></article>';
 }
-async function loadOrders(){
- const el=$('adminContent');el.textContent='กำลังโหลดออเดอร์…';
+async function loadOrders({silent=false}={}){
+ const el=$('adminContent');
+ if(silent&&el.querySelector('.order-actions button:disabled'))return;
+ if(!silent)el.textContent='กำลังโหลดออเดอร์…';
+ const expanded=new Set(Array.from(el.querySelectorAll('.loyverse-compact[open]')).map(d=>d.closest('[data-order-id]')?.dataset.orderId).filter(Boolean));
  try{
   const orders=(await request('admin/orders')).orders;
   el.innerHTML=orders.length?orders.map(orderCard).join(''):'<p class="empty">ยังไม่มีออเดอร์</p>';
+  for(const id of expanded){const card=Array.from(el.querySelectorAll('[data-order-id]')).find(node=>node.dataset.orderId===id);card?.querySelector('.loyverse-compact')?.setAttribute('open','')}
   if(selectedOrderId){
    const focused=orders.find(o=>o.id===selectedOrderId);
    const status=$('orderFocusStatus');
@@ -95,10 +102,10 @@ async function loadOrders(){
     card?.classList.add('focus-order');
     const instruction=focused.status==='completed'?(focused.payment_status!=='verified'&&!isPointsRedemption(focused)&&Number(focused.total)>0?'ตรวจยอดเงินจริง แล้วกดยืนยันรับเงินด้านล่าง':'ส่งมอบเรียบร้อยแล้ว'):focused.status==='cancelled'?'ออเดอร์ถูกยกเลิกแล้ว':'ตรวจรายละเอียด แล้วเลือกดำเนินการด้านล่าง';
     status.textContent='ออเดอร์ #'+focused.id.slice(0,8).toUpperCase()+' · '+(statuses[focused.status]||focused.status)+' — '+instruction;
-    requestAnimationFrame(()=>card?.scrollIntoView({behavior:'smooth',block:'center'}));
+    if(!silent)requestAnimationFrame(()=>card?.scrollIntoView({behavior:'smooth',block:'center'}));
    }else status.textContent='ไม่พบออเดอร์ที่เปิดจาก LINE ในรายการล่าสุด กรุณารีเฟรชหรือตรวจหมายเลขออเดอร์';
   }
- }catch(e){el.textContent=e.message}
+ }catch(e){if(!silent)el.textContent=e.message}
 }
 $('adminContent').addEventListener('click',async e=>{
  const b=e.target.closest('[data-complete-order], [data-status]');if(!b)return;
