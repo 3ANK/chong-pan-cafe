@@ -33,7 +33,7 @@ const sc=document.createElement('canvas');sc.width=sc.height=128;const s=sc.getC
  // Geometric CSS fallback for devices without WebGL. All sides rotate together.
  const holder=document.createElement('div');holder.className='css-view';
  const cup=document.createElement('div');cup.className='css-cup';holder.append(cup);stage.prepend(holder);
- for(let i=0;i<48;i++){const f=document.createElement('div');f.className='cup-face';const angle=i*7.5;const light=1+.17*Math.cos(angle*Math.PI/180);f.style.cssText=`transform:rotateY(${angle}deg) translateZ(55px) rotateX(5deg);filter:brightness(${light})`;cup.append(f)}
+ for(let i=0;i<48;i++){const f=document.createElement('div');f.className='cup-face';const angle=i*7.5;const light=1+.17*Math.cos(angle*Math.PI/180);f.style.cssText=`transform:rotateY(${angle}deg) translateZ(55px) rotateX(-5deg);filter:brightness(${light})`;cup.append(f)}
  const add=(cls,text='')=>{const e=document.createElement('div');e.className=cls;e.textContent=text;cup.append(e);return e};
  add('cup-top');add('cup-bottom');add('cup-straw');add('cup-label','ชง&ปั่น').append(Object.assign(document.createElement('small'),{textContent:'CHONG & PAN'}));
  for(let i=0;i<5;i++){let ice=add('cup-ice');ice.style.transform=`translate3d(${(i%3-1)*26}px,-80px,${(Math.floor(i/3)-.5)*38}px) rotateX(90deg) rotateZ(${i*23}deg)`}
