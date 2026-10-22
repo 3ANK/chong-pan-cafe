@@ -3,7 +3,7 @@ export async function mountDrink(stage, initialDrink) {
  let yaw=0,pitch=.08,distance=6.6,draw=()=>{},resize=()=>{},mode='',applyDrink=()=>{};
  const hint=stage.querySelector('.cup-hint');
  try {
- const T=await import('https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js');
+ const T=window.THREE;if(!T)throw new Error('Three.js library did not load');
  const scene=new T.Scene(),camera=new T.PerspectiveCamera(35,1,.1,100);
  const renderer=new T.WebGLRenderer({antialias:true,alpha:true,powerPreference:'low-power'});
  renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.setClearColor(0,0);renderer.outputColorSpace=T.SRGBColorSpace;stage.prepend(renderer.domElement);
@@ -21,7 +21,12 @@ const iceMeshes=[];const iceMat=new T.MeshPhysicalMaterial({color:0xe8ded0,trans
 [[.30,.84,.26],[-.27,.9,.31],[.22,.94,-.3],[-.32,.85,-.24],[0,.96,0]].forEach(([x,y,z],i)=>{let o=mesh(new T.BoxGeometry(.35,.27,.31),iceMat,x,y,z);iceMeshes.push(o);o.rotation.set(i*.24,.3+i*.7,.12+i*.17)});
 const straw=mesh(new T.CylinderGeometry(.045,.045,1.38,20),new T.MeshStandardMaterial({color:0x536d39,roughness:.6}),.38,1.23,-.16);straw.rotation.z=-.13;
 const hole=mesh(new T.CircleGeometry(.031,20),new T.MeshBasicMaterial({color:0x263c24}),.47,1.915,-.16);hole.rotation.x=-Math.PI/2;
-const label=document.createElement('canvas');label.width=1024;label.height=512;const c=label.getContext('2d');c.fillStyle='#fff9e9';c.beginPath();c.ellipse(512,256,420,224,0,0,Math.PI*2);c.fill();c.fillStyle='#506435';c.textAlign='center';c.textBaseline='middle';c.font='bold 112px Tahoma,sans-serif';c.fillText('ชง&ปั่น',512,225);c.font='32px sans-serif';c.fillText('C H O N G  &  P A N',512,330);const tex=new T.CanvasTexture(label);tex.colorSpace=T.SRGBColorSpace;
+const label=document.createElement('canvas');label.width=1024;label.height=512;const c=label.getContext('2d');
+function paintLabel(){c.clearRect(0,0,label.width,label.height);c.fillStyle='#fff9e9';c.beginPath();c.ellipse(512,256,420,224,0,0,Math.PI*2);c.fill()}
+paintLabel();const tex=new T.CanvasTexture(label);tex.colorSpace=T.SRGBColorSpace;
+const shopLogo=new Image();shopLogo.onload=()=>{paintLabel();c.drawImage(shopLogo,90,280,1100,560,128,122,768,276);tex.needsUpdate=true};
+shopLogo.onerror=()=>{c.fillStyle='#506435';c.textAlign='center';c.textBaseline='middle';c.font='bold 112px Tahoma,sans-serif';c.fillText('ชง&ปั่น',512,225);c.font='32px sans-serif';c.fillText('C H O N G  &  P A N',512,330);tex.needsUpdate=true};
+shopLogo.src='assets/logo.png';
 mesh(new T.CylinderGeometry(.704,.644,.8,48,1,true,-.92,1.84),new T.MeshStandardMaterial({map:tex,transparent:true,roughness:.8,side:T.DoubleSide}),0,-.12,0);
 // Soft contact shadow stays on the table while the cup rotates.
 const sc=document.createElement('canvas');sc.width=sc.height=128;const s=sc.getContext('2d'),g=s.createRadialGradient(64,64,4,64,64,64);g.addColorStop(0,'rgba(65,45,20,.24)');g.addColorStop(1,'rgba(65,45,20,0)');s.fillStyle=g;s.fillRect(0,0,128,128);const shadow=new T.Mesh(new T.PlaneGeometry(3.5,3.5),new T.MeshBasicMaterial({map:new T.CanvasTexture(sc),transparent:true,depthWrite:false}));shadow.rotation.x=-Math.PI/2;shadow.position.y=-1.13;scene.add(shadow);
