@@ -47,7 +47,7 @@ b.onclick=()=>{if(!suppressClick)select(i)};scene.append(b);const d=document.cre
 function select(i){index=(i+n)%n;const photo=menu[0].length===3,spacing=scene.clientWidth<650?(photo?140:112):(photo?190:160);
 root.querySelectorAll('.product').forEach((el,j)=>{let delta=(j-index+n)%n;if(delta>n/2)delta-=n;const visible=Math.abs(delta)<=2;el.style.transform='translateX(calc(-50% + '+delta*spacing+'px)) scale('+(delta===0?1.08:.73)+') rotateY('+(delta===0?0:delta>0?-23:23)+'deg)';el.style.opacity=visible?(delta===0?1:.45):0;el.style.zIndex=10-Math.abs(delta);el.style.pointerEvents=visible?'auto':'none';el.tabIndex=visible?0:-1;el.setAttribute('aria-hidden',String(!visible));el.setAttribute('aria-pressed',String(j===index))});
 root.getElementById('name').textContent=menu[index][0];root.getElementById('price').textContent=menu[index][1];root.getElementById('count').textContent=String(index+1).padStart(2,'0')+' / '+String(n).padStart(2,'0');root.querySelectorAll('.dots button').forEach((b,j)=>{b.classList.toggle('active',j===index);b.setAttribute('aria-pressed',String(j===index))})}
-if(category==='coffee'){
+if(['coffee','tea','matcha','fruit'].includes(category)){
  const style=document.createElement('style');style.textContent=`
  .espresso-stage{position:absolute;left:50%;top:0;transform:translateX(-50%);width:190px;height:280px;z-index:15;touch-action:none;cursor:grab;outline-offset:-4px}
  .espresso-stage:active{cursor:grabbing}.espresso-stage:focus-visible{outline:2px solid #596b35;border-radius:16px}
@@ -55,16 +55,24 @@ if(category==='coffee'){
  .cup-hint{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:11px;color:#68714f;pointer-events:none}
  .css-view{position:absolute;inset:0;perspective:700px;pointer-events:none}.css-cup{position:absolute;left:50%;top:52%;width:0;height:0;transform-style:preserve-3d}
  .cup-face{position:absolute;left:-4.5px;top:-90px;width:9px;height:180px;background:linear-gradient(90deg,#ffffff22,transparent),linear-gradient(#4c2e1e,#8a5837 45%,#b98a58);backface-visibility:hidden;transform-style:preserve-3d}
- .cup-top,.cup-bottom{position:absolute;left:-64px;top:-64px;width:128px;height:128px;border-radius:50%;background:#65402b;border:5px solid #e1dfc9;transform:translateY(-90px) rotateX(-90deg);backface-visibility:hidden}
- .cup-bottom{left:-48px;top:-48px;width:96px;height:96px;background:#a77c51;transform:translateY(90px) rotateX(90deg)}
+ .cup-top,.cup-bottom{position:absolute;left:-64px;top:-64px;width:128px;height:128px;border-radius:50%;background:#65402b;border:5px solid #e1dfc9;transform:translateY(-90px) rotateX(90deg);backface-visibility:hidden}
+ .cup-bottom{left:-48px;top:-48px;width:96px;height:96px;background:#a77c51;transform:translateY(90px) rotateX(-90deg)}
  .cup-straw{position:absolute;width:7px;height:95px;background:linear-gradient(90deg,#3b522e,#8aa170,#3b522e);border-radius:4px;transform:translate3d(25px,-155px,-8px) rotateZ(7deg)}
  .cup-label{position:absolute;left:-36px;top:-14px;width:72px;height:64px;border-radius:50%;background:#fff9e9;color:#526334;font-size:17px;font-weight:bold;display:flex;align-items:center;justify-content:center;flex-direction:column;transform:translateZ(59px);backface-visibility:hidden}.cup-label small{font-size:6px;letter-spacing:1px;margin-top:4px}
- .cup-ice{position:absolute;left:-13px;top:-13px;width:26px;height:26px;border:1px solid #fff8;background:linear-gradient(135deg,#fffc,#fff3);border-radius:6px}
+ .drink-foam{position:absolute;left:-61px;top:-61px;width:122px;height:122px;border-radius:50%;transform:translateY(-92px) rotateX(90deg);backface-visibility:hidden}.cup-ice{position:absolute;left:-13px;top:-13px;width:26px;height:26px;border:1px solid #fff8;background:linear-gradient(135deg,#fffc,#fff3);border-radius:6px}
  @media(min-width:650px){.espresso-stage{height:300px;width:210px}}
  `;root.append(style);
  const stage=document.createElement('div');stage.className='espresso-stage';stage.tabIndex=0;stage.setAttribute('role','group');stage.setAttribute('aria-label','แก้วเอสเพรสโซ 3D ลากเพื่อหมุน ใช้ลูกศรเพื่อหมุนเมื่อโฟกัส ใช้ Home กลับมุมเดิม');stage.innerHTML='<span class="cup-hint" role="status">กำลังเตรียมแก้ว…</span>';scene.append(stage);
- let viewer,started=false;const product=root.querySelector('.product');
- function syncCup(){const active=index===0;stage.hidden=!active;product.style.visibility=active&&stage.dataset.ready?'hidden':'';root.querySelector('.heading small').textContent=active?'ลากบนแก้วเพื่อหมุน · ปัดพื้นที่รอบแก้วหรือลูกศรเพื่อเปลี่ยนเมนู':'ปัดซ้าย–ขวาเพื่อเลือกเมนู ↔';if(active&&viewer)viewer.refresh();if(active&&!started){started=true;import('./espresso-inline.js?v=2').then(m=>m.mountEspresso(stage)).then(v=>{viewer=v;syncCup()}).catch(()=>{stage.hidden=true;product.style.visibility='';root.querySelector('.heading small').textContent='ปัดซ้าย–ขวาเพื่อเลือกเมนู ↔'})}}
+ let viewer,started=false,current=-1,failed=false;
+ const getDrink=()=>{const m=menu[index];return {name:m[0],top:m[2],bottom:m[3],smoothie:category==='fruit',foam:m[0]==='คาปูชิโน',layered:['อเมริกาโนน้ำส้ม','โอเลี้ยงยกล้อ','มัทฉะน้ำมะพร้าว','มัทฉะน้ำส้ม','มัทฉะนมสดสตรอว์เบอร์รี','มัทฉะโกโก้','มัทฉะเอสเปรสโซ'].includes(m[0])}};
+ const categoryElement=document.getElementById(category);
+ function syncCup(){
+  root.querySelectorAll('.product').forEach((p,i)=>p.style.visibility=stage.dataset.ready&&i===index?'hidden':'');
+  root.querySelector('.heading small').textContent=failed?'ปัดซ้าย–ขวาเพื่อเลือกเมนู ↔':'ลากบนแก้วเพื่อหมุน · ปัดพื้นที่รอบแก้วหรือลูกศรเพื่อเปลี่ยนเมนู';
+  if(viewer){if(current!==index){current=index;viewer.setDrink(getDrink())}viewer.refresh()}
+  if(!started&&categoryElement.open){started=true;import('./drinks-inline.js').then(m=>m.mountDrink(stage,getDrink())).then(v=>{viewer=v;current=-1;syncCup()}).catch(()=>{failed=true;stage.hidden=true;delete stage.dataset.ready;syncCup()})}
+ }
+ categoryElement.addEventListener('toggle',syncCup);
  stage.addEventListener('cup-ready',syncCup);new MutationObserver(syncCup).observe(root.getElementById('name'),{childList:true});syncCup();
 }
 root.getElementById('prev').onclick=()=>select(index-1);root.getElementById('next').onclick=()=>select(index+1);
