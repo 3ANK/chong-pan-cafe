@@ -50,7 +50,7 @@ b.onclick=()=>{if(!suppressClick)select(i)};scene.append(b);const d=document.cre
 function select(i){index=(i+n)%n;const photo=category==='coffee'||menu[0].length===3,spacing=scene.clientWidth<650?(photo?140:112):(photo?190:160);
 root.querySelectorAll('.product').forEach((el,j)=>{let delta=(j-index+n)%n;if(delta>n/2)delta-=n;const visible=Math.abs(delta)<=2;el.style.transform='translateX(calc(-50% + '+delta*spacing+'px)) scale('+(delta===0?1.08:.73)+') rotateY('+(delta===0?0:delta>0?-23:23)+'deg)';el.style.opacity=visible?(delta===0?1:.45):0;el.style.zIndex=10-Math.abs(delta);el.style.pointerEvents=visible?'auto':'none';el.tabIndex=visible?0:-1;el.setAttribute('aria-hidden',String(!visible));el.setAttribute('aria-pressed',String(j===index))});
 root.getElementById('name').textContent=menu[index][0];root.getElementById('price').textContent=menu[index][1];root.getElementById('count').textContent=String(index+1).padStart(2,'0')+' / '+String(n).padStart(2,'0');root.querySelectorAll('.dots button').forEach((b,j)=>{b.classList.toggle('active',j===index);b.setAttribute('aria-pressed',String(j===index))})}
-if(['coffee','tea','matcha','fruit'].includes(category)){
+if(['tea','matcha','fruit'].includes(category)){
  const style=document.createElement('style');style.textContent=`
  .espresso-stage{position:absolute;left:50%;top:0;transform:translateX(-50%);width:190px;height:280px;z-index:15;touch-action:none;cursor:grab;outline-offset:-4px}
  .espresso-stage:active{cursor:grabbing}.espresso-stage:focus-visible{outline:2px solid #596b35;border-radius:16px}
