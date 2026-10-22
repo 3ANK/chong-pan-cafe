@@ -47,9 +47,26 @@ b.onclick=()=>{if(!suppressClick)select(i)};scene.append(b);const d=document.cre
 function select(i){index=(i+n)%n;const photo=menu[0].length===3,spacing=scene.clientWidth<650?(photo?140:112):(photo?190:160);
 root.querySelectorAll('.product').forEach((el,j)=>{let delta=(j-index+n)%n;if(delta>n/2)delta-=n;const visible=Math.abs(delta)<=2;el.style.transform='translateX(calc(-50% + '+delta*spacing+'px)) scale('+(delta===0?1.08:.73)+') rotateY('+(delta===0?0:delta>0?-23:23)+'deg)';el.style.opacity=visible?(delta===0?1:.45):0;el.style.zIndex=10-Math.abs(delta);el.style.pointerEvents=visible?'auto':'none';el.tabIndex=visible?0:-1;el.setAttribute('aria-hidden',String(!visible));el.setAttribute('aria-pressed',String(j===index))});
 root.getElementById('name').textContent=menu[index][0];root.getElementById('price').textContent=menu[index][1];root.getElementById('count').textContent=String(index+1).padStart(2,'0')+' / '+String(n).padStart(2,'0');root.querySelectorAll('.dots button').forEach((b,j)=>{b.classList.toggle('active',j===index);b.setAttribute('aria-pressed',String(j===index))})}
-const view3d=document.createElement('a');view3d.href='espresso-3d.html';view3d.textContent='ดูแก้ว 3D · ลากหมุน 360°';view3d.style.cssText='display:block;text-align:center;margin:8px 20px 18px;padding:12px;border:1px solid #596b35;border-radius:12px;color:#405332;font-weight:bold';view3d.hidden=category!=='coffee';root.querySelector('.details').after(view3d);
-const update3d=()=>{view3d.style.display=category==='coffee'&&index===0?'block':'none'};
-new MutationObserver(update3d).observe(root.getElementById('name'),{childList:true});update3d();
+if(category==='coffee'){
+ const style=document.createElement('style');style.textContent=`
+ .espresso-stage{position:absolute;left:50%;top:0;transform:translateX(-50%);width:190px;height:280px;z-index:15;touch-action:none;cursor:grab;outline-offset:-4px}
+ .espresso-stage:active{cursor:grabbing}.espresso-stage:focus-visible{outline:2px solid #596b35;border-radius:16px}
+ .espresso-stage[hidden]{display:none}.espresso-stage canvas{display:block;width:100%;height:100%}
+ .cup-hint{position:absolute;bottom:0;left:0;right:0;text-align:center;font-size:11px;color:#68714f;pointer-events:none}
+ .css-view{position:absolute;inset:0;perspective:700px;pointer-events:none}.css-cup{position:absolute;left:50%;top:52%;width:0;height:0;transform-style:preserve-3d}
+ .cup-face{position:absolute;left:-4px;top:-90px;width:8px;height:180px;background:linear-gradient(90deg,#ffffff22,transparent),linear-gradient(#4c2e1e,#8a5837 45%,#b98a58);backface-visibility:hidden;transform-style:preserve-3d}
+ .cup-top,.cup-bottom{position:absolute;left:-64px;top:-64px;width:128px;height:128px;border-radius:50%;background:#65402b;border:5px solid #e1dfc9;transform:translateY(-90px) rotateX(90deg);backface-visibility:hidden}
+ .cup-bottom{left:-48px;top:-48px;width:96px;height:96px;background:#a77c51;transform:translateY(90px) rotateX(-90deg)}
+ .cup-straw{position:absolute;width:7px;height:95px;background:linear-gradient(90deg,#3b522e,#8aa170,#3b522e);border-radius:4px;transform:translate3d(25px,-155px,-8px) rotateZ(7deg)}
+ .cup-label{position:absolute;left:-36px;top:-14px;width:72px;height:64px;border-radius:50%;background:#fff9e9;color:#526334;font-size:17px;font-weight:bold;display:flex;align-items:center;justify-content:center;flex-direction:column;transform:translateZ(59px);backface-visibility:hidden}.cup-label small{font-size:6px;letter-spacing:1px;margin-top:4px}
+ .cup-ice{position:absolute;left:-13px;top:-13px;width:26px;height:26px;border:1px solid #fff8;background:linear-gradient(135deg,#fffc,#fff3);border-radius:6px}
+ @media(min-width:650px){.espresso-stage{height:300px;width:210px}}
+ `;root.append(style);
+ const stage=document.createElement('div');stage.className='espresso-stage';stage.tabIndex=0;stage.setAttribute('role','group');stage.setAttribute('aria-label','แก้วเอสเพรสโซ 3D ลากเพื่อหมุน ใช้ลูกศรเพื่อหมุนเมื่อโฟกัส ใช้ Home กลับมุมเดิม');stage.innerHTML='<span class="cup-hint" role="status">กำลังเตรียมแก้ว…</span>';scene.append(stage);
+ let viewer,started=false;const product=root.querySelector('.product');
+ function syncCup(){const active=index===0;stage.hidden=!active;product.style.visibility=active&&stage.dataset.ready?'hidden':'';root.querySelector('.heading small').textContent=active?'ลากบนแก้วเพื่อหมุน · ปัดพื้นที่รอบแก้วหรือลูกศรเพื่อเปลี่ยนเมนู':'ปัดซ้าย–ขวาเพื่อเลือกเมนู ↔';if(active&&viewer)viewer.refresh();if(active&&!started){started=true;import('./espresso-inline.js').then(m=>m.mountEspresso(stage)).then(v=>{viewer=v;syncCup()}).catch(()=>{stage.hidden=true;product.style.visibility='';root.querySelector('.heading small').textContent='ปัดซ้าย–ขวาเพื่อเลือกเมนู ↔'})}}
+ stage.addEventListener('cup-ready',syncCup);new MutationObserver(syncCup).observe(root.getElementById('name'),{childList:true});syncCup();
+}
 root.getElementById('prev').onclick=()=>select(index-1);root.getElementById('next').onclick=()=>select(index+1);
 let start=null;scene.addEventListener('pointerdown',e=>{if(e.button!==0)return;start={x:e.clientX,y:e.clientY};suppressClick=false});scene.addEventListener('pointerup',e=>{if(!start)return;const dx=e.clientX-start.x,dy=e.clientY-start.y;start=null;if(Math.abs(dx)>35&&Math.abs(dx)>Math.abs(dy)){suppressClick=true;select(index+(dx<0?1:-1));setTimeout(()=>suppressClick=false,0)}});scene.addEventListener('pointercancel',()=>start=null);scene.addEventListener('pointerleave',()=>start=null);
 scene.addEventListener('keydown',e=>{if(e.key==='ArrowRight'||e.key==='ArrowLeft'){e.preventDefault();select(index+(e.key==='ArrowRight'?1:-1))}});new ResizeObserver(()=>select(index)).observe(scene);select(0);
