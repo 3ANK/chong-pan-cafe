@@ -42,6 +42,7 @@
   return records.filter(p=>(p.name+' '+p.category+' '+p.id).toLowerCase().includes(q)).map(p=>`
    <article class="admin-product" data-id="${escape(p.id)}">
     <div class="admin-product-top"><strong>${escape(p.name)}</strong><small>${escape(p.category)} · ${p.image?'มีรูป':'ยังไม่มีรูป'}</small></div>
+    ${canEditImages?'<label class="admin-category-edit">หมวดหมู่<input type="text" data-category maxlength="70" value="'+escape(p.category)+'"></label>':''}
     ${imageControls(p)}
     <div class="admin-product-edit"><label>ราคา (บาท)<input type="number" data-price min="0" max="100000" step="1" value="${Number(p.price)}"></label>
     <label class="admin-check"><input type="checkbox" data-available ${p.available?'checked':''}> เปิดขาย</label>
@@ -117,6 +118,8 @@
   const p=records.find(x=>x.id===id);
   if(verified&&!p.verified&&!confirm('ยืนยันว่าตรวจสอบราคา '+p.name+' ('+price+' บาท) จากราคาขายจริงแล้ว?'))return;
   const payload={id,price,available,verified};
+  const category=el.querySelector('[data-category]');
+  if(category)payload.category=category.value.trim();
   if(Object.prototype.hasOwnProperty.call(el.dataset,'pendingImage'))payload.image=el.dataset.pendingImage;
   else if(el.querySelector('[data-clear-image]')?.checked)payload.image='';
   b.disabled=true;
