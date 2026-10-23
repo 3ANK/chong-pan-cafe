@@ -300,16 +300,16 @@ async function listAdminMenu(db,canEditImages=false){
 }
 async function updateMenu(req,db,s,env){
  const d=await body(req,75000);
- const hasImage=Object.prototype.hasOwnProperty.call(d,'image');
- if(typeof d.id!=='string'||!Number.isInteger(d.price)||d.price<0||d.price>100000||typeof d.available!=='boolean'||(d.verified!==undefined&&typeof d.verified!=='boolean'))return fail('ข้อมูลสินค้าไม่ถูกต้อง');
+ const hasImage=Object.prototype.hasOwnProperty.call(d,'image'),hasCategory=Object.prototype.hasOwnProperty.call(d,'category');
+ if(typeof d.id!=='string'||!Number.isInteger(d.price)||d.price<0||d.price>100000||typeof d.available!=='boolean'||(d.verified!==undefined&&typeof d.verified!=='boolean')||(hasCategory&&(typeof d.category!=='string'||!d.category.trim()||d.category.length>70)))return fail('ข้อมูลสินค้าไม่ถูกต้อง');
  if(d.available&&d.price<=0)return fail('ต้องกำหนดราคาก่อนเปิดขาย',400);
- if(hasImage&&(!primaryOwner(s,env)))return fail('เฉพาะเจ้าของร้านเท่านั้นที่เพิ่มหรือแก้รูปเมนูได้',403);
+ if((hasImage||hasCategory)&&(!primaryOwner(s,env)))return fail('เฉพาะเจ้าของร้านเท่านั้นที่แก้รูปหรือหมวดหมู่เมนูได้',403);
  if(hasImage&&(typeof d.image!=='string'||d.image.length>64000||!validMenuImage(d.image)))return fail('ไฟล์รูปไม่ถูกต้อง หรือมีขนาดใหญ่เกินไป กรุณาเลือกรูป JPG/PNG/WebP ใหม่',400);
  const prev=await db.prepare('SELECT price FROM catalog WHERE id=?').bind(d.id).first();
  if(!prev)return fail('ไม่พบเมนู',404);
  // A price edit revokes previous verification unless explicitly reapproved.
  const verified=d.verified===true?1:d.verified===false?0:(prev.price===d.price?null:0);
- const steps=[db.prepare('UPDATE catalog SET price=?,available=?,image=COALESCE(?,image),updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(d.price,d.available?1:0,hasImage?d.image:null,d.id)];
+ const steps=[db.prepare('UPDATE catalog SET price=?,available=?,image=COALESCE(?,image),category=COALESCE(?,category),updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(d.price,d.available?1:0,hasImage?d.image:null,hasCategory?d.category.trim():null,d.id)];
  if(verified!==null)steps.push(db.prepare("INSERT INTO catalog_price_reviews(product_id,source,verified,reviewed_at) VALUES(?,'owner-review',?,CASE WHEN ?=1 THEN CURRENT_TIMESTAMP ELSE NULL END) ON CONFLICT(product_id) DO UPDATE SET source='owner-review',verified=excluded.verified,reviewed_at=excluded.reviewed_at").bind(d.id,verified,verified));
  await db.batch(steps);
  return json({ok:true,verified:verified===null?undefined:!!verified,imageUpdated:hasImage});
