@@ -39,11 +39,11 @@ function subTotal(){return state.basket.reduce((sum,it)=>sum+lineSubtotal(it),0)
 function saveBasket(){try{localStorage.setItem('chongpan-v2-basket',JSON.stringify(state.basket))}catch{}}
 function restoreBasket(){try{const v=JSON.parse(localStorage.getItem('chongpan-v2-basket')||'[]');if(Array.isArray(v))state.basket=v.filter(it=>it&&Number.isInteger(it.qty)&&it.qty>0).slice(0,70)}catch{}}
 // Every catalog item belongs to exactly one main group. New categories fall back by product type.
-const riceCategories=new Set(['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ข้าวสั่งแยก']);
-const riceCategoryOrder=['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ข้าวสั่งแยก'];
+const riceCategories=new Set(['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ข้าวสั่งแยก','ข้าวอื่นๆ']);
+const riceCategoryOrder=['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ข้าวสั่งแยก','ข้าวอื่นๆ'];
 const riceGroupCategory='__rice__';
 const menuGroupCategories={
- food:new Set(['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ไข่สั่งแยก','ข้าวสั่งแยก','ส้มตำ','สปาเก็ตตี้']),
+ food:new Set(['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ไข่สั่งแยก','ข้าวสั่งแยก','ข้าวอื่นๆ','ส้มตำ','สปาเก็ตตี้']),
  drinks:new Set(['กาแฟ','ชาและนม','มัทฉะ','ผลไม้สดปั่น','โซดา','น้ำผลไม้','น้ำปั่น','ท็อปปิง','น้ำเปล่า/น้ำอัดลม']),
  dessert:new Set(['ขนมปัง','ดิปสังขยา'])
 };
