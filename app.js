@@ -173,10 +173,15 @@ function paintCatalog(){
 }
 let optionQuantity=1;
 let optionEggQuantity=1;
+const proteinChoiceIds=new Set(['45','rice-porridge']);
+const needsProteinChoice=p=>!!p&&proteinChoiceIds.has(String(p.id));
 function selectedOptionItem(){
  const p=state.selectedProduct;
  if(!p)return null;
- return {id:p.id,name:p.name,price:p.price,qty:optionQuantity,sweetness:p.drink?$('sweetness').value:'',egg:supportsEgg(p)?$('egg').value:'',eggQty:supportsEgg(p)&&$('egg').value?optionEggQuantity:0,note:$('itemNote').value.trim()};
+ const protein=needsProteinChoice(p)?$('protein').value:'';
+ const note=[$(protein?'protein':'itemNote')];
+ const orderNote=[protein?'เลือกเนื้อสัตว์: '+protein:'',$('itemNote').value.trim()].filter(Boolean).join(' | ').slice(0,140);
+ return {id:p.id,name:p.name,price:p.price,qty:optionQuantity,sweetness:p.drink?$('sweetness').value:'',egg:supportsEgg(p)?$('egg').value:'',eggQty:supportsEgg(p)&&$('egg').value?optionEggQuantity:0,note:orderNote};
 }
 function paintOptionQuantity(){
  const draft=selectedOptionItem();
@@ -209,6 +214,8 @@ function openOption(id){
  for(const o of $('egg').options){if(!o.value)o.textContent='ไม่เพิ่มไข่';else{o.textContent=({fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'})[o.value]+' +'+({fried:10,omelet:10,creamy:20})[o.value]+' '+eggUnit}}
  show('sweetnessGroup',!!p.drink);
  show('eggGroup',supportsEgg(p));
+ show('proteinGroup',needsProteinChoice(p));
+ $('protein').value='หมู';
  $('itemNote').value='';
  $('sweetness').value='ปกติ';
  $('egg').value='';
