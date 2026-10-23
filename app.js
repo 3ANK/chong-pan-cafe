@@ -179,7 +179,6 @@ function selectedOptionItem(){
  const p=state.selectedProduct;
  if(!p)return null;
  const protein=needsProteinChoice(p)?$('protein').value:'';
- const note=[$(protein?'protein':'itemNote')];
  const orderNote=[protein?'เลือกเนื้อสัตว์: '+protein:'',$('itemNote').value.trim()].filter(Boolean).join(' | ').slice(0,140);
  return {id:p.id,name:p.name,price:p.price,qty:optionQuantity,sweetness:p.drink?$('sweetness').value:'',egg:supportsEgg(p)?$('egg').value:'',eggQty:supportsEgg(p)&&$('egg').value?optionEggQuantity:0,note:orderNote};
 }
