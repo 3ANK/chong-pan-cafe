@@ -165,3 +165,25 @@ main#home{width:100%;margin:0;padding-bottom:24px}
 .flavour-section,.popular-products,.band,.visit,.menu-section .wrap{width:calc(100% - 36px)}
 .flavour-section{padding-top:20px}
 }
+
+/* Continuous cream floor from the reference scene into the menu. */
+body,main#home,footer{background-color:#faf5e5}
+main#home{background-image:none}
+.hero{
+ -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 94%,transparent 100%);
+ mask-image:linear-gradient(to bottom,#000 0%,#000 94%,transparent 100%)
+}
+.flavour-section{padding-top:4px;padding-bottom:26px}
+.flavour-card::after{
+ -webkit-mask-image:linear-gradient(to bottom,transparent,#000 38%);
+ mask-image:linear-gradient(to bottom,transparent,#000 38%)
+}
+.popular-products{padding-top:24px}
+@media(max-width:760px){
+ .hero{
+  -webkit-mask-image:linear-gradient(to bottom,#000 0%,#000 96%,transparent 100%);
+  mask-image:linear-gradient(to bottom,#000 0%,#000 96%,transparent 100%)
+ }
+ .flavour-section{padding-top:10px;padding-bottom:20px}
+ .popular-products{padding-top:20px}
+}
