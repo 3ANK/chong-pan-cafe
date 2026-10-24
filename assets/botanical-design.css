@@ -200,3 +200,21 @@ footer a{color:var(--cream)}
  .hero figure.hero-art{width:110%;aspect-ratio:1.25;margin:12px 0 50px -5%}
  .hero figcaption.showcase-caption{bottom:-15%}
 }
+
+/* Reference botanical cutouts: two distinct compositions, never tiled. */
+:root{--reference-left:url("data:image/webp;base64,");--reference-right:url("data:image/webp;base64,")}
+.scene-foliage{width:260px;height:1050px;bottom:auto;top:105px;background-repeat:no-repeat;background-size:100% auto;filter:drop-shadow(8px 15px 12px #244b403d)}
+.scene-foliage-left{left:-150px;background-image:var(--reference-left);background-position:left top}
+.scene-foliage-right{right:-150px;top:155px;transform:none;background-image:var(--reference-right);background-position:right top}
+.flavour-card,.flavour-matcha,.flavour-fruit,.popular-product{background:transparent;border-color:transparent;box-shadow:none}
+.flavour-card::after{display:none}
+.popular-product:hover,.flavour-card:hover{background:#ffe4d338}
+@media(min-width:761px) and (max-width:1050px){
+.scene-foliage{width:180px;height:740px}
+.scene-foliage-left{left:-100px}.scene-foliage-right{right:-100px}
+}
+@media(max-width:760px){
+.scene-foliage{width:105px;height:420px;top:95px;background-size:100% auto;opacity:.92}
+.scene-foliage-left{left:-83px}
+.scene-foliage-right{right:-83px;top:155px}
+}
