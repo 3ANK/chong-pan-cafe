@@ -55,3 +55,6 @@ footer{border:0;color:#fff3dc}.mobile-bar{background:linear-gradient(#fffaf0,#ef
  .visit{width:calc(100% - 22px);padding:24px 18px;border-radius:26px}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn,.category-nav a,.flavour-card{transition:none}}
+
+/* Keep the ingredient artwork clear of the hero copy on desktop and tablet. */
+@media(min-width:761px){.hero figure.hero-art{width:calc(100% - 20px);margin-left:20px}.hero img.ingredient-frame{width:110%;left:-5%}}
