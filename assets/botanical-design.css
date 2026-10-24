@@ -83,3 +83,6 @@ footer{border:0;color:#fff3dc}.mobile-bar{background:linear-gradient(#fffaf0,#ef
 
 @media(min-width:761px) and (max-width:1100px){.hero{padding-left:clamp(76px,9vw,96px)}}
 @media(min-width:1101px){.hero{padding-left:clamp(92px,8vw,110px)}}
+
+/* Keep the decorative frame from creating horizontal page scroll. */
+html,body{overflow-x:clip}
