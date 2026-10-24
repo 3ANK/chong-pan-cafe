@@ -111,3 +111,13 @@ h2,.flavour-heading h2,.popular-products h2{font-size:26px}.eyebrow{font-size:10
 .hero figure.hero-art{aspect-ratio:1.08}
 .scene-foliage-left{left:-93px}.scene-foliage-right{right:-95px}
 }
+
+/* Ingredient still life in front of the real drink photographs. */
+.hero img.ingredient-frame{display:block;position:absolute;z-index:3;left:-2%;bottom:-8%;width:104%;max-width:none;height:auto;aspect-ratio:3;object-fit:contain;border-radius:0;pointer-events:none;filter:drop-shadow(2px 7px 5px #4c57382b)}
+.hero figure.hero-art{margin-bottom:65px}
+.hero figcaption.showcase-caption{bottom:-14%}
+@media(max-width:760px){
+.hero img.ingredient-frame{width:110%;left:-5%;bottom:-9%}
+.hero figure.hero-art{margin-bottom:40px}
+.hero figcaption.showcase-caption{bottom:-17%}
+}
