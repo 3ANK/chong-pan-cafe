@@ -193,3 +193,10 @@ footer a{color:var(--cream)}
  .flavour-arrow{top:165px}
  .mobile-bar .btn.line-order{background:linear-gradient(150deg,#77a88b,#4d8266)}
 }
+
+/* Keep the opening composition compact and its caption above the menu. */
+@media(min-width:761px){
+ .hero{padding-top:58px;min-height:620px}
+ .hero figure.hero-art{width:110%;aspect-ratio:1.25;margin:12px 0 50px -5%}
+ .hero figcaption.showcase-caption{bottom:-15%}
+}
