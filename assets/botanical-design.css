@@ -86,3 +86,6 @@ footer{border:0;color:#fff3dc}.mobile-bar{background:linear-gradient(#fffaf0,#ef
 
 /* Keep the decorative frame from creating horizontal page scroll. */
 html,body{overflow-x:clip}
+
+/* Clip the decorative artwork to the viewport without clipping the hero card. */
+html{overflow-x:hidden}
