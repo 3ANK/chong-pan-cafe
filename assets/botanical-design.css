@@ -60,3 +60,6 @@ footer{border:0;color:#fff3dc}.mobile-bar{background:linear-gradient(#fffaf0,#ef
 .btn.line-order img.line-logo-3d{display:block;flex:0 0 44px;width:44px;height:44px;max-width:none;aspect-ratio:1;object-fit:contain;border-radius:0;margin:-6px 0;filter:none}
 .links .btn.line-order img.line-logo-3d{flex-basis:38px;width:38px;height:38px}
 @media(max-width:760px){.mobile-bar .btn.line-order img.line-logo-3d{flex-basis:38px;width:38px;height:38px}}
+
+/* Keep the ingredient artwork clear of the hero copy on desktop and tablet. */
+@media(min-width:761px){.hero figure.hero-art{width:calc(100% - 20px);margin-left:20px}.hero img.ingredient-frame{width:110%;left:-5%}}
