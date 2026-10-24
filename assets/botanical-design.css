@@ -96,3 +96,18 @@ h2,.flavour-heading h2,.popular-products h2{font-size:26px}.eyebrow{font-size:10
 .mobile-bar .btn{border-radius:17px;min-height:48px}.mobile-bar .btn.line-order{font-size:14px;gap:6px;padding:10px 7px}.mobile-bar .quick-action{font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn,.flavour-card{transition:none}}
+
+/* Live visual corrections: keep foliage clear of copy and ground every cup. */
+@media(min-width:761px){
+.hero{min-height:650px;padding-top:72px;padding-bottom:44px;grid-template-columns:minmax(0,.85fr) minmax(0,1.15fr)}
+.hero figure.hero-art{width:110%;aspect-ratio:1.15;margin-left:-5%}
+.scene-foliage-left{left:-205px;width:320px}
+.scene-foliage-right{right:-198px;width:320px;top:95px}
+}
+.hero img.showcase-drink{top:auto;bottom:14%;height:82%;object-position:center bottom}
+.hero img.showcase-matcha{top:auto;bottom:8%;height:82%}
+.hero-art::before{bottom:6%;height:16%}
+@media(max-width:760px){
+.hero figure.hero-art{aspect-ratio:1.08}
+.scene-foliage-left{left:-93px}.scene-foliage-right{right:-95px}
+}
