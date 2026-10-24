@@ -144,3 +144,11 @@ header{background:transparent;border:0}
  .popular-product img{height:150px}
  .popular-product span{font-size:15px}
 }
+
+/* Refine the live header to match the botanical hero reference. */
+.nav{width:min(1180px,calc(100% - 48px));margin:0 auto;padding:10px 0;background:transparent;border:0;border-radius:0;box-shadow:none}
+.brand{color:#fff9ed;font-size:27px;line-height:1.15;text-shadow:0 2px 10px #263d31aa}
+.brand img{display:none}
+.brand small{color:#f4efe0;font-size:11px;letter-spacing:2.2px}
+.links a:not(.btn){color:#fff9ed;text-shadow:0 1px 8px #263d31aa}
+@media(max-width:760px){.nav{width:calc(100% - 32px);margin:0 auto;padding:8px 0}.brand{font-size:21px}.brand img{display:none}}
