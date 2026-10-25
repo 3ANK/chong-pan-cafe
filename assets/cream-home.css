@@ -142,3 +142,10 @@ html,body{background:#70877c;background-image:none}
 .garden{width:min(1600px,calc(100% - 180px))}
 .topbar{width:min(1360px,calc(100% - 240px))}
 }
+
+/* Preserve the botanical artwork's aspect ratio independently of the wide panel. */
+@media(min-width:761px){
+.botanical-frame{width:auto;height:100%;max-width:none;object-fit:contain;aspect-ratio:1/1}
+.frame-left{inset:0 auto 0 -85px;transform:none}
+.frame-right{inset:0 -85px 0 auto;transform:none}
+}
