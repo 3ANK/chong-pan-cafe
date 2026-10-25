@@ -79,3 +79,38 @@
 .admin-image-status{color:#596b35;line-height:1.5}
 .admin-image-clear input{width:auto;display:inline-block;margin:0}
 @media(max-width:520px){.admin-image-preview{width:112px;height:112px}}
+
+/* Compact kitchen queue with consistent soft surfaces and clear next actions. */
+.queue-summary{display:flex;flex-wrap:wrap;gap:9px;margin:15px 0 20px}
+.queue-filter{display:flex;align-items:center;gap:8px;min-height:46px}
+.queue-filter strong{background:#ffffff8c;padding:1px 8px;border-radius:999px}
+.queue-filter[aria-pressed=true]{background:linear-gradient(145deg,#779b7c,#436c52);color:#fffbed;border-color:#a6b99b70}
+.queue-filter[aria-pressed=true] strong{background:#ffffff26}
+.queue-day-heading{font-size:16px;color:#405a32;margin:18px 0 8px}
+#adminContent .ordercard{border-left:5px solid #bdc6ad;padding:16px;margin:12px 0;background:linear-gradient(145deg,#fffef7,#faf2e2);box-shadow:inset 1px 1px 2px #fff,3px 6px 14px #3c503314}
+#adminContent .status-pending{border-left-color:#bc8424}
+#adminContent .status-accepted{border-left-color:#67967b}
+#adminContent .status-preparing{border-left-color:#4a7da2}
+#adminContent .status-ready{border-left-color:#528646}
+#adminContent .status-cancelled{border-left-color:#ad7772}
+.order-time{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:13px;color:#56624d;margin:7px 0 12px}
+.order-wait{background:#f7ecd2;color:#78510e;border-radius:999px;padding:3px 9px;font-weight:700}
+.order-context{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;font-size:14px}
+.fulfillment-tag{padding:4px 10px;border-radius:10px;background:#e7eedc;color:#375633}
+.order-items{list-style:none;padding:0;margin:14px 0}
+.order-items>li{padding:8px 0;border-bottom:1px solid #dce1d344}
+.order-items>li>div:first-child>span{font-weight:750}
+.order-items>li>div:first-child>strong{font-size:22px;color:#2e5949}
+.order-modifiers,.order-note{margin-top:5px;border-radius:9px;background:#f4eacb;color:#594613;padding:6px 9px;font-size:14px;font-weight:700;overflow-wrap:anywhere}
+.order-total{font-size:19px;margin:10px 0}
+.order-extra{font-size:13px;margin:7px 0;color:#526247}
+.order-extra>summary{cursor:pointer;padding:7px 0;font-weight:650}
+.order-extra p,.order-extra ul{margin:5px 0 10px;overflow-wrap:anywhere}
+.order-extra ul{padding-left:20px}
+.order-points .loyalty-points{margin:0 0 7px}
+#adminContent .order-actions{align-items:center;gap:12px;margin-top:14px}
+#adminContent .order-actions .order-next,#adminContent .order-actions .award-points-button{flex:1 1 200px}
+#adminContent .order-actions .order-cancel{flex:0 0 auto;width:auto;min-height:44px;padding:8px 16px;font-size:13px;color:#8b4237;border-color:#d2aaa0;background:#fff8f4;box-shadow:none;margin-left:auto}
+.order-help{font-size:13px;color:#64705c;margin:10px 0}
+.order-help>summary{cursor:pointer;padding:7px 0}
+@media(max-width:619px){.queue-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.queue-filter{padding:10px 8px;justify-content:space-between;font-size:12px}.queue-filter:first-child{grid-column:1/-1}#adminContent .ordercard{padding:12px}.order-context{font-size:13px}.order-time{font-size:12px}#adminContent .order-actions .order-next,#adminContent .order-actions .award-points-button{flex:1 1 160px}.order-modifiers,.order-note{font-size:13px}}
