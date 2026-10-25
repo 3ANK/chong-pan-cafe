@@ -101,14 +101,48 @@ function orderCard(o){
  (typeof window.renderLoyverseStatus==='function'?window.renderLoyverseStatus(o):'')+
  '<div class="order-actions">'+pointsButton+actions+'</div></article>';
 }
+
+function orderDayKey(value){
+ let date=value instanceof Date?value:new Date(typeof value==='string'&&!/(Z|[+-]\d{2}:?\d{2})$/i.test(value)?value.replace(' ','T')+'Z':value);
+ if(!Number.isFinite(date.getTime()))return '';
+ return new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
+}
+function groupRecentOrders(orders,now=new Date()){
+ const today=orderDayKey(now),current=[],previous=new Map();
+ const sorted=[...orders].sort((a,b)=>String(b.created_at).localeCompare(String(a.created_at)));
+ for(const order of sorted){
+  const day=orderDayKey(order.created_at);
+  if(day===today||!day||!['completed','cancelled'].includes(order.status)){current.push(order);continue}
+  if(!previous.has(day))previous.set(day,[]);
+  previous.get(day).push(order);
+ }
+ return {current,previous};
+}
+function recentOrdersMarkup(orders,olderOpen){
+ if(!orders.length)return '<p class="empty">ยังไม่มีออเดอร์</p>';
+ const {current,previous}=groupRecentOrders(orders);
+ let html=current.length?current.map(orderCard).join(''):'<p class="empty">ยังไม่มีออเดอร์วันนี้หรือรายการค้าง</p>';
+ if(previous.size){
+  const count=[...previous.values()].reduce((n,items)=>n+items.length,0);
+  const focusedOld=[...previous.values()].some(items=>items.some(o=>o.id===selectedOrderId));
+  html+='<details id="olderOrders"'+(olderOpen||focusedOld?' open':'')+'><summary class="secondary"><span class="older-show">+ ดูออเดอร์วันก่อน</span><span class="older-hide">− ซ่อนออเดอร์วันก่อน</span> ('+count+')</summary>';
+  for(const [day,items] of [...previous].sort(([a],[b])=>b.localeCompare(a))){
+   const date=new Date(day+'T12:00:00+07:00').toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'long',year:'numeric'});
+   html+='<section class="older-order-day"><h3>'+escapeText(date)+'</h3>'+items.map(orderCard).join('')+'</section>';
+  }
+  html+='</details>';
+ }
+ return html;
+}
+
 async function loadOrders({silent=false}={}){
  const el=$('adminContent');
  if(silent&&el.querySelector('.order-actions button:disabled'))return;
- if(!silent)el.textContent='กำลังโหลดออเดอร์…';
+ const olderOpen=!!$('olderOrders')?.open;
  const expanded=new Set(Array.from(el.querySelectorAll('.loyverse-compact[open]')).map(d=>d.closest('[data-order-id]')?.dataset.orderId).filter(Boolean));
  try{
   const orders=(await request('admin/orders')).orders;
-  el.innerHTML=orders.length?orders.map(orderCard).join(''):'<p class="empty">ยังไม่มีออเดอร์</p>';
+  el.innerHTML=recentOrdersMarkup(orders,olderOpen);
   for(const id of expanded){const card=Array.from(el.querySelectorAll('[data-order-id]')).find(node=>node.dataset.orderId===id);card?.querySelector('.loyverse-compact')?.setAttribute('open','')}
   if(selectedOrderId){
    const focused=orders.find(o=>o.id===selectedOrderId);
