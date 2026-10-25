@@ -136,3 +136,9 @@ html,body{background:#70877c;background-image:none}
 /* Leave room around the outer edges for the foliage's diffuse shadow. */
 .frame-left{clip-path:inset(-60px 50% -60px -60px)}
 .frame-right{clip-path:inset(-60px -60px -60px 50%)}
+
+/* Use wide desktop screens instead of leaving large empty sage margins. */
+@media(min-width:1100px){
+.garden{width:min(1600px,calc(100% - 180px))}
+.topbar{width:min(1360px,calc(100% - 240px))}
+}
