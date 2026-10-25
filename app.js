@@ -40,7 +40,7 @@ function saveBasket(){try{localStorage.setItem('chongpan-v2-basket',JSON.stringi
 function restoreBasket(){try{const v=JSON.parse(localStorage.getItem('chongpan-v2-basket')||'[]');if(Array.isArray(v))state.basket=v.filter(it=>it&&Number.isInteger(it.qty)&&it.qty>0).slice(0,70)}catch{}}
 // Every catalog item belongs to exactly one main group. New categories fall back by product type.
 const riceCategories=new Set(['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ข้าวสั่งแยก','ข้าวและไข่สั่งแยก','เทอริยากิ']);
-const riceCategoryOrder=['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ข้าวสั่งแยก','ข้าวและไข่สั่งแยก','เทอริยากิ'];
+const riceCategoryOrder=['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ข้าวสั่งแยก','เทอริยากิ','ข้าวและไข่สั่งแยก'];
 const riceGroupCategory='__rice__';
 const menuGroupCategories={
  food:new Set(['ข้าว','กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ไข่สั่งแยก','ข้าวสั่งแยก','ข้าวและไข่สั่งแยก','เทอริยากิ','ส้มตำ','สปาเก็ตตี้']),
@@ -64,7 +64,7 @@ function menuGroups(){
   return p.category===state.selectedCategory;
  });
  const groups={};for(const p of valid)(groups[p.category]||=[]).push(p);
- return groups;
+ return Object.fromEntries(Object.entries(groups).sort(([a],[b])=>Number(a==='ข้าวและไข่สั่งแยก')-Number(b==='ข้าวและไข่สั่งแยก')));
 }
 function paintMenuGroupTabs(){
  const searching=!!$('search').value.trim();
