@@ -82,3 +82,50 @@ dialog{overflow-x:hidden}
 .gallery-view,.gallery-view figure{min-width:0;max-width:100%}
 .gallery-image{max-width:100%}
 }
+
+/* Soft upper-left lighting: a rounded surface, contact shadow and diffuse cast shadow. */
+.pill{
+background:linear-gradient(145deg,#fffdf0 0%,#f5ecd7 60%,#eee2c8 100%);
+border:1px solid #fff9e280;
+box-shadow:inset 1px 1px 2px #ffffffc4,inset -1px -2px 3px #b4a48920,1px 2px 3px #4b51331c,5px 8px 15px #3c503322;
+transition:transform .18s ease,box-shadow .18s ease,filter .18s ease;
+}
+.pill:hover{
+transform:translateY(-1px);
+box-shadow:inset 1px 1px 2px #ffffffc4,inset -1px -2px 3px #b4a48920,1px 3px 4px #4b51331a,6px 10px 18px #3c503325;
+}
+.pill:active{
+transform:translateY(1px);
+box-shadow:inset 1px 2px 4px #6a63431a,inset -1px -1px 2px #ffffff70,1px 2px 4px #3c50331b;
+}
+.order-main,.floating-line{
+background:linear-gradient(145deg,#779b7c 0%,#567e60 52%,#436c52 100%);
+border-color:#a6b99b70;
+box-shadow:inset 1px 1px 2px #d4e3bb80,inset -1px -2px 3px #234d3a30,1px 2px 3px #263d3026,5px 8px 16px #233f3433;
+}
+.order-main:hover,.floating-line:hover{
+box-shadow:inset 1px 1px 2px #d4e3bb80,inset -1px -2px 3px #234d3a30,1px 3px 4px #263d3023,6px 10px 18px #233f3433;
+}
+.order-main:active,.floating-line:active{
+box-shadow:inset 1px 2px 4px #234b3a40,inset -1px -1px 2px #c5d5ad50,1px 2px 4px #233f3426;
+}
+.round{
+background:linear-gradient(140deg,#fffdf0,#efe4cb);
+border-color:#fffae580;
+box-shadow:inset 1px 1px 1px #ffffffd0,inset -1px -1px 2px #a4997c24,1px 2px 3px #4d543222,3px 5px 8px #3c50331c;
+}
+.round:hover{background:linear-gradient(140deg,#fffef5,#f2e8d3)}
+.round:active{transform:translateY(1px);box-shadow:inset 1px 2px 3px #7c735027,1px 1px 3px #3c50331c}
+.carousel{
+border-color:#fffbee99;
+background:linear-gradient(145deg,#fffdf2,#f2e9d5);
+box-shadow:inset 1px 1px 2px #ffffffc0,inset -1px -1px 3px #bdad8b15,1px 2px 3px #62593b14,5px 8px 16px #3f50351b;
+}
+.map-card{
+box-shadow:inset 1px 1px 2px #d0dfb970,inset -1px -2px 3px #23493425,1px 2px 3px #3c50331c,5px 8px 16px #3c503322;
+}
+.gallery-tabs [aria-pressed=true]{
+background:linear-gradient(145deg,#839e7f,#527457);
+box-shadow:inset 1px 1px 2px #d2dfb577,inset -1px -2px 3px #234d3a25,1px 2px 3px #263d301b,4px 6px 12px #233f3422;
+}
+@media(hover:none){.pill:hover{transform:none}.pill:active{transform:translateY(1px)}}
