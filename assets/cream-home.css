@@ -149,3 +149,35 @@ html,body{background:#70877c;background-image:none}
 .frame-left{inset:0 auto 0 -85px;transform:none}
 .frame-right{inset:0 -85px 0 auto;transform:none}
 }
+
+/* Mobile-only readability and compact controls; desktop and foliage rules stay intact. */
+@media(max-width:760px){
+.page-content{padding-bottom:22px}
+.intro{margin-bottom:8px}
+.stage{height:102px}
+.hero-product{height:102px;width:74px}
+.carousel-controls .round{width:36px;height:36px}
+.carousel-controls span{font-size:10px}
+.product-name{min-height:20px;padding:0 8px;font-size:13px;line-height:1.5}
+.dots{height:22px;align-items:center;margin:0 0 3px}
+.dots button{display:none;flex:none}
+.dots button[aria-pressed=true],.dots button:has(+button[aria-pressed=true]),.dots button:has(+button+button[aria-pressed=true]),.dots button[aria-pressed=true]+button,.dots button[aria-pressed=true]+button+button{display:block}
+.category-buttons{margin-top:12px;gap:7px}
+.category{min-height:44px}
+.category[aria-pressed=true]{background:linear-gradient(145deg,#e4ecd7,#ccd9bc);border-color:#a3b48f}
+.about{padding:11px 0 9px}
+.visit{grid-template-columns:minmax(0,1fr);gap:9px;padding:12px 10px;background:linear-gradient(145deg,#fbf5e7,#f1e6ce);border:1px solid #fff9e5;border-radius:16px;position:relative;isolation:isolate}
+.shop-info{text-align:center;min-width:0}
+.shop-info h2{font-size:16px}
+.shop-info p{font-size:11px;line-height:1.55}
+.contact-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+.contact-actions .pill{font-size:11px;min-height:42px;padding:8px 4px;white-space:nowrap}
+.phone{font-size:16px;margin-top:8px}
+.map-card{flex-direction:row;gap:9px;padding:9px;min-height:58px;text-align:left}
+.map-card img{width:30px;height:30px}
+.map-card b{font-size:12px}
+.map-card small{font-size:10px;margin-top:1px}
+.order-main{display:none}
+.floating-line{min-height:44px;font-size:11px;padding:10px 16px}
+footer{margin-bottom:calc(76px + env(safe-area-inset-bottom))}
+}
