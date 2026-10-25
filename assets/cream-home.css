@@ -129,3 +129,6 @@ background:linear-gradient(145deg,#839e7f,#527457);
 box-shadow:inset 1px 1px 2px #d2dfb577,inset -1px -2px 3px #234d3a25,1px 2px 3px #263d301b,4px 6px 12px #233f3422;
 }
 @media(hover:none){.pill:hover{transform:none}.pill:active{transform:translateY(1px)}}
+
+/* A single sage canvas prevents a visible color seam beside the overflowing foliage. */
+html,body{background:#70877c;background-image:none}
