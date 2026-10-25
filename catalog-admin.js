@@ -3,7 +3,7 @@
  'use strict';
  const root=document.getElementById('adminCatalog');
  const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- let records=[],filter='',canEditImages=false;
+ let records=[],filter='',canEditImages=false,categoryFilter='',statusFilter='';
  async function api(method,path,payload){
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
   try{
@@ -16,9 +16,10 @@
  }
  const stat=()=>`<p class="admin-summary">สินค้า ${records.length} รายการ · รอยืนยันราคา ${records.filter(p=>!p.verified).length} · ไม่มีภาพ ${records.filter(p=>!p.image).length} · ยังไม่เปิดขาย ${records.filter(p=>!p.available).length}</p>`;
  const header=()=>`<div class="admin-editor-header"><h3>จัดการราคาและสินค้า</h3><button class="secondary" type="button" id="closeAdminCatalog">ปิด</button></div>
- <p class="caption">ยืนยันราคาจากหน้าร้าน/Loyverse ทีละรายการก่อนเปิดรับออเดอร์จริง รายการราคา 0 บาทยังเปิดขายไม่ได้</p>
- ${canEditImages?'<p class="caption">เจ้าของร้านสามารถเลือกรูป JPG, PNG หรือ WebP เพื่อเพิ่มหรือเปลี่ยนรูปเมนูได้ ระบบจะย่อรูปให้อัตโนมัติ</p>':''}
+ <p class="caption">แก้ราคาแล้วกดบันทึกเฉพาะแถว · กด “รูปและรายละเอียด” เมื่อต้องการแก้รูปหรือหมวด</p>
+ 
  <label class="admin-search">ค้นหาชื่อหรือหมวดหมู่<input type="search" id="adminFilter" placeholder="พิมพ์ชื่อเมนู…" value="${escape(filter)}"></label>
+ <div class="catalog-filters"><label>หมวด<select id="adminCategoryFilter"><option value="">ทุกหมวด</option>${[...new Set(records.map(p=>p.category))].sort((a,b)=>a.localeCompare(b,'th')).map(c=>'<option value="'+escape(c)+'"'+(categoryFilter===c?' selected':'')+'>'+escape(c)+'</option>').join('')}</select></label><label>สถานะ<select id="adminStatusFilter"><option value="">ทั้งหมด</option>${[['unverified','รอยืนยันราคา'],['missing','ไม่มีรูป'],['unavailable','ปิดขาย'],['draft','ราคา 0 บาท']].map(([v,n])=>'<option value="'+v+'"'+(statusFilter===v?' selected':'')+'>'+n+'</option>').join('')}</select></label><button type="button" class="secondary" id="clearCatalogFilters">ล้างตัวกรอง</button></div><p id="catalogVisibleCount" class="caption" role="status"></p>
  <details class="admin-add"><summary>+ เพิ่มเมนูใหม่ (บันทึกเป็นฉบับร่าง)</summary>
  <form id="adminCreateForm"><label>ชื่อเมนู<input name="name" required maxlength="100"></label><label>หมวดหมู่<input name="category" required maxlength="70"></label>
  <label>ราคา<input name="price" type="number" min="0" max="100000" step="1" value="0" required></label>
@@ -37,21 +38,28 @@
    <small class="admin-image-status" data-image-status>เลือกรูป JPG, PNG หรือ WebP · ระบบย่อภาพให้อัตโนมัติ</small>
   </div>`;
  }
- function cards(){
-  const q=filter.trim().toLowerCase();
-  return records.filter(p=>(p.name+' '+p.category+' '+p.id).toLowerCase().includes(q)).map(p=>`
-   <article class="admin-product" data-id="${escape(p.id)}">
-    <div class="admin-product-top"><strong>${escape(p.name)}</strong><small>${escape(p.category)} · ${p.image?'มีรูป':'ยังไม่มีรูป'}</small></div>
-    ${canEditImages?'<label class="admin-category-edit">หมวดหมู่<input type="text" data-category maxlength="70" value="'+escape(p.category)+'"></label>':''}
-    ${imageControls(p)}
-    <div class="admin-product-edit"><label>ราคา (บาท)<input type="number" data-price min="0" max="100000" step="1" value="${Number(p.price)}"></label>
-    <label class="admin-check"><input type="checkbox" data-available ${p.available?'checked':''}> เปิดขาย</label>
-    <label class="admin-check"><input type="checkbox" data-verified ${p.verified?'checked':''}> ยืนยันราคาจากหน้าร้านแล้ว</label>
-    <button type="button" class="secondary" data-save>บันทึก</button></div>
-    ${p.price<=0?'<p class="admin-draft">ฉบับร่าง: ต้องกำหนดราคาและยืนยันก่อนเปิดขาย</p>':!p.verified?'<p class="admin-draft">ราคายังไม่ได้รับการยืนยัน</p>':''}
-   </article>`).join('')||'<p class="caption">ไม่พบเมนูที่ค้นหา</p>';
+
+ function productCard(p){
+  return '<article class="admin-product catalog-row" data-id="'+escape(p.id)+'"><div class="catalog-row-head"><div class="catalog-thumb">'+previewMarkup(p)+'</div><div class="catalog-product-title"><strong>'+escape(p.name)+'</strong><small>'+escape(p.category)+' · '+(p.available?'เปิดขาย':'ปิดขาย')+(!p.verified?' · รอยืนยันราคา':'')+'</small></div></div>'+
+  '<div class="admin-product-edit catalog-quick-edit"><label>ราคา (บาท)<input aria-label="ราคา '+escape(p.name)+'" type="number" data-price min="0" max="100000" step="1" value="'+Number(p.price)+'"></label><label class="admin-check"><input type="checkbox" data-available '+(p.available?'checked':'')+'> เปิดขาย</label><button type="button" class="primary" data-save>บันทึก</button></div>'+
+  '<p class="catalog-save-status caption" data-save-status role="status"></p><details class="catalog-product-details"><summary>รูปและรายละเอียด'+(!p.verified?' · รอยืนยันราคา':'')+'</summary>'+
+  (canEditImages?'<label class="admin-category-edit">หมวดหมู่<input type="text" data-category maxlength="70" value="'+escape(p.category)+'"></label>':'')+
+  '<label class="admin-check"><input type="checkbox" data-verified '+(p.verified?'checked':'')+'> ยืนยันราคาจากหน้าร้านแล้ว</label>'+imageControls(p)+
+  (p.price<=0?'<p class="admin-draft">ฉบับร่าง: ต้องกำหนดราคาและยืนยันก่อนเปิดขาย</p>':'')+'</details></article>';
  }
- function paint(){root.innerHTML=header()+stat()+'<div id="adminProducts">'+cards()+'</div>';}
+ function cards(){return records.map(productCard).join('')}
+ function applyFilters(){
+  const q=filter.trim().toLowerCase();let count=0;
+  root.querySelectorAll('.catalog-row').forEach(el=>{
+   const p=records.find(p=>String(p.id)===el.dataset.id);
+   const match=p&&(p.name+' '+p.category+' '+p.id).toLowerCase().includes(q)&&(!categoryFilter||p.category===categoryFilter)&&
+   (!statusFilter||statusFilter==='unverified'&&!p.verified||statusFilter==='missing'&&!p.image||statusFilter==='unavailable'&&!p.available||statusFilter==='draft'&&p.price<=0);
+   el.hidden=!match;if(match)count++;
+  });
+  document.getElementById('catalogVisibleCount').textContent='แสดง '+count+' จาก '+records.length+' เมนู'+(!count?' · ไม่พบเมนูตามตัวกรอง':'');
+ }
+ function paint(){root.innerHTML=header()+stat()+'<div id="adminProducts">'+cards()+'</div>';applyFilters()}
+ function hasUnsaved(){return !!root.querySelector('[data-dirty="true"],[data-saving="true"]')}
  async function reload(){
   root.innerHTML='<p class="caption">กำลังโหลดรายการ…</p>';
   try{const data=await api('GET','admin/menu');records=data.products;canEditImages=!!data.canEditImages;paint()}catch(e){root.textContent=e.message;}
@@ -87,54 +95,70 @@
   throw new Error('ย่อรูปแล้วยังมีขนาดใหญ่เกินไป กรุณาเลือกรูปอื่น');
  }
  root.addEventListener('input',ev=>{
-  if(ev.target.id==='adminFilter'){filter=ev.target.value;document.getElementById('adminProducts').innerHTML=cards();}
+  if(ev.target.id==='adminFilter'){filter=ev.target.value;applyFilters();}
  });
+ root.addEventListener('input',ev=>{const card=ev.target.closest('.catalog-row');if(card){card.dataset.dirty='true';card.querySelector('[data-save-status]').textContent='แก้ไขแล้ว · ยังไม่ได้บันทึก'}});
  root.addEventListener('change',async ev=>{
+  if(ev.target.id==='adminCategoryFilter'){categoryFilter=ev.target.value;applyFilters();return}
+  if(ev.target.id==='adminStatusFilter'){statusFilter=ev.target.value;applyFilters();return}
+  const changedCard=ev.target.closest('.catalog-row');if(changedCard){changedCard.dataset.dirty='true';changedCard.querySelector('[data-save-status]').textContent='แก้ไขแล้ว · ยังไม่ได้บันทึก'}
+
   if(ev.target.matches('[data-image]')){
    const input=ev.target,file=input.files?.[0],card=input.closest('[data-id]');
    if(!file)return;
    const status=card.querySelector('[data-image-status]'),clear=card.querySelector('[data-clear-image]');
-   input.disabled=true;status.textContent='กำลังย่อรูป…';
+   input.disabled=true;card.querySelector('[data-save]').disabled=true;status.textContent='กำลังย่อรูป…';
    try{
     const data=await compressImage(file);card.dataset.pendingImage=data;
     if(clear)clear.checked=false;
     showPreview(card,data);status.textContent='รูปพร้อมบันทึก · '+Math.round(data.length/1024)+' KB';
    }catch(e){input.value='';delete card.dataset.pendingImage;status.textContent=e.message;alert(e.message)}
-   finally{input.disabled=false}
+   finally{input.disabled=false;card.querySelector('[data-save]').disabled=false}
   }
   if(ev.target.matches('[data-clear-image]')){
-   const card=ev.target.closest('[data-id]'),p=records.find(x=>x.id===card.dataset.id);
+   const card=ev.target.closest('[data-id]'),p=records.find(x=>String(x.id)===card.dataset.id);
    if(ev.target.checked){delete card.dataset.pendingImage;showPreview(card,'');card.querySelector('[data-image-status]').textContent='กดบันทึกเพื่อเอารูปออก';}
    else{showPreview(card,p?.image||'');card.querySelector('[data-image-status]').textContent='เลือกรูป JPG, PNG หรือ WebP · ระบบย่อภาพให้อัตโนมัติ';}
   }
  });
  root.addEventListener('click',async ev=>{
-  if(ev.target.closest('#closeAdminCatalog')){root.hidden=true;return;}
+  if(ev.target.closest('#closeAdminCatalog')){if(hasUnsaved()&&!confirm('มีรายการที่ยังไม่บันทึก ต้องการปิดและทิ้งการแก้ไขหรือไม่?'))return;root.hidden=true;return;}
+  if(ev.target.closest('#clearCatalogFilters')){filter='';categoryFilter='';statusFilter='';root.querySelector('#adminFilter').value='';root.querySelector('#adminCategoryFilter').value='';root.querySelector('#adminStatusFilter').value='';applyFilters();return;}
   const b=ev.target.closest('[data-save]');if(!b)return;
   const el=b.closest('[data-id]'),id=el.dataset.id;
   const price=Number(el.querySelector('[data-price]').value),available=el.querySelector('[data-available]').checked,verified=el.querySelector('[data-verified]').checked;
   if(!Number.isInteger(price)||price<0||price>100000){alert('ราคาไม่ถูกต้อง');return;}
   if(available&&price<=0){alert('ยังไม่สามารถเปิดขายสินค้าราคา 0 บาท');return;}
-  const p=records.find(x=>x.id===id);
+  const p=records.find(x=>String(x.id)===id);
   if(verified&&!p.verified&&!confirm('ยืนยันว่าตรวจสอบราคา '+p.name+' ('+price+' บาท) จากราคาขายจริงแล้ว?'))return;
   const payload={id,price,available,verified};
   const category=el.querySelector('[data-category]');
   if(category)payload.category=category.value.trim();
   if(Object.prototype.hasOwnProperty.call(el.dataset,'pendingImage'))payload.image=el.dataset.pendingImage;
   else if(el.querySelector('[data-clear-image]')?.checked)payload.image='';
-  b.disabled=true;
-  try{await api('PATCH','admin/menu',payload);await reload();if(window.bootMenu)await window.bootMenu();}
-  catch(e){alert(e.message);b.disabled=false;}
+  const controls=[...el.querySelectorAll('input,button')];controls.forEach(c=>c.disabled=true);el.dataset.saving='true';
+  try{
+   await api('PATCH','admin/menu',payload);
+   Object.assign(p,payload);delete el.dataset.dirty;delete el.dataset.saving;
+   const open=el.querySelector('details').open;
+   const holder=document.createElement('div');holder.innerHTML=productCard(p);const fresh=holder.firstElementChild;
+   fresh.querySelector('details').open=open;el.replaceWith(fresh);fresh.querySelector('[data-save-status]').textContent='บันทึกแล้ว ✓';
+   fresh.querySelector('[data-save]').focus();
+   const stats=root.querySelector('.admin-summary');if(stats)stats.outerHTML=stat();
+   applyFilters();if(window.bootMenu)window.bootMenu().catch(()=>{});
+  }catch(e){el.querySelector('[data-save-status]').textContent='บันทึกไม่สำเร็จ: '+e.message;alert(e.message);controls.forEach(c=>c.disabled=false);delete el.dataset.saving;}
  });
  root.addEventListener('submit',async ev=>{
   if(ev.target.id!=='adminCreateForm')return;ev.preventDefault();
+  if(hasUnsaved()&&!confirm('มีเมนูที่แก้ค้างไว้ การเพิ่มเมนูใหม่จะโหลดรายการใหม่และทิ้งค่าที่ยังไม่บันทึก ต้องการทำต่อหรือไม่?'))return;
   const data=new FormData(ev.target);const price=Number(data.get('price'));
   try{await api('POST','admin/menu',{name:String(data.get('name')).trim(),category:String(data.get('category')).trim(),price,drink:data.has('drink')});
-   filter=String(data.get('name')).trim();await reload();
+   filter=String(data.get('name')).trim();categoryFilter='';statusFilter='';await reload();
   }catch(e){alert(e.message);}
  });
+ window.addEventListener('beforeunload',e=>{if(!root.hidden&&hasUnsaved()){e.preventDefault();e.returnValue=''}});
  window.openChongpanCatalog=async()=>{
-  if(!root.hidden){root.hidden=true;return;}
+  if(!root.hidden){if(hasUnsaved()&&!confirm('มีรายการที่ยังไม่บันทึก ต้องการปิดและทิ้งการแก้ไขหรือไม่?'))return;root.hidden=true;return;}
   root.hidden=false;await reload();root.scrollIntoView({behavior:'smooth',block:'start'});
  };
 })();
