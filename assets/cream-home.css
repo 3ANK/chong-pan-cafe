@@ -69,3 +69,16 @@ footer{margin:5px 0 62px;font-size:7px}
 .contact-actions .pill{font-size:9px;padding:7px 6px}
 h1{font-size:23px}
 }
+
+/* Contain decorative foliage so mobile browsers cannot pan the document sideways. */
+html{width:100%;max-width:100%;overflow-x:hidden}
+body{width:100%;max-width:100%;overflow-x:hidden;position:relative}
+@supports(overflow:clip){html,body{overflow-x:clip}}
+@media(max-width:760px){
+.garden{width:100%;max-width:100%;overflow:hidden;overflow:clip}
+.page-content,.topbar,.intro,.showcase,.category-section,.visit,.shop-info{min-width:0}
+.carousel,.stage{max-width:100%;overflow:hidden}
+dialog{overflow-x:hidden}
+.gallery-view,.gallery-view figure{min-width:0;max-width:100%}
+.gallery-image{max-width:100%}
+}
