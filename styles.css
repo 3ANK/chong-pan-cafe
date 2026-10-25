@@ -302,3 +302,29 @@ select,dialog select{
 .categories.food-categories .food-category-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;width:100%}
 .categories.food-categories .food-rice-subcategories{padding:8px 0 0 12px;border-left:3px solid var(--green)}
 .categories.food-categories .food-rice-subcategories small{width:100%;color:var(--muted);font-size:12px}
+
+/* Soft sculpted buttons, matching the promotional homepage's upper-left light. */
+:root{--button-cream:linear-gradient(145deg,#fffdf0 0%,#f5ecd7 60%,#eee2c8 100%);--button-green:linear-gradient(145deg,#779b7c 0%,#567e60 52%,#436c52 100%);--button-soft-shadow:inset 1px 1px 2px #ffffffc4,inset -1px -2px 3px #b4a48920,1px 2px 3px #4b51331c,5px 8px 15px #3c503322;--button-green-shadow:inset 1px 1px 2px #d4e3bb80,inset -1px -2px 3px #234d3a30,1px 2px 3px #263d3026,5px 8px 16px #233f3433}
+.primary,.secondary,.add,.ghost,.iconbtn,.option-step,.cartbuttons button,.tabs button,.tabs .tab-link,.categories button,.menu-group-tabs button,.legacy-order-link,.pay-slip-link,.order-topbar .line-add-friend-header{
+border:1px solid #fff9e280;background:var(--button-cream);color:#2e5949;box-shadow:var(--button-soft-shadow);transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;text-decoration:none;
+}
+.primary,.add,.tabs button.selected,.categories button.selected,.menu-group-tabs button.selected,.reorder-button,.order-topbar .line-add-friend-header{
+background:var(--button-green);color:#fffbed;border-color:#a6b99b70;box-shadow:var(--button-green-shadow);
+}
+.primary,.secondary,.add,.menu-group-tabs button,.tabs button,.tabs .tab-link{border-radius:18px}
+.categories button,.ghost,.legacy-order-link{border-radius:999px}
+.option-step{border-radius:15px}
+.cartbuttons button{border-radius:10px}
+.iconbtn{border-radius:50%}
+.tabs,.menu-group-tabs,.categories,.inline,.header-actions{row-gap:10px}
+.menu-explorer .categories{padding-top:6px;padding-bottom:13px}
+button:focus-visible,a:focus-visible{outline:3px solid #d09b37;outline-offset:3px}
+@media(hover:hover){
+.primary:not(:disabled):hover,.secondary:not(:disabled):hover,.add:not(:disabled):hover,.ghost:hover,.iconbtn:hover,.option-step:not(:disabled):hover,.cartbuttons button:not(:disabled):hover,.tabs button:not(:disabled):hover,.tabs .tab-link:hover,.categories button:not(:disabled):hover,.menu-group-tabs button:not(:disabled):hover,.legacy-order-link:hover,.pay-slip-link:hover,.order-topbar .line-add-friend-header:hover{transform:translateY(-1px);filter:brightness(1.035)}
+}
+.primary:not(:disabled):active,.secondary:not(:disabled):active,.add:not(:disabled):active,.ghost:active,.iconbtn:active,.option-step:not(:disabled):active,.cartbuttons button:not(:disabled):active,.tabs button:not(:disabled):active,.tabs .tab-link:active,.categories button:not(:disabled):active,.menu-group-tabs button:not(:disabled):active,.legacy-order-link:active,.pay-slip-link:active,.order-topbar .line-add-friend-header:active{
+transform:translateY(1px);box-shadow:inset 1px 2px 4px #40513a35,inset -1px -1px 2px #ffffff70,1px 2px 4px #3c50331b;filter:none;
+}
+button:disabled{box-shadow:inset 1px 1px 2px #ffffff80,0 1px 3px #3c503312;transform:none;filter:none}
+.add:disabled{background:#aeb4a3;color:#fff}
+@media(prefers-reduced-motion:reduce){button,.tabs .tab-link,.ghost,.legacy-order-link,.pay-slip-link{transition:none!important}}
