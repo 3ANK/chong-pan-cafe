@@ -132,3 +132,7 @@ box-shadow:inset 1px 1px 2px #d2dfb577,inset -1px -2px 3px #234d3a25,1px 2px 3px
 
 /* A single sage canvas prevents a visible color seam beside the overflowing foliage. */
 html,body{background:#70877c;background-image:none}
+
+/* Leave room around the outer edges for the foliage's diffuse shadow. */
+.frame-left{clip-path:inset(-60px 50% -60px -60px)}
+.frame-right{clip-path:inset(-60px -60px -60px 50%)}
