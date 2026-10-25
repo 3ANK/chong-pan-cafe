@@ -3,7 +3,8 @@
  'use strict';
  const root=document.getElementById('adminCatalog');
  const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- let records=[],filter='',canEditImages=false,categoryFilter='',statusFilter='';
+ let records=[],filter='',canEditImages=false,categoryFilter='',statusFilter='',catalogPage=1;
+ const pageSize=10;
  async function api(method,path,payload){
   const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),20000);
   try{
@@ -18,8 +19,8 @@
  const header=()=>`<div class="admin-editor-header"><h3>จัดการราคาและสินค้า</h3><button class="secondary" type="button" id="closeAdminCatalog">ปิด</button></div>
  <p class="caption">แก้ราคาแล้วกดบันทึกเฉพาะแถว · กด “รูปและรายละเอียด” เมื่อต้องการแก้รูปหรือหมวด</p>
  
- <label class="admin-search">ค้นหาชื่อหรือหมวดหมู่<input type="search" id="adminFilter" placeholder="พิมพ์ชื่อเมนู…" value="${escape(filter)}"></label>
- <div class="catalog-filters"><label>หมวด<select id="adminCategoryFilter"><option value="">ทุกหมวด</option>${[...new Set(records.map(p=>p.category))].sort((a,b)=>a.localeCompare(b,'th')).map(c=>'<option value="'+escape(c)+'"'+(categoryFilter===c?' selected':'')+'>'+escape(c)+'</option>').join('')}</select></label><label>สถานะ<select id="adminStatusFilter"><option value="">ทั้งหมด</option>${[['unverified','รอยืนยันราคา'],['missing','ไม่มีรูป'],['unavailable','ปิดขาย'],['draft','ราคา 0 บาท']].map(([v,n])=>'<option value="'+v+'"'+(statusFilter===v?' selected':'')+'>'+n+'</option>').join('')}</select></label><button type="button" class="secondary" id="clearCatalogFilters">ล้างตัวกรอง</button></div><p id="catalogVisibleCount" class="caption" role="status"></p>
+ <div class="catalog-toolbar"><label class="admin-search">ค้นหาชื่อหรือหมวดหมู่<input type="search" id="adminFilter" placeholder="พิมพ์ชื่อเมนู…" value="${escape(filter)}"></label>
+ <div class="catalog-filters"><label>หมวด<select id="adminCategoryFilter"><option value="">ทุกหมวด</option>${[...new Set(records.map(p=>p.category))].sort((a,b)=>a.localeCompare(b,'th')).map(c=>'<option value="'+escape(c)+'"'+(categoryFilter===c?' selected':'')+'>'+escape(c)+'</option>').join('')}</select></label><label>สถานะ<select id="adminStatusFilter"><option value="">ทั้งหมด</option>${[['unverified','รอยืนยันราคา'],['missing','ไม่มีรูป'],['unavailable','ปิดขาย'],['draft','ราคา 0 บาท']].map(([v,n])=>'<option value="'+v+'"'+(statusFilter===v?' selected':'')+'>'+n+'</option>').join('')}</select></label><button type="button" class="secondary" id="clearCatalogFilters">ล้างตัวกรอง</button></div><p id="catalogVisibleCount" class="caption" role="status"></p><div class="catalog-pagination" data-catalog-pager></div></div>
  <details class="admin-add"><summary>+ เพิ่มเมนูใหม่ (บันทึกเป็นฉบับร่าง)</summary>
  <form id="adminCreateForm"><label>ชื่อเมนู<input name="name" required maxlength="100"></label><label>หมวดหมู่<input name="category" required maxlength="70"></label>
  <label>ราคา<input name="price" type="number" min="0" max="100000" step="1" value="0" required></label>
@@ -48,17 +49,22 @@
   (p.price<=0?'<p class="admin-draft">ฉบับร่าง: ต้องกำหนดราคาและยืนยันก่อนเปิดขาย</p>':'')+'</details></article>';
  }
  function cards(){return records.map(productCard).join('')}
- function applyFilters(){
-  const q=filter.trim().toLowerCase();let count=0;
-  root.querySelectorAll('.catalog-row').forEach(el=>{
-   const p=records.find(p=>String(p.id)===el.dataset.id);
-   const match=p&&(p.name+' '+p.category+' '+p.id).toLowerCase().includes(q)&&(!categoryFilter||p.category===categoryFilter)&&
-   (!statusFilter||statusFilter==='unverified'&&!p.verified||statusFilter==='missing'&&!p.image||statusFilter==='unavailable'&&!p.available||statusFilter==='draft'&&p.price<=0);
-   el.hidden=!match;if(match)count++;
-  });
-  document.getElementById('catalogVisibleCount').textContent='แสดง '+count+' จาก '+records.length+' เมนู'+(!count?' · ไม่พบเมนูตามตัวกรอง':'');
+
+ function matchingRecords(){
+  const q=filter.trim().toLowerCase();
+  return records.filter(p=>(p.name+' '+p.category+' '+p.id).toLowerCase().includes(q)&&(!categoryFilter||p.category===categoryFilter)&&
+   (!statusFilter||statusFilter==='unverified'&&!p.verified||statusFilter==='missing'&&!p.image||statusFilter==='unavailable'&&!p.available||statusFilter==='draft'&&p.price<=0));
  }
- function paint(){root.innerHTML=header()+stat()+'<div id="adminProducts">'+cards()+'</div>';applyFilters()}
+ function applyFilters(){
+  const matches=matchingRecords(),pages=Math.max(1,Math.ceil(matches.length/pageSize));
+  catalogPage=Math.max(1,Math.min(catalogPage,pages));
+  const start=(catalogPage-1)*pageSize,ids=new Set(matches.slice(start,start+pageSize).map(p=>String(p.id)));
+  root.querySelectorAll('.catalog-row').forEach(el=>{el.hidden=!ids.has(el.dataset.id)});
+  document.getElementById('catalogVisibleCount').textContent=matches.length?'แสดง '+(start+1)+'–'+Math.min(start+pageSize,matches.length)+' จาก '+matches.length+' เมนูที่พบ · ทั้งหมด '+records.length+' เมนู':'ไม่พบเมนูตามตัวกรอง';
+  const pager='<button type="button" class="secondary" data-catalog-page="-1"'+(catalogPage===1?' disabled':'')+'>‹ ก่อนหน้า</button><span>หน้า '+catalogPage+' / '+pages+'</span><button type="button" class="secondary" data-catalog-page="1"'+(catalogPage===pages?' disabled':'')+'>ถัดไป ›</button>';
+  root.querySelectorAll('[data-catalog-pager]').forEach(el=>el.innerHTML=pager);
+ }
+ function paint(){root.innerHTML=header()+stat()+'<div id="adminProducts">'+cards()+'</div><div class="catalog-pagination" data-catalog-pager></div>';applyFilters()}
  function hasUnsaved(){return !!root.querySelector('[data-dirty="true"],[data-saving="true"]')}
  async function reload(){
   root.innerHTML='<p class="caption">กำลังโหลดรายการ…</p>';
@@ -95,12 +101,12 @@
   throw new Error('ย่อรูปแล้วยังมีขนาดใหญ่เกินไป กรุณาเลือกรูปอื่น');
  }
  root.addEventListener('input',ev=>{
-  if(ev.target.id==='adminFilter'){filter=ev.target.value;applyFilters();}
+  if(ev.target.id==='adminFilter'){filter=ev.target.value;catalogPage=1;applyFilters();}
  });
  root.addEventListener('input',ev=>{const card=ev.target.closest('.catalog-row');if(card){card.dataset.dirty='true';card.querySelector('[data-save-status]').textContent='แก้ไขแล้ว · ยังไม่ได้บันทึก'}});
  root.addEventListener('change',async ev=>{
-  if(ev.target.id==='adminCategoryFilter'){categoryFilter=ev.target.value;applyFilters();return}
-  if(ev.target.id==='adminStatusFilter'){statusFilter=ev.target.value;applyFilters();return}
+  if(ev.target.id==='adminCategoryFilter'){categoryFilter=ev.target.value;catalogPage=1;applyFilters();return}
+  if(ev.target.id==='adminStatusFilter'){statusFilter=ev.target.value;catalogPage=1;applyFilters();return}
   const changedCard=ev.target.closest('.catalog-row');if(changedCard){changedCard.dataset.dirty='true';changedCard.querySelector('[data-save-status]').textContent='แก้ไขแล้ว · ยังไม่ได้บันทึก'}
 
   if(ev.target.matches('[data-image]')){
@@ -122,8 +128,10 @@
   }
  });
  root.addEventListener('click',async ev=>{
+  const pageButton=ev.target.closest('[data-catalog-page]');
+  if(pageButton){if(pageButton.disabled)return;catalogPage+=Number(pageButton.dataset.catalogPage);applyFilters();root.querySelector('.catalog-toolbar').scrollIntoView({behavior:'smooth',block:'start'});return;}
   if(ev.target.closest('#closeAdminCatalog')){if(hasUnsaved()&&!confirm('มีรายการที่ยังไม่บันทึก ต้องการปิดและทิ้งการแก้ไขหรือไม่?'))return;root.hidden=true;return;}
-  if(ev.target.closest('#clearCatalogFilters')){filter='';categoryFilter='';statusFilter='';root.querySelector('#adminFilter').value='';root.querySelector('#adminCategoryFilter').value='';root.querySelector('#adminStatusFilter').value='';applyFilters();return;}
+  if(ev.target.closest('#clearCatalogFilters')){filter='';categoryFilter='';statusFilter='';catalogPage=1;root.querySelector('#adminFilter').value='';root.querySelector('#adminCategoryFilter').value='';root.querySelector('#adminStatusFilter').value='';applyFilters();return;}
   const b=ev.target.closest('[data-save]');if(!b)return;
   const el=b.closest('[data-id]'),id=el.dataset.id;
   const price=Number(el.querySelector('[data-price]').value),available=el.querySelector('[data-available]').checked,verified=el.querySelector('[data-verified]').checked;
@@ -153,12 +161,12 @@
   if(hasUnsaved()&&!confirm('มีเมนูที่แก้ค้างไว้ การเพิ่มเมนูใหม่จะโหลดรายการใหม่และทิ้งค่าที่ยังไม่บันทึก ต้องการทำต่อหรือไม่?'))return;
   const data=new FormData(ev.target);const price=Number(data.get('price'));
   try{await api('POST','admin/menu',{name:String(data.get('name')).trim(),category:String(data.get('category')).trim(),price,drink:data.has('drink')});
-   filter=String(data.get('name')).trim();categoryFilter='';statusFilter='';await reload();
+   filter=String(data.get('name')).trim();categoryFilter='';statusFilter='';catalogPage=1;await reload();
   }catch(e){alert(e.message);}
  });
  window.addEventListener('beforeunload',e=>{if(!root.hidden&&hasUnsaved()){e.preventDefault();e.returnValue=''}});
  window.openChongpanCatalog=async()=>{
   if(!root.hidden){if(hasUnsaved()&&!confirm('มีรายการที่ยังไม่บันทึก ต้องการปิดและทิ้งการแก้ไขหรือไม่?'))return;root.hidden=true;return;}
-  root.hidden=false;await reload();root.scrollIntoView({behavior:'smooth',block:'start'});
+  root.hidden=false;catalogPage=1;await reload();root.scrollIntoView({behavior:'smooth',block:'start'});
  };
 })();
