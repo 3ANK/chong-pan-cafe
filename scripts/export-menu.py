@@ -18,7 +18,14 @@ for group in ["เครื่องดื่ม", "อาหาร", "ขนม
    lines.append(f"| {i['name']} | {i['price_thb']} | {note} |")
    writer.writerow([group,c["category"],i["name"],i["price_thb"],note])
   lines.append("")
+for addon in data.get("add_ons", []):
+ lines += ["## " + addon["category"], "", "ราคาเพิ่มในเมนูข้าว ไม่ใช่ราคาไข่สั่งเดี่ยว และไม่นับรวมจำนวนเมนูหลัก", "", "| รายการเพิ่ม | ราคา (บาท) |", "|---|---:|"]
+ for i in addon["items"]:
+  lines.append(f"| {i['name']} | {i['price_thb']} |")
+  writer.writerow(["ตัวเลือกเพิ่มเติม", addon["category"], i["name"], i["price_thb"], "เพิ่มในเมนูข้าว ไม่ใช่ไข่สั่งเดี่ยว"])
+ lines.append("")
 (root / "MENU.md").write_text("\n".join(lines), encoding="utf-8")
 (root / "menu.csv").write_text(buf.getvalue(), encoding="utf-8-sig")
 print("Exported", data["item_count"], "menu items")
+
 
