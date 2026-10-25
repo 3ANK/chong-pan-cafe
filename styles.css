@@ -331,8 +331,8 @@ button:disabled{box-shadow:inset 1px 1px 2px #ffffff80,0 1px 3px #3c503312;trans
 
 /* Product cards share the buttons' cream surface and upper-left studio light. */
 .item{
-background:linear-gradient(145deg,#fffef7 0%,#fbf4e5 62%,#f3e8d1 100%);
-border:1px solid #fffdf2;
+background:linear-gradient(145deg,#ffffff 0%,#fffefa 72%,#faf7ee 100%);
+border:1px solid #ffffff;
 box-shadow:inset 1px 1px 2px #ffffffdf,inset -1px -2px 4px #b4a48916,1px 2px 3px #4b513314,5px 8px 16px #3c50331b;
 }
 .productart{
