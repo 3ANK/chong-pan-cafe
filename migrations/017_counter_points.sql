@@ -1,0 +1,2 @@
+CREATE TABLE IF NOT EXISTS counter_point_grants(request_key TEXT PRIMARY KEY,line_user_id TEXT NOT NULL REFERENCES members(line_user_id),purchase_amount INTEGER NOT NULL CHECK(purchase_amount BETWEEN 25 AND 100000),delta INTEGER NOT NULL CHECK(delta>0),actor_line_user_id TEXT NOT NULL,note TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP);
+CREATE INDEX IF NOT EXISTS idx_counter_grants_member ON counter_point_grants(line_user_id,created_at DESC);
