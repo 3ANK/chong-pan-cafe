@@ -74,14 +74,46 @@ function orderItemSubtotal(i){
  const pair=!i.egg?(String(i.id)==='30'&&price===15?25:((String(i.id)==='31'||String(i.id)==='32')&&price===20?35:null)):null;
  return pair===null?(price+eggExtra)*qty:Math.floor(qty/2)*pair+(qty%2)*price;
 }
+
+let queueFilter='all',latestQueueOrders=[];
+function orderDate(value){
+ if(value==null||value==='')return null;
+ const text=String(value);
+ const date=value instanceof Date?value:new Date(/(Z|[+-]\d{2}:?\d{2})$/i.test(text)?text:text.replace(' ','T')+'Z');
+ return Number.isFinite(date.getTime())?date:null;
+}
+function orderTimeMarkup(o,now=new Date()){
+ const date=orderDate(o.created_at);if(!date)return '<p class="order-time">ไม่พบเวลาสั่ง</p>';
+ const day=date.toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',year:'numeric'});
+ const time=date.toLocaleTimeString('th-TH',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+ const active=!['completed','cancelled'].includes(o.status),minutes=Math.max(0,Math.floor((now-date)/60000));
+ const wait=minutes<1?'ไม่ถึง 1 นาที':minutes<60?minutes+' นาที':Math.floor(minutes/60)+' ชม. '+minutes%60+' นาที';
+ return '<p class="order-time"><time datetime="'+date.toISOString()+'">สั่งเมื่อ '+escapeText(day)+' · '+escapeText(time)+' น.</time>'+(active?'<span class="order-wait">ผ่านมาแล้ว '+wait+'</span>':'')+'</p>';
+}
+function queueMarkup(orders){
+ const {current}=groupRecentOrders(orders);
+ const filters=[['all','วันนี้และคิวค้าง'],['pending','รอรับ'],['accepted','รับแล้ว'],['preparing','กำลังทำ'],['ready','พร้อมรับ/ส่ง']];
+ return '<div class="queue-summary" role="group" aria-label="กรองคิวออเดอร์">'+filters.map(([key,label])=>'<button type="button" class="secondary queue-filter" data-queue-filter="'+key+'" aria-pressed="'+(queueFilter===key)+'">'+label+' <strong>'+current.filter(o=>key==='all'||o.status===key).length+'</strong></button>').join('')+'</div>';
+}
+function renderQueue(orders){
+ const el=$('adminContent'),olderOpen=!!$('olderOrders')?.open;
+ const expanded=Array.from(el.querySelectorAll('details[open]')).map(d=>({id:d.closest('[data-order-id]')?.dataset.orderId,kind:d.dataset.orderDetail|| (d.classList.contains('loyverse-compact')?'loyverse':'')})).filter(x=>x.id&&x.kind);
+ el.innerHTML=recentOrdersMarkup(orders,olderOpen);
+ for(const x of expanded){const card=Array.from(el.querySelectorAll('[data-order-id]')).find(n=>n.dataset.orderId===x.id);const detail=x.kind==='loyverse'?card?.querySelector('.loyverse-compact'):Array.from(card?.querySelectorAll('[data-order-detail]')||[]).find(d=>d.dataset.orderDetail===x.kind);if(detail)detail.open=true}
+}
+$('adminContent').addEventListener('click',e=>{
+ const b=e.target.closest('[data-queue-filter]');if(!b)return;
+ if($('adminContent').querySelector('.order-actions button:disabled'))return;
+ queueFilter=b.dataset.queueFilter;renderQueue(latestQueueOrders);
+ $('adminContent').querySelector('[data-queue-filter="'+queueFilter+'"]')?.focus();
+});
+
 function orderCard(o){
  const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'};
  const items=(o.items||[]).map(i=>{
   const egg=i.egg?'เพิ่ม'+(eggNames[i.egg]||'ไข่')+' '+(i.eggQty??1)+' ฟอง (+'+Number(i.eggPrice||0)+' บาท)':'';
   const modifiers=[i.sweetness||'',egg,i.note||''].filter(Boolean);
-  const priceInfo=isPointsRedemption(o)||o.payment_method==='points'?'รายการแลกแต้ม':'ราคา '+fmt(i.price)+' × '+Number(i.qty)+' รายการ';
-  const totalInfo=isPointsRedemption(o)||o.payment_method==='points'?'แลกแต้ม':'รวม '+fmt(orderItemSubtotal(i));
-  return '<li style="margin:0 0 .7rem;line-height:1.5"><div style="display:flex;align-items:baseline;gap:.75rem;justify-content:space-between"><span>'+escapeText(i.name)+'</span><strong style="white-space:nowrap">×'+Number(i.qty)+'</strong></div>'+(modifiers.length?'<div class="caption">'+modifiers.map(escapeText).join(' · ')+'</div>':'')+'<div style="display:flex;justify-content:space-between;gap:.75rem;font-size:.9em;color:#58654b"><span>'+escapeText(priceInfo)+'</span><strong style="white-space:nowrap">'+escapeText(totalInfo)+'</strong></div></li>';
+  return '<li style="margin:0 0 .7rem;line-height:1.5"><div style="display:flex;align-items:baseline;gap:.75rem;justify-content:space-between"><span>'+escapeText(i.name)+'</span><strong style="white-space:nowrap">×'+Number(i.qty)+'</strong></div>'+(modifiers.length?'<div class="order-modifiers">'+modifiers.map(escapeText).join(' · ')+'</div>':'')+'</li>';
  }).join('');
  const reward=Math.floor(Math.max(0,Number(o.total)||0)/25),credited=o.pointsAwarded==null?null:Number(o.pointsAwarded);
  const redeem=isPointsRedemption(o)||o.payment_method==='points';
@@ -91,13 +123,17 @@ function orderCard(o){
    :'รับ +'+reward+' แต้มเมื่อส่งมอบ';
  const payPending=o.payment_method==='qr'&&o.payment_status!=='verified';
  const pointsButton=o.status==='ready'?'<button type="button" class="primary award-points-button" data-complete-order="'+escapeText(o.id)+'" data-points="'+reward+'" '+(payPending?'disabled title="ต้องตรวจยอดเงินก่อนส่งมอบ"':'')+'>ส่งมอบแล้ว</button>':'';
- const actions=(nextStatuses[o.status]||[]).filter(s=>s!=='completed').map(s=>'<button type="button" class="'+(s==='cancelled'?'secondary order-cancel':'primary order-next')+'" data-status="'+s+'" data-order="'+escapeText(o.id)+'" data-payment-method="'+escapeText(o.payment_method)+'">'+escapeText(s==='accepted'?'รับออเดอร์':s==='preparing'?'เริ่มทำ':s==='ready'?'พร้อมส่ง':statuses[s]||s)+'</button>').join('');
- return '<article class="ordercard" data-order-id="'+escapeText(o.id)+'" tabindex="-1"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statuses[o.status]||o.status)+'</span></div>'+
- '<div class="admin-order-details"><ul style="list-style:none;padding:0;margin:1rem 0">'+items+'</ul><p><strong>'+(redeem?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม · ไม่มียอดชำระเป็นเงิน':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+(Number(o.points_used)>0&&!redeem?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
- '<p>ลูกค้า: '+escapeText(o.display_name||'')+' · '+escapeText(o.delivery_address||'')+'</p>'+
- '<p>หมายเหตุ: '+escapeText(o.note||'ไม่มี')+'</p></div>'+
+ const actions=(nextStatuses[o.status]||[]).filter(s=>s!=='completed').map(s=>'<button type="button" class="'+(s==='cancelled'?'secondary order-cancel':'primary order-next')+'" data-status="'+s+'" data-order="'+escapeText(o.id)+'" data-payment-method="'+escapeText(o.payment_method)+'">'+escapeText(s==='accepted'?'รับออเดอร์':s==='preparing'?'เริ่มทำ':s==='ready'?(o.fulfillment==='delivery'?'พร้อมส่ง':'พร้อมรับ'):statuses[s]||s)+'</button>').join('');
+ return '<article class="ordercard status-'+escapeText(o.status)+'" data-order-id="'+escapeText(o.id)+'" tabindex="-1"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statuses[o.status]||o.status)+'</span></div>'+
+ orderTimeMarkup(o)+
+ '<div class="order-context"><strong class="fulfillment-tag">'+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+'</strong>'+(o.display_name?'<span>ลูกค้า: '+escapeText(o.display_name)+'</span>':'')+'</div>'+
+ (o.fulfillment==='delivery'&&o.delivery_address?'<details class="order-extra" data-order-detail="address"><summary>ดูที่อยู่จัดส่ง</summary><p>'+escapeText(o.delivery_address)+'</p></details>':'')+
+ '<div class="admin-order-details"><ul class="order-items">'+items+'</ul>'+
+ (o.note&&o.note.trim()&&o.note.trim()!=='ไม่มี'?'<p class="order-note"><strong>หมายเหตุ:</strong> '+escapeText(o.note)+'</p>':'')+
+ '<p class="order-total"><strong>'+(redeem?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม · ไม่มียอดชำระเป็นเงิน':fmt(o.total))+'</strong>'+(Number(o.points_used)>0&&!redeem?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p></div>'+
+ '<details class="order-extra" data-order-detail="prices"><summary>ดูรายละเอียดราคา</summary><ul>'+ (o.items||[]).map(i=>'<li>'+escapeText(i.name)+' · '+fmt(i.price)+' × '+Number(i.qty)+(i.egg?' · เพิ่มไข่ '+Number(i.eggQty??1)+' ฟอง':'')+' · '+(redeem?'แลกแต้ม':fmt(orderItemSubtotal(i)))+'</li>').join('')+'</ul></details>'+
  '<div class="payment-chip '+(o.payment_status==='verified'?'success':'warning')+'">'+escapeText(paymentText(o))+'</div>'+
- '<div class="loyalty-points '+(o.status==='completed'&&credited!==null?'awarded':'')+'">'+escapeText(pointsInfo)+'</div>'+
+ '<details class="order-extra order-points" data-order-detail="points"><summary>แต้มสะสม</summary><div class="loyalty-points '+(o.status==='completed'&&credited!==null?'awarded':'')+'">'+escapeText(pointsInfo)+'</div></details>'+
  (typeof window.renderLoyverseStatus==='function'?window.renderLoyverseStatus(o):'')+
  '<div class="order-actions">'+pointsButton+actions+'</div></article>';
 }
@@ -121,8 +157,11 @@ function groupRecentOrders(orders,now=new Date()){
 function recentOrdersMarkup(orders,olderOpen){
  if(!orders.length)return '<p class="empty">ยังไม่มีออเดอร์</p>';
  const {current,previous}=groupRecentOrders(orders);
- let html=current.length?current.map(orderCard).join(''):'<p class="empty">ยังไม่มีออเดอร์วันนี้หรือรายการค้าง</p>';
- if(previous.size){
+ const visible=current.filter(o=>queueFilter==='all'||o.status===queueFilter);
+ const today=orderDayKey(new Date()),carry=visible.filter(o=>orderDayKey(o.created_at)!==today),todays=visible.filter(o=>orderDayKey(o.created_at)===today);
+ let html=queueMarkup(orders)+(carry.length?'<h3 class="queue-day-heading">ออเดอร์ค้างวันก่อน ('+carry.length+')</h3>'+carry.map(orderCard).join(''):'')+(todays.length?'<h3 class="queue-day-heading">วันนี้ ('+todays.length+')</h3>'+todays.map(orderCard).join(''):'');
+ if(!visible.length)html+='<p class="empty">ไม่มีออเดอร์ในคิวที่เลือก</p>';
+ if(previous.size&&queueFilter==='all'){
   const count=[...previous.values()].reduce((n,items)=>n+items.length,0);
   const focusedOld=[...previous.values()].some(items=>items.some(o=>o.id===selectedOrderId));
   html+='<details id="olderOrders"'+(olderOpen||focusedOld?' open':'')+'><summary class="secondary"><span class="older-show">+ ดูออเดอร์วันก่อน</span><span class="older-hide">− ซ่อนออเดอร์วันก่อน</span> ('+count+')</summary>';
@@ -142,7 +181,9 @@ async function loadOrders({silent=false}={}){
  const expanded=new Set(Array.from(el.querySelectorAll('.loyverse-compact[open]')).map(d=>d.closest('[data-order-id]')?.dataset.orderId).filter(Boolean));
  try{
   const orders=(await request('admin/orders')).orders;
-  el.innerHTML=recentOrdersMarkup(orders,olderOpen);
+  latestQueueOrders=orders;
+  if(!silent&&selectedOrderId)queueFilter='all';
+  renderQueue(orders);
   for(const id of expanded){const card=Array.from(el.querySelectorAll('[data-order-id]')).find(node=>node.dataset.orderId===id);card?.querySelector('.loyverse-compact')?.setAttribute('open','')}
   if(selectedOrderId){
    const focused=orders.find(o=>o.id===selectedOrderId);
