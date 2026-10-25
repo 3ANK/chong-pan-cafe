@@ -290,7 +290,7 @@ function renderCustomerPoints(){
  $('membersSummary').textContent='สมาชิก '+customerPointMembers.length+' บัญชี · รวม '+total.toLocaleString('th-TH')+' แต้ม'+(q?' · พบ '+filtered.length+' บัญชี':'');
  $('membersContent').innerHTML=filtered.length?filtered.map(m=>{
   const id=String(m.line_user_id||'');
-  return '<article class="ordercard"><div class="adminrow"><strong>'+escapeText(m.display_name||'สมาชิก LINE')+'</strong><strong>'+Math.max(0,Number(m.points)||0).toLocaleString('th-TH')+' แต้ม</strong></div><p class="caption">LINE ลงท้าย '+escapeText(id.slice(-8))+'</p></article>';
+  return '<article class="ordercard"><div class="adminrow"><strong>'+escapeText(m.display_name||'สมาชิก LINE')+'</strong><strong>'+Math.max(0,Number(m.points)||0).toLocaleString('th-TH')+' แต้ม</strong></div><p class="caption">LINE ลงท้าย '+escapeText(id.slice(-8))+'</p><button type="button" class="primary" data-counter-member="'+escapeText(id)+'">เติมแต้มหน้าร้าน</button></article>';
  }).join(''):'<p class="empty">'+(q?'ไม่พบลูกค้าที่ค้นหา':'ยังไม่มีลูกค้าที่เข้าสู่ระบบ LINE')+'</p>';
 }
 async function loadCustomerPoints(){
