@@ -22,7 +22,7 @@ async function isAdmin(s,env,db){
 }
 function eggPrice(s){return({fried:10,omelet:10,creamy:20})[s]??null}
 const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'};
-const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระเทียม']);
+const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระเพรา','ข้าวกระเทียม']);
 const validSweet=new Set(['','ปกติ','หวานน้อย','ไม่หวาน','ไม่เติมน้ำตาล','เติมหวานน้อย','เติมหวานปกติ']);
 const validStatus=new Set(['accepted','preparing','ready','completed','cancelled']);
 async function body(req,maxChars=18000){const raw=await req.text();if(raw.length>maxChars)throw new Error('คำขอใหญ่เกินกำหนด');try{return JSON.parse(raw)}catch{throw new Error('รูปแบบ JSON ไม่ถูกต้อง')}}
