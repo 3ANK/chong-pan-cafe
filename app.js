@@ -22,7 +22,7 @@ async function request(path,opts={}){
  }catch(e){if(e?.name==='AbortError')throw Error('การเชื่อมต่อช้าเกินไป กรุณาลองอีกครั้ง');if(e instanceof TypeError)throw Error(navigator.onLine===false?'ไม่มีอินเทอร์เน็ต กรุณาเชื่อมต่อแล้วลองอีกครั้ง':'เชื่อมต่อระบบไม่ได้ กรุณาตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง');throw e}
  finally{clearTimeout(timeout)}
 }
-const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระเทียม']);
+const eggEligibleCategories=new Set(['ข้าวกระเพรา','กะเพรา','ข้าวกระเทียม']);
 const supportsEgg=p=>!!p&&eggEligibleCategories.has(p.category);
 function keyOf(item){return JSON.stringify([item.id,item.sweetness,item.egg,item.egg?item.eggQty??1:0,item.note])}
 function extra(item){return (({fried:10,omelet:10,creamy:20})[item.egg]||0)*(item.egg?(item.eggQty??1):0)}
@@ -39,11 +39,11 @@ function subTotal(){return state.basket.reduce((sum,it)=>sum+lineSubtotal(it),0)
 function saveBasket(){try{localStorage.setItem('chongpan-v2-basket',JSON.stringify(state.basket))}catch{}}
 function restoreBasket(){try{const v=JSON.parse(localStorage.getItem('chongpan-v2-basket')||'[]');if(Array.isArray(v))state.basket=v.filter(it=>it&&Number.isInteger(it.qty)&&it.qty>0).slice(0,70)}catch{}}
 // Every catalog item belongs to exactly one main group. New categories fall back by product type.
-const riceCategories=new Set(['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ข้าวสั่งแยก','ข้าวและไข่สั่งแยก','เทอริยากิ']);
-const riceCategoryOrder=['กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ข้าวสั่งแยก','เทอริยากิ','ข้าวและไข่สั่งแยก'];
+const riceCategories=new Set(['ข้าวกระเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ข้าวสั่งแยก','ข้าวและไข่สั่งแยก','เทอริยากิ']);
+const riceCategoryOrder=['ข้าวกระเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ข้าวสั่งแยก','เทอริยากิ','ข้าวและไข่สั่งแยก'];
 const riceGroupCategory='__rice__';
 const menuGroupCategories={
- food:new Set(['ข้าว','กะเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ไข่สั่งแยก','ข้าวสั่งแยก','ข้าวและไข่สั่งแยก','เทอริยากิ','ส้มตำ','สปาเก็ตตี้']),
+ food:new Set(['ข้าว','ข้าวกระเพรา','ข้าวผัด','ข้าวกระเทียม','ข้าวไข่','ข้าวต้ม','ไข่สั่งแยก','ข้าวสั่งแยก','ข้าวและไข่สั่งแยก','เทอริยากิ','ส้มตำ','สปาเก็ตตี้']),
  drinks:new Set(['กาแฟ','ชาและนม','มัทฉะ','ผลไม้สดปั่น','โซดา','น้ำผลไม้','น้ำปั่น','ท็อปปิง','น้ำเปล่า/น้ำอัดลม']),
  dessert:new Set(['ขนมปัง','ดิปสังขยา','ดิปและของทานเล่น'])
 };
@@ -64,7 +64,8 @@ function menuGroups(){
   return p.category===state.selectedCategory;
  });
  const groups={};for(const p of valid)(groups[p.category]||=[]).push(p);
- return Object.fromEntries(Object.entries(groups).sort(([a],[b])=>Number(a==='ข้าวและไข่สั่งแยก')-Number(b==='ข้าวและไข่สั่งแยก')));
+ const rank=c=>c==='ข้าวกระเพรา'||c==='กะเพรา'?-1:c==='ข้าวและไข่สั่งแยก'?1:0;
+ return Object.fromEntries(Object.entries(groups).sort(([a],[b])=>rank(a)-rank(b)));
 }
 function paintMenuGroupTabs(){
  const searching=!!$('search').value.trim();
@@ -90,7 +91,7 @@ function paintCategories(){
   :['ทั้งหมด',...availableCategories];
  if(!mainCategories.includes(state.selectedCategory))state.selectedCategory='ทั้งหมด';
  if(state.selectedCategory===riceGroupCategory&&!riceSubs.includes(state.selectedRiceCategory))state.selectedRiceCategory='ทั้งหมด';
- const mascotPoses={'กาแฟ':0,'ชาและนม':1,'มัทฉะ':2,'ผลไม้สดปั่น':3,'กะเพรา':4,'ส้มตำ':5,'สปาเก็ตตี้':4,'ข้าวกระเทียม':4,'ข้าวไข่':4,'ไข่สั่งแยก':4,'ข้าวสั่งแยก':4,'ขนมปัง':6,'ดิปสังขยา':6,'ท็อปปิง':6,'โซดา':7,'น้ำผลไม้':7,'น้ำปั่น':3};
+ const mascotPoses={'กาแฟ':0,'ชาและนม':1,'มัทฉะ':2,'ผลไม้สดปั่น':3,'ข้าวกระเพรา':4,'ส้มตำ':5,'สปาเก็ตตี้':4,'ข้าวกระเทียม':4,'ข้าวไข่':4,'ไข่สั่งแยก':4,'ข้าวสั่งแยก':4,'ขนมปัง':6,'ดิปสังขยา':6,'ท็อปปิง':6,'โซดา':7,'น้ำผลไม้':7,'น้ำปั่น':3};
  const mascotFor=category=>{
   if(Object.prototype.hasOwnProperty.call(mascotPoses,category))return mascotPoses[category];
   if(/กาแฟ/.test(category))return 0;
