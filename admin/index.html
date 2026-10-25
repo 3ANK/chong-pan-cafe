@@ -6,7 +6,7 @@
 <link rel="icon" href="/assets/chongpan-main-logo.webp" type="image/webp">
 <link rel="stylesheet" href="/styles.css?v=rice-category-layout-20261022"><link rel="stylesheet" href="/admin/admin.css?v=paged-catalog-20261025">
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
-<script src="/admin/admin.js?v=kitchen-queue-20261025" defer></script><script src="/catalog-admin.js?v=paged-catalog-20261025" defer></script>
+<script src="/admin/admin.js?v=counter-points-20261025" defer></script><script src="/catalog-admin.js?v=paged-catalog-20261025" defer></script>
 <script src="/admin/loyverse.js?v=compact-loyverse-20261021" defer></script>
 <style>#olderOrders{margin:18px 0}#olderOrders>summary{cursor:pointer;list-style:none;padding:12px 16px}#olderOrders>summary::-webkit-details-marker{display:none}#olderOrders .older-hide{display:none}#olderOrders[open] .older-hide{display:inline}#olderOrders[open] .older-show{display:none}.older-order-day{margin-top:18px}.older-order-day h3{font-size:16px;margin:10px 0;color:#405a32}</style></head><body>
 <div class="admin-wrap">
@@ -61,4 +61,4 @@
 <p class="caption">หากยังไม่มีรูป QR บนเว็บ อย่าเพิ่งเปิดวิธีสแกนจ่าย ส่งไฟล์ QR ร้านให้ผู้ดูแลเว็บเพิ่มรูปจริงก่อน</p>
 </section>
 </main></div>
-</body></html>
+<dialog id="counterDialog" aria-labelledby="counterTitle"><div class="dialogtop"><h2 id="counterTitle">เติมแต้มหน้าร้าน</h2><button id="counterClose" type="button" class="iconbtn" aria-label="ปิด">×</button></div><p id="counterName"></p><form id="counterForm"><label>ยอดซื้อที่รับเงินจริง (บาท)<input id="counterAmount" type="number" min="25" max="100000" step="1" inputmode="numeric" required></label><p id="counterPreview" class="caption"></p><label>หมายเหตุ / เลขบิล (ถ้ามี)<input id="counterNote" maxlength="200"></label><p class="caption">สำหรับยอดซื้อหน้าร้านที่ยังไม่เคยได้รับแต้มเท่านั้น</p><button id="counterSubmit" type="submit" class="primary full">ตรวจสอบและเติมแต้ม</button><p id="counterStatus" role="status" aria-live="polite"></p></form><details><summary>ประวัติเติมแต้มหน้าร้าน 50 รายการล่าสุด</summary><div id="counterHistory"></div></details></dialog><script src="/admin/counter-points.js?v=20261025" defer></script></body></html>
