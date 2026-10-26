@@ -94,3 +94,16 @@ button:hover:not(:disabled){background:linear-gradient(135deg,#fefeff,#deddf5);b
 .login{background:linear-gradient(135deg,#fff,#e8e7f8)}.login:before{background:linear-gradient(135deg,#eee4ff,#bcbae9);color:#7569a0}
 .recipe-card.panel[open]{border-color:#b4b0df;background:#eeedfc}.recipe-card[open]>summary{background:linear-gradient(120deg,#e0d7f9,#e5ecfc)}.recipe-card[open]>.recipe-content{background:#f5f5fe}
 .unit-workspace .cost-result{background:linear-gradient(135deg,#b5a5e6,#929ed7)}.unit-workspace .cost-result,.unit-workspace .cost-result span,.unit-workspace .cost-result small{color:#393453}
+
+/* One soft light source at the upper left; avoid luminous button outlines. */
+:root{--button-shadow:4px 5px 10px #777fa72b,-2px -2px 6px #ffffff80,inset 0 1px 0 #ffffff80;--button-down:inset 2px 3px 6px #777fa72b,inset -1px -1px 3px #ffffff80}
+button,.editor-tools button,.quick-actions button,.recipe-actions button,.category-tools button,#lock,.welcome-card button,.login button,.unit-workspace .primary,.unit-workspace .quick button,.unit-workspace .data-actions button{border:1px solid #bfc1d94d;border-top-color:#ffffff80;border-left-color:#ffffff66;box-shadow:var(--button-shadow);text-shadow:none;outline-offset:3px;transition:background .15s,box-shadow .15s,transform .15s}
+.welcome-card button{background:linear-gradient(145deg,#f5f0ff,#d9d9f3);color:#494269;border-color:#ffffff40;border-bottom-color:#858abb40;box-shadow:4px 6px 12px #666c9c35,inset 0 1px 0 #ffffff70}
+.nav-button,.unit-workspace nav button,.recipe-domains button{box-shadow:none;border-color:transparent}
+.nav-button[aria-current=page],.unit-workspace nav .active,.recipe-domains button[aria-pressed=true]{box-shadow:2px 3px 7px #777fa726,inset 0 1px 0 #ffffff66;border:1px solid #a7abd04d}
+.unit-workspace .swap{background:transparent;box-shadow:none;border:0}
+button:hover:not(:disabled){transform:none;box-shadow:var(--button-shadow)}
+@media(hover:hover) and (pointer:fine){button:hover:not(:disabled){transform:translateY(-1px);box-shadow:4px 6px 12px #777fa733,inset 0 1px 0 #ffffff80}.nav-button:hover:not(:disabled),.unit-workspace nav button:hover:not(:disabled),.recipe-domains button:hover:not(:disabled){transform:none;box-shadow:none}.unit-workspace .swap:hover:not(:disabled){box-shadow:none}}
+button:active:not(:disabled),.welcome-card button:active:not(:disabled),.editor-tools button:active:not(:disabled),.quick-actions button:active:not(:disabled),.recipe-actions button:active:not(:disabled),.unit-workspace .primary:active:not(:disabled){transform:translateY(1px);box-shadow:var(--button-down)}
+button:disabled{box-shadow:none;transform:none;opacity:.6}
+@media(prefers-reduced-motion:reduce){button,button:hover:not(:disabled),button:active:not(:disabled){transition:none;transform:none}}
