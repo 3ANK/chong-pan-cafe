@@ -43,6 +43,7 @@
  function productCard(p){
   return '<article class="admin-product catalog-row" data-id="'+escape(p.id)+'"><div class="catalog-row-head"><div class="catalog-thumb">'+previewMarkup(p)+'</div><div class="catalog-product-title"><strong>'+escape(p.name)+'</strong><small>'+escape(p.category)+' · '+(p.available?'เปิดขาย':'ปิดขาย')+(!p.verified?' · รอยืนยันราคา':'')+'</small></div></div>'+
   '<div class="admin-product-edit catalog-quick-edit"><label>ราคา (บาท)<input aria-label="ราคา '+escape(p.name)+'" type="number" data-price min="0" max="100000" step="1" value="'+Number(p.price)+'"></label><label class="admin-check"><input type="checkbox" data-available '+(p.available?'checked':'')+'> เปิดขาย</label><button type="button" class="primary" data-save>บันทึก</button></div>'+
+  (canEditImages?'<button type="button" class="secondary catalog-delete" data-delete aria-label="ลบเมนู '+escape(p.name)+'">ลบเมนู</button>':'')+
   '<p class="catalog-save-status caption" data-save-status role="status"></p><details class="catalog-product-details"><summary>รูปและรายละเอียด'+(!p.verified?' · รอยืนยันราคา':'')+'</summary>'+
   (canEditImages?'<label class="admin-category-edit">หมวดหมู่<input type="text" data-category maxlength="70" value="'+escape(p.category)+'"></label>':'')+
   '<label class="admin-check"><input type="checkbox" data-verified '+(p.verified?'checked':'')+'> ยืนยันราคาจากหน้าร้านแล้ว</label>'+imageControls(p)+
@@ -132,6 +133,22 @@
   if(pageButton){if(pageButton.disabled)return;catalogPage+=Number(pageButton.dataset.catalogPage);applyFilters();root.querySelector('.catalog-toolbar').scrollIntoView({behavior:'smooth',block:'start'});return;}
   if(ev.target.closest('#closeAdminCatalog')){if(hasUnsaved()&&!confirm('มีรายการที่ยังไม่บันทึก ต้องการปิดและทิ้งการแก้ไขหรือไม่?'))return;root.hidden=true;return;}
   if(ev.target.closest('#clearCatalogFilters')){filter='';categoryFilter='';statusFilter='';catalogPage=1;root.querySelector('#adminFilter').value='';root.querySelector('#adminCategoryFilter').value='';root.querySelector('#adminStatusFilter').value='';applyFilters();return;}
+  const remove=ev.target.closest('[data-delete]');
+  if(remove){
+   const card=remove.closest('[data-id]'),id=card.dataset.id,p=records.find(x=>String(x.id)===id);
+   if(!p||card.dataset.saving==='true'||card.querySelector('[data-image]:disabled'))return;
+   if(!confirm('ลบเมนู “'+p.name+'” ออกจากระบบสั่งอาหารหรือไม่?\nเมนูจะหายจากหน้าลูกค้าและหลังบ้าน ประวัติออเดอร์เดิมยังอยู่\nการลบนี้ไม่สามารถยกเลิกได้'))return;
+   const controls=[...card.querySelectorAll('input,button')];controls.forEach(c=>c.disabled=true);card.dataset.saving='true';
+   card.querySelector('[data-save-status]').textContent='กำลังลบเมนู…';
+   try{
+    await api('DELETE','admin/menu',{id,confirmed:true});
+    records=records.filter(x=>String(x.id)!==id);card.remove();
+    const stats=root.querySelector('.admin-summary');if(stats)stats.outerHTML=stat();
+    applyFilters();document.getElementById('catalogVisibleCount').textContent+=' · ลบ “'+p.name+'” แล้ว';
+    if(window.bootMenu)window.bootMenu().catch(()=>{});
+   }catch(e){card.querySelector('[data-save-status]').textContent='ลบไม่สำเร็จ: '+e.message;controls.forEach(c=>c.disabled=false);delete card.dataset.saving;}
+   return;
+  }
   const b=ev.target.closest('[data-save]');if(!b)return;
   const el=b.closest('[data-id]'),id=el.dataset.id;
   const price=Number(el.querySelector('[data-price]').value),available=el.querySelector('[data-available]').checked,verified=el.querySelector('[data-verified]').checked;

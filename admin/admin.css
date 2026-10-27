@@ -162,3 +162,5 @@
 #adminCatalog .catalog-row[hidden]{display:none!important}
 @media(max-width:619px){#adminCatalog .catalog-toolbar{padding:8px;margin-left:-5px;margin-right:-5px}.catalog-toolbar .catalog-filters{gap:6px}#adminCatalog .catalog-toolbar .catalog-filters button{grid-column:auto;padding:8px;font-size:11px}#adminCatalog .catalog-toolbar .catalog-filters{grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto}#adminCatalog .catalog-pagination{gap:7px}#adminCatalog .catalog-pagination button{padding:8px 10px;font-size:12px}}
 @media(max-height:500px){#adminCatalog .catalog-toolbar{position:static}}
+
+#adminCatalog .catalog-delete{color:#a42929;border:1px solid #dba6a1;background:#fff2ef;min-height:44px;margin-top:10px}
