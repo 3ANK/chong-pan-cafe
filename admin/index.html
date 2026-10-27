@@ -4,30 +4,40 @@
 <meta name="theme-color" content="#596b35"><meta name="robots" content="noindex,nofollow">
 <title>หลังบ้านชง&ปั่น | เจ้าของร้าน</title>
 <link rel="icon" href="/assets/chongpan-main-logo.webp" type="image/webp">
-<link rel="stylesheet" href="/styles.css?v=rice-category-layout-20261022"><link rel="stylesheet" href="/admin/admin.css?v=delete-menu-20261028">
+<link rel="stylesheet" href="/styles.css?v=rice-category-layout-20261022"><link rel="stylesheet" href="/admin/admin.css?v=tidy-dashboard-20261028">
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
-<script src="/admin/admin.js?v=legacy-pending-20261028" defer></script><script src="/catalog-admin.js?v=delete-menu-20261028" defer></script>
+<script src="/admin/admin.js?v=tidy-dashboard-20261028" defer></script><script src="/catalog-admin.js?v=tidy-dashboard-20261028" defer></script>
 <script src="/admin/loyverse.js?v=compact-loyverse-20261021" defer></script>
 <style>#olderOrders{margin:18px 0}#olderOrders>summary{cursor:pointer;list-style:none;padding:12px 16px}#olderOrders>summary::-webkit-details-marker{display:none}#olderOrders .older-hide{display:none}#olderOrders[open] .older-hide{display:inline}#olderOrders[open] .older-show{display:none}.older-order-day{margin-top:18px}.older-order-day h3{font-size:16px;margin:10px 0;color:#405a32}</style></head><body>
 <div class="admin-wrap">
 <header class="admin-hero"><div class="admin-title"><img class="admin-mark" src="/assets/chongpan-main-logo.webp" alt="โลโก้ร้านชง&ปั่น"><div><h1>หลังบ้านร้านชง&ปั่น</h1><p>ระบบจัดการออเดอร์ · เฉพาะเจ้าของร้าน</p></div></div><a href="/order" class="admin-back">← หน้าเมนูลูกค้า</a></header>
 <section id="adminLogin" class="admin-login" role="status"><h2>กำลังตรวจสอบสิทธิ์เจ้าของร้าน…</h2><p id="adminLoginStatus">กรุณารอสักครู่</p><button id="adminLoginRetry" type="button" class="primary" hidden>เชื่อมต่อ LINE เพื่อเข้าหลังบ้าน</button></section>
 <main id="adminPrivate" hidden>
-<div id="ownerHello" class="admin-info"></div>
-<div class="admin-actions">
-<button id="logoutAdmin" class="secondary" type="button">ออกจากระบบ / เปลี่ยนบัญชี</button>
-<button id="refreshAdmin" class="secondary" type="button">รีเฟรชออเดอร์</button>
-<button id="manageLoyverse" class="secondary" type="button" hidden>เชื่อม Loyverse</button>
-<button id="manageCatalog" class="secondary" type="button">จัดการเมนู</button>
-<button id="manageLegacy" class="secondary" type="button">ย้ายแต้มสมาชิกเก่า</button>
-<button id="manageMembers" class="secondary" type="button">ดูแต้มลูกค้า</button>
-<button id="manageAdmins" class="secondary" type="button" hidden>จัดการแอดมิน</button>
-<button id="checkReadiness" class="secondary" type="button">ตรวจความพร้อม</button>
-<button id="testLineAlert" class="secondary" type="button">ทดสอบแจ้งเตือน LINE</button>
-<button id="toggleShop" class="secondary" type="button">เปิด / ปิดรับออเดอร์</button>
-</div>
-<section id="loyversePanel" class="admin-section" hidden><h2>เชื่อม Loyverse</h2><div id="loyverseSettings"></div></section>
-<section id="adminsPanel" class="admin-section" hidden>
+<div class="admin-account"><span id="ownerHello"></span><button id="logoutAdmin" class="secondary" type="button">ออกจากระบบ / เปลี่ยนบัญชี</button></div>
+<section class="shop-controls" aria-label="สถานะร้าน"><strong id="shopStatus" role="status">กำลังตรวจสถานะร้าน…</strong><button id="toggleShop" class="secondary" type="button" disabled>เปิด / ปิดรับออเดอร์</button></section>
+<div id="systemWarning" class="notice warn" role="status" hidden></div>
+<nav class="admin-actions" aria-label="จัดการร้าน"><button id="manageCatalog" class="secondary" type="button">จัดการเมนู</button><button id="manageMembers" class="secondary" type="button">แต้มลูกค้า</button><button id="manageSettings" class="secondary" type="button" aria-expanded="false" aria-controls="settingsPanel">ตั้งค่า</button></nav>
+
+
+<section id="membersPanel" class="admin-section" hidden>
+ <div class="admin-section-head"><h2>รายชื่อลูกค้าและแต้ม</h2><button id="refreshMembers" class="secondary" type="button">อัปเดต</button></div>
+ <p class="caption">แสดงลูกค้าที่เข้าสู่ระบบด้วย LINE แล้ว ค้นหาด้วยชื่อหรือเลขท้าย LINE</p>
+ <label>ค้นหาลูกค้า<input id="memberSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อหรือเลขท้าย LINE"></label>
+ <p id="membersSummary" class="caption" role="status" aria-live="polite"></p>
+ <div id="membersContent" class="admin-list"></div><details class="legacy-tools"><summary>ย้ายแต้มสมาชิกเก่า</summary><button id="manageLegacy" class="secondary" type="button">เปิดรายการรอย้ายแต้ม</button><section id="legacyPanel" class="admin-section" hidden><h2>ย้ายแต้มจากสมาชิกเก่า</h2><p>จับคู่บัญชี LINE หลังตรวจสอบตัวตนลูกค้าแล้วเท่านั้น</p><div id="legacyContent"></div></section></details>
+</section>
+
+<section class="admin-section"><div class="admin-section-head"><h2>ออเดอร์ล่าสุด</h2><button id="refreshAdmin" class="secondary compact-refresh" type="button">รีเฟรช</button><a href="https://manager.line.biz/" target="_blank" rel="noopener noreferrer">เปิด LINE OA เพื่อดูสลิป ↗</a></div>
+<details class="order-help"><summary>คำแนะนำการรับออเดอร์และชำระเงิน</summary><p class="caption">ออเดอร์สแกนจ่าย: ตรวจหลักฐานในแชต LINE OA และตรวจยอดเงินจริงก่อนกดยืนยันรับเงิน · ออเดอร์แลกแต้มจะแสดงแต้มที่ใช้และไม่ต้องรับเงิน</p>
+<p class="caption">สถานะการส่งยอดขายจะแสดงใหม่อัตโนมัติทุก 15 วินาที ระหว่างเปิดหน้านี้</p>
+</details>
+<div id="orderFocusStatus" class="focus-order-status" role="status" hidden></div><div id="adminContent" class="admin-list">กำลังโหลดออเดอร์…</div></section>
+<section id="adminCatalog" class="admin-catalog admin-section" hidden></section>
+
+
+<section id="settingsPanel" class="admin-section" hidden><div class="admin-section-head"><h2>ตั้งค่าร้าน</h2><button id="closeSettings" class="secondary" type="button">ปิด</button></div>
+<div class="settings-actions"><button id="manageLoyverse" class="secondary" type="button" hidden>เชื่อม Loyverse</button><button id="manageAdmins" class="secondary" type="button" hidden>จัดการแอดมิน</button></div>
+<details id="systemDetails" class="system-details"><summary>สถานะระบบ</summary><div class="settings-actions"><button id="checkReadiness" class="secondary" type="button">ตรวจอีกครั้ง</button><button id="testLineAlert" class="secondary" type="button">ทดสอบแจ้งเตือน LINE</button></div><section id="readinessReport" class="readiness-report" hidden></section></details><section id="loyversePanel" class="admin-section" hidden><h2>เชื่อม Loyverse</h2><div id="loyverseSettings"></div></section><section id="adminsPanel" class="admin-section" hidden>
  <div class="admin-section-head"><h2>จัดการแอดมิน</h2><button id="refreshAdmins" class="secondary" type="button">อัปเดต</button></div>
  <p id="adminRosterSummary" class="caption" role="status"></p>
  <p class="caption">แอดมินทุกคนจะได้รับแจ้งเตือนออเดอร์และเข้าหลังบ้านได้ ให้ผู้ที่จะเพิ่มเปิดหน้าเมนูสั่งอาหารและเข้าสู่ระบบ LINE อย่างน้อยหนึ่งครั้ง พร้อมเพิ่มเพื่อน LINE OA ของร้านก่อน</p>
@@ -35,30 +45,13 @@
  <h3>เพิ่มจากสมาชิก LINE</h3>
  <label>ค้นหาสมาชิก<input id="adminCandidateSearch" type="search" autocomplete="off" placeholder="ค้นหาชื่อหรือเลขท้าย LINE"></label>
  <div id="adminCandidates" class="admin-list"></div>
-</section>
-<section id="membersPanel" class="admin-section" hidden>
- <div class="admin-section-head"><h2>รายชื่อลูกค้าและแต้ม</h2><button id="refreshMembers" class="secondary" type="button">อัปเดต</button></div>
- <p class="caption">แสดงลูกค้าที่เข้าสู่ระบบด้วย LINE แล้ว ค้นหาด้วยชื่อหรือเลขท้าย LINE</p>
- <label>ค้นหาลูกค้า<input id="memberSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อหรือเลขท้าย LINE"></label>
- <p id="membersSummary" class="caption" role="status" aria-live="polite"></p>
- <div id="membersContent" class="admin-list"></div>
-</section>
-<section id="readinessReport" class="readiness-report" hidden></section>
-<section class="admin-section"><div class="admin-section-head"><h2>ออเดอร์ล่าสุด</h2><a href="https://manager.line.biz/" target="_blank" rel="noopener noreferrer">เปิด LINE OA เพื่อดูสลิป ↗</a></div>
-<details class="order-help"><summary>คำแนะนำการรับออเดอร์และชำระเงิน</summary><p class="caption">ออเดอร์สแกนจ่าย: ตรวจหลักฐานในแชต LINE OA และตรวจยอดเงินจริงก่อนกดยืนยันรับเงิน · ออเดอร์แลกแต้มจะแสดงแต้มที่ใช้และไม่ต้องรับเงิน</p>
-<p class="caption">สถานะการส่งยอดขายจะแสดงใหม่อัตโนมัติทุก 15 วินาที ระหว่างเปิดหน้านี้</p>
-</details>
-<div id="orderFocusStatus" class="focus-order-status" role="status" hidden></div><div id="adminContent" class="admin-list">กำลังโหลดออเดอร์…</div></section>
-<section id="adminCatalog" class="admin-catalog admin-section" hidden></section>
-<section id="legacyPanel" class="admin-section" hidden><h2>ย้ายแต้มจากสมาชิกเก่า</h2><p>จับคู่บัญชี LINE หลังตรวจสอบตัวตนลูกค้าแล้วเท่านั้น</p><div id="legacyContent"></div></section>
-<section class="admin-section"><h2>ตั้งค่ารับชำระเงินร้าน</h2>
-<p class="caption">เงินสดพร้อมใช้งานแล้ว ส่วนสแกนจ่ายจะเปิดเมื่อมีรูป QR รับเงินจริงในเว็บ และ LINE OA Basic ID ที่ถูกต้องเท่านั้น</p>
+</section><section class="admin-section"><h2>รับชำระเงิน</h2>
+<p class="caption">ตั้งค่า LINE OA และรูป QR สำหรับรับชำระเงิน</p>
 <form id="paymentSettingsForm">
 <label>LINE OA Basic ID (ขึ้นต้นด้วย @)<input id="oaId" name="oaId" autocomplete="off" placeholder="@xxxxxxxx"></label>
 <label>ตำแหน่งรูป QR ร้านบนเว็บไซต์<input id="qrPath" name="qrPath" placeholder="/assets/payment/shop-qr.png" autocomplete="off"></label>
 <button class="primary" type="submit">บันทึกการตั้งค่าชำระเงิน</button>
 <p id="paymentSettingsStatus" class="caption" role="status">กำลังตรวจสอบการตั้งค่า…</p></form>
 <p class="caption">หากยังไม่มีรูป QR บนเว็บ อย่าเพิ่งเปิดวิธีสแกนจ่าย ส่งไฟล์ QR ร้านให้ผู้ดูแลเว็บเพิ่มรูปจริงก่อน</p>
-</section>
-</main></div>
+</section></section></main></div>
 <dialog id="counterDialog" aria-labelledby="counterTitle"><div class="dialogtop"><h2 id="counterTitle">เติมแต้มหน้าร้าน</h2><button id="counterClose" type="button" class="iconbtn" aria-label="ปิด">×</button></div><p id="counterName"></p><form id="counterForm"><label>ยอดซื้อที่รับเงินจริง (บาท)<input id="counterAmount" type="number" min="25" max="100000" step="1" inputmode="numeric" required></label><p id="counterPreview" class="caption"></p><label>หมายเหตุ / เลขบิล (ถ้ามี)<input id="counterNote" maxlength="200"></label><p class="caption">สำหรับยอดซื้อหน้าร้านที่ยังไม่เคยได้รับแต้มเท่านั้น</p><button id="counterSubmit" type="submit" class="primary full">ตรวจสอบและเติมแต้ม</button><p id="counterStatus" role="status" aria-live="polite"></p></form><details><summary>ประวัติเติมแต้มหน้าร้าน 50 รายการล่าสุด</summary><div id="counterHistory"></div></details></dialog><script src="/admin/counter-points.js?v=20261025" defer></script></body></html>

@@ -32,11 +32,11 @@ function showAdminReconnect(){
 }
 function allowed(m){
  $('adminLogin').hidden=true;$('adminPrivate').hidden=false;
- $('ownerHello').textContent='เข้าสู่ระบบหลังบ้านแล้ว · '+(m.name||'แอดมินร้าน');
+ $('ownerHello').textContent=m.name||'แอดมินร้าน';
  $('manageAdmins').hidden=!m.isPrimaryOwner;
  $('manageLoyverse').hidden=!m.isPrimaryOwner;
  loadOrders();loadPaymentSettings();checkReadiness();
- if(!orderRefreshTimer)orderRefreshTimer=setInterval(()=>{if(!document.hidden&&!$('adminPrivate').hidden&&!$('adminContent').querySelector('.order-actions button:disabled'))loadOrders({silent:true})},15000);
+ if(!orderRefreshTimer)orderRefreshTimer=setInterval(()=>{if(!document.hidden&&!$('adminPrivate').hidden&&!$('adminContent').querySelector('.order-actions button:disabled')){loadOrders({silent:true});checkReadiness()}},15000);
  if(!orderVisibilityBound){document.addEventListener('visibilitychange',()=>{if(!document.hidden&&!$('adminPrivate').hidden)loadOrders({silent:true})});orderVisibilityBound=true}
 }
 async function initAdmin(userInitiated=false){
@@ -227,10 +227,21 @@ $('adminContent').addEventListener('click',async e=>{
  }catch(err){alert(err.message);await loadOrders()}
 });
 async function checkReadiness(){
- const el=$('readinessReport');el.hidden=false;el.textContent='กำลังตรวจ…';
- try{const r=await request('admin/readiness');el.innerHTML='<strong>'+(r.ordersEnabled?'กำลังเปิดรับออเดอร์':'ยังไม่เปิดรับออเดอร์')+'</strong><p>เมนู '+r.catalog.total+' รายการ · รอยืนยันราคา '+r.catalog.unverified+'</p><ul>'+r.checks.map(x=>'<li>'+escapeText(x.label)+' — '+(x.ok?'พร้อม ✓':'ยังไม่พร้อม')+'</li>').join('')+'</ul>'}
- catch(e){el.textContent=e.message}
+ const el=$('readinessReport');el.hidden=false;
+ try{
+  const r=await request('admin/readiness');
+  const shopOn=!!r.checks.find(x=>x.id==='shop_database')?.ok;
+  $('shopStatus').textContent=r.ordersEnabled?'🟢 เปิดรับออเดอร์อยู่':shopOn?'🟠 ระบบยังไม่พร้อมรับออเดอร์':'⚪ ปิดรับออเดอร์อยู่';
+  $('toggleShop').textContent=shopOn?'ปิดรับออเดอร์':'เปิดรับออเดอร์';$('toggleShop').disabled=false;
+  const issues=r.checks.filter(x=>!x.ok&&x.id!=='shop_database');
+  $('systemWarning').hidden=!issues.length;
+  $('systemWarning').textContent=issues.length?'ระบบยังไม่พร้อม: '+issues.map(x=>x.label).join(' · ')+' — ดูรายละเอียดใน ตั้งค่า › สถานะระบบ':'';
+  el.innerHTML='<p>เมนู '+r.catalog.total+' รายการ · รอยืนยันราคา '+r.catalog.unverified+'</p><ul>'+r.checks.map(x=>'<li>'+escapeText(x.label)+' — '+(x.ok?'พร้อม ✓':'ยังไม่พร้อม')+'</li>').join('')+'</ul>';
+ }catch(e){el.textContent=e.message;$('shopStatus').textContent='ตรวจสถานะร้านไม่ได้';$('systemWarning').hidden=false;$('systemWarning').textContent=e.message}
 }
+function showSettings(open){$('settingsPanel').hidden=!open;$('manageSettings').setAttribute('aria-expanded',String(open));if(open)$('settingsPanel').scrollIntoView({behavior:'smooth',block:'start'})}
+$('manageSettings').addEventListener('click',()=>showSettings($('settingsPanel').hidden));
+$('closeSettings').addEventListener('click',()=>showSettings(false));
 $('refreshAdmin').addEventListener('click',loadOrders);
 $('checkReadiness').addEventListener('click',checkReadiness);
 $('manageCatalog').addEventListener('click',()=>window.openChongpanCatalog?.());
@@ -265,7 +276,7 @@ $('toggleShop').addEventListener('click',async()=>{
   const s=await request('admin/readiness');
   const on=!!s.checks.find(x=>x.id==='shop_database')?.ok;
   if(on){if(!confirm('ปิดรับออเดอร์ระบบใหม่ทันที?'))return;await request('admin/shop',{method:'POST',body:JSON.stringify({enabled:false})})}
-  else{if(s.checks.filter(x=>x.id!=='shop_database'&&!x.ok).length){await checkReadiness();alert('ยังไม่ผ่านเงื่อนไขเปิดรับออเดอร์');return}if(!confirm('เปิดรับออเดอร์ใหม่จริง และยืนยันว่าทดสอบแล้ว?'))return;await request('admin/shop',{method:'POST',body:JSON.stringify({enabled:true,ownerConfirmed:true})})}
+  else{if(s.checks.filter(x=>x.id!=='shop_database'&&!x.ok).length){showSettings(true);$('systemDetails').open=true;await checkReadiness();alert('ยังไม่ผ่านเงื่อนไขเปิดรับออเดอร์');return}if(!confirm('เปิดรับออเดอร์ใหม่จริง และยืนยันว่าทดสอบแล้ว?'))return;await request('admin/shop',{method:'POST',body:JSON.stringify({enabled:true,ownerConfirmed:true})})}
   await checkReadiness();
  }catch(e){alert(e.message)}
 });

@@ -272,7 +272,7 @@ function paintBasket(){
  syncPointSpendUi();
  $('placeOrder').disabled=!state.canOrder||!state.member||!count||(state.redeemMode&&Number(state.member?.points||0)<subTotal());
  show('redemptionBanner',state.redeemMode);
- if(!checkoutMessageOverride&&!state.redeemMode)checkoutStatus(!state.canOrder?'ระบบทดลอง ยังไม่เปิดรับออเดอร์จริง':!state.member?'เข้าสู่ LINE ก่อนยืนยันออเดอร์':'ตรวจสอบราคาและยอดชำระก่อนสั่ง');
+ if(!checkoutMessageOverride&&!state.redeemMode)checkoutStatus(!state.canOrder?'ขณะนี้ร้านยังไม่เปิดรับออเดอร์':!state.member?'เข้าสู่ LINE ก่อนยืนยันออเดอร์':'ตรวจสอบราคาและยอดชำระก่อนสั่ง');
 }
 function setTab(tab){hideNextStep();for(const t of ['menu','history'])show(t+'Panel',t===tab);document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.tab===tab));if(tab==='history')loadHistory()}
 function paintMember(){const m=state.member;$('memberName').textContent=m?.name||'ยังไม่ได้เข้าสู่ระบบ';$('points').textContent=m?.points??'–';$('loginBtn').textContent=m?'บัญชี LINE ✓':'เข้าสู่ LINE';state.admin=!!m?.isOwner;show('adminShortcut',state.admin);paintBasket()}
@@ -518,7 +518,7 @@ async function bootMenu(){try{const r=await request('menu');state.products=r.pro
    return {...it,name:p.name,price:p.price,egg:supportsEgg(p)?it.egg:'',sweetness:p.drink?it.sweetness:''};
   }).filter(Boolean);saveBasket();
   restorePendingCheckout();saveBasket();
-  state.liffId=r.liffId||'';state.canOrder=!!r.shopEnabled;show('legacyCheckout',!state.canOrder);$('statusBanner').className='notice '+(state.canOrder?'ok':'warn');$('statusBanner').textContent=state.canOrder?'พร้อมรับออเดอร์ผ่าน LINE':'ระบบใหม่อยู่ระหว่างทดสอบ · ยังไม่รับออเดอร์จริง · ราคาอ้างอิงจากข้อมูลเดิม';state.ready=true;paintMenuGroupTabs();paintCategories();paintCatalog();paintBasket();return true}catch(e){$('statusBanner').className='notice warn';$('statusBanner').textContent='เชื่อมต่อเมนูไม่สำเร็จ';$('catalog').innerHTML='<p class="empty">'+escapeText(e.message)+'</p>';return false}}
+  state.liffId=r.liffId||'';state.canOrder=!!r.shopEnabled;$('statusBanner').className='notice '+(state.canOrder?'ok':'warn');$('statusBanner').textContent=state.canOrder?'พร้อมรับออเดอร์ผ่าน LINE':'ขณะนี้ร้านยังไม่เปิดรับออเดอร์ กรุณาติดต่อร้านผ่าน LINE OA';state.ready=true;paintMenuGroupTabs();paintCategories();paintCatalog();paintBasket();return true}catch(e){$('statusBanner').className='notice warn';$('statusBanner').textContent='เชื่อมต่อเมนูไม่สำเร็จ';$('catalog').innerHTML='<p class="empty">'+escapeText(e.message)+'</p>';return false}}
 $('search').addEventListener('input',()=>{state.selectedCategory='ทั้งหมด';paintMenuGroupTabs();paintCategories();paintCatalog()});
 document.querySelectorAll('[data-menu-group]').forEach(b=>b.addEventListener('click',()=>setMenuGroup(b.dataset.menuGroup)));
 $('nextStepButton').addEventListener('click',()=>setMenuGroup(nextStepTarget));
