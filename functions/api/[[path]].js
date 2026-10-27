@@ -267,7 +267,7 @@ async function removeAdmin(req,db,env){
 }
 async function legacyList(db){
   const [legacy,members]=await Promise.all([
-    db.prepare('SELECT legacy_code,display_name,snapshot_points,claimed_line_user_id,claimed_at FROM legacy_accounts ORDER BY imported_at,legacy_code').all(),
+    db.prepare('SELECT legacy_code,display_name,snapshot_points,claimed_line_user_id,claimed_at FROM legacy_accounts WHERE claimed_line_user_id IS NULL ORDER BY imported_at,legacy_code').all(),
     db.prepare('SELECT line_user_id,display_name,points FROM members ORDER BY created_at DESC LIMIT 300').all()
   ]);
   return json({legacy:legacy.results||[],members:members.results||[]});
