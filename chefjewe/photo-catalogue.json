@@ -1,0 +1,253 @@
+[
+  {
+    "name": "ครีมเทียม",
+    "priceSource": "https://www.makro.pro/th/p/983906-498390677686128",
+    "source": "https://www.makro.pro/th/p/983906-498390677686128",
+    "image": "https://images.mango-prod.siammakro.cloud/product-images/498390677686128-474c0448-0f18-4f81-8651-0a61c9721f39.jpeg",
+    "title": "ดรีมมี่ ครีมเทียม 1.35 กก.",
+    "asset": "/ingredient-images/c929e3f58ac1.jpg"
+  },
+  {
+    "name": "ไซรัปมะพร้าว senorita",
+    "priceSource": "https://www.makro.pro/en/p/861717-7164726837443",
+    "source": "https://www.makro.pro/en/p/861717-7164726837443",
+    "image": "https://images.mango-prod.siammakro.cloud/SOURCE/639f178148ba4285862f7ed9a1588891",
+    "title": "SENORITA Coconut Syrup 750 ml",
+    "asset": "/ingredient-images/ddc3012aed87.jpg"
+  },
+  {
+    "name": "นมข้นจืดตราคาเนชั่น",
+    "priceSource": "https://www.makro.pro/th/p/856303-6926627438787",
+    "source": "https://www.makro.pro/th/p/856303-6926627438787",
+    "image": "https://images.mango-prod.siammakro.cloud/product-images/6926627438787-fed5172a-6b6a-4d79-a7a7-9711be46fb42.jpeg",
+    "title": "คาร์เนชัน นมข้นจืด 1 กก.",
+    "asset": "/ingredient-images/1c328040bae0.jpg"
+  },
+  {
+    "name": "น้ำผึ้ง",
+    "priceSource": "https://www.makro.pro/th/p/930832-169875071598598",
+    "source": "https://www.makro.pro/th/p/930832-169875071598598",
+    "image": "https://images.mango-prod.siammakro.cloud/SOURCE/c07c552481234778984044fdbe113d8f",
+    "title": "เอโร่ น้ำผึ้งแท้ 100% 1 กก.",
+    "asset": "/ingredient-images/254bec9f3a40.jpg"
+  },
+  {
+    "name": "น้ำฝรั่ง",
+    "priceSource": "https://shopping.lotuss.com/th/product/51460598",
+    "source": "https://shopee.co.th/%E0%B8%81%E0%B8%A3%E0%B8%B5%E0%B8%99%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B9%8C%E0%B9%80%E0%B8%94%E0%B9%89%E0%B8%99-%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%9D%E0%B8%A3%E0%B8%B1%E0%B9%88%E0%B8%87-100-1-%E0%B8%A5.-%28GREEN-GARDEN-Grava-Juices-1-l%29-i.37501912.24612794755",
+    "image": "https://down-th.img.susercontent.com/file/sg-11134201-822yj-mi2e7vei016r7a",
+    "title": "Green Garden 100% Green Guava Juice Bottle",
+    "illustrative": false,
+    "asset": "/ingredient-images/2b629d8e403b.jpg"
+  },
+  {
+    "name": "ไซรัปบลูเบอร์รี่ติ่งฟง",
+    "priceSource": "https://www.makro.pro/th/p/210428-6915026649283",
+    "source": "https://www.makro.pro/th/p/210428-6915026649283",
+    "image": "https://images.mango-prod.siammakro.cloud/product-images/6915026649283-89f0be37-0385-4f11-b0e6-da39e82b5395.jpeg",
+    "title": "ติ่งฟง น้ำสคอวช บลูเบอร์รี่ 760 มล.",
+    "asset": "/ingredient-images/159281aeab97.jpg"
+  },
+  {
+    "name": "น้ำมะพร้าว",
+    "priceSource": "https://www.makro.pro/th/p/915438-517998154905781",
+    "source": "https://www.makro.pro/th/p/915438-517998154905781",
+    "image": "https://images.mango-prod.siammakro.cloud/SOURCE/2a19da6ce4b146e1ac67acf83bf1a1e8",
+    "title": "มะพร้าวน้ำหอมบ้านแพ้วเปลือกเขียว 1 ลูก",
+    "asset": "/ingredient-images/4b7b16eb5316.jpg"
+  },
+  {
+    "name": "น้ำส้มติ่งฟง",
+    "priceSource": "https://www.makro.pro/th/p/210427-7078763528387",
+    "source": "https://www.makro.pro/th/p/210427-7078763528387",
+    "image": "https://images.mango-prod.siammakro.cloud/product-images/7078763528387-fb3651c4-b5a2-4c35-82f0-f7b3af1c03e2.jpeg",
+    "title": "ติ่งฟง น้ำสคอวช ส้ม 760 มล.",
+    "asset": "/ingredient-images/def8f62ced41.jpg"
+  },
+  {
+    "name": "น้ำเชื่อม",
+    "priceSource": "https://www.makro.pro/th/p/231001-6761204973763",
+    "source": "https://www.makro.pro/th/p/231001-6761204973763",
+    "image": "https://images.mango-prod.siammakro.cloud/product-images/6761204973763-cafd7192-0503-4b98-9215-4fa112dbae1c.jpeg",
+    "title": "มิตรผล น้ำเชื่อมสำเร็จรูป 800 มล.",
+    "asset": "/ingredient-images/16723911e60e.jpg"
+  },
+  {
+    "name": "ผงมัทฉะ",
+    "priceSource": "https://www.lotuss.com/th/product/52175940",
+    "source": "https://www.makro.pro/th/p/844861-7416111235267",
+    "image": "https://images.mango-prod.siammakro.cloud/product-images/7416111235267-8fbc066e-e5da-4ecf-be1e-7411c742cb53.jpeg",
+    "title": "คาวามิ มัทฉะ 100% 100 กรัม",
+    "illustrative": false,
+    "asset": "/ingredient-images/306bf6f7c4b6.jpg"
+  },
+  {
+    "name": "ผงเผือก",
+    "priceSource": "https://www.makro.pro/p/zx7fpqc-6974593138883",
+    "source": "https://www.makro.pro/p/zx7fpqc-6974593138883",
+    "image": "https://images.mango-prod.siammakro.cloud/SOURCE/6175f42e06004ec1bef9786426d89c42",
+    "title": "ใบไม้แดง ผงกลิ่นเผือก 300 ก.",
+    "asset": "/ingredient-images/4e03557ee386.jpg"
+  },
+  {
+    "name": "ผงมัทฉะเกรดพรีเมียม",
+    "priceSource": "https://www.lotuss.com/th/product/75718936",
+    "source": "https://shopee.co.th/%E0%B9%84%E0%B8%A3%E0%B9%88%E0%B8%9E%E0%B8%A3%E0%B8%B0%E0%B8%88%E0%B8%B1%E0%B8%99%E0%B8%97%E0%B8%A3%E0%B9%8C-%F0%9F%92%A5%E0%B8%9C%E0%B8%87%E0%B8%8A%E0%B8%B2%E0%B9%80%E0%B8%82%E0%B8%B5%E0%B8%A2%E0%B8%A7%E0%B8%A1%E0%B8%B1%E0%B8%97%E0%B8%89%E0%B8%B0%F0%9F%92%A5Matcha-Powder-%E0%B8%9C%E0%B8%87%E0%B8%A1%E0%B8%B1%E0%B8%97%E0%B8%89%E0%B8%B0-100-%E0%B8%9B%E0%B8%A5%E0%B8%AD%E0%B8%94%E0%B8%AA%E0%B8%B2%E0%B8%A3-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B9%81%E0%B8%95%E0%B9%88%E0%B8%87%E0%B8%AA%E0%B8%B5-%E0%B8%81%E0%B8%A5%E0%B8%B4%E0%B9%88%E0%B8%99-%E0%B9%84%E0%B8%A1%E0%B9%88%E0%B8%9C%E0%B8%AA%E0%B8%A1%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%95%E0%B8%B2%E0%B8%A5-%E0%B8%82%E0%B8%99%E0%B8%B2%E0%B8%94-100-%E0%B8%81%E0%B8%A3%E0%B8%B1%E0%B8%A1-i.1342798769.26612576609",
+    "image": "https://down-th.img.susercontent.com/file/th-11134208-81ztn-mezcfgu7lybwcc",
+    "title": "ไร่พระจันทร์ 100% Matcha Powder",
+    "illustrative": false,
+    "asset": "/ingredient-images/0c68b690bebe.jpg"
+  },
+  {
+    "name": "นม Meiji",
+    "priceSource": "https://www.makro.pro/th/p/xk89vwc-6976619184323",
+    "source": "https://www.makro.pro/th/p/xk89vwc-6976619184323",
+    "image": "https://images.mango-prod.siammakro.cloud/SOURCE/118aa7b3910044c4970f67b714675969",
+    "title": "เมจิ นมสดพาสเจอร์ไรซ์ รสจืด 2 ล.",
+    "asset": "/ingredient-images/11728b9e5c1b.jpg"
+  },
+  {
+    "name": "นมข้นหวานตรามะลิ",
+    "priceSource": "https://www.bigc.co.th/product/mali-sweetened-condensed-milk-2-kg.97810",
+    "source": "https://www.makro.pro/th/p/235994-6761198092483",
+    "image": "https://images.mango-prod.siammakro.cloud/product-images/6761198092483-00fe799f-f759-4eb5-8880-43c629934228.jpeg",
+    "title": "มะลิ นมข้นหวาน 2 กก.",
+    "illustrative": false,
+    "asset": "/ingredient-images/e25e09baf01e.jpg"
+  },
+  {
+    "name": "น้ำแดง",
+    "priceSource": "https://www.bigc.co.th/product/hale-s-blue-boy-sweet-syrup-zalacca-flavoured-710-cc.708",
+    "source": "https://www.thai-food-online.co.uk/products/sala-syrup-drink-hales-blue-boy",
+    "image": "https://www.thai-food-online.co.uk/cdn/shop/products/Hale_sBlueBoySalaSyrup-Front_1200x1200.png?v=1634808933",
+    "title": "Hale’s Blue Boy Sala Syrup",
+    "illustrative": false,
+    "asset": "/ingredient-images/971c4b334df7.jpg"
+  },
+  {
+    "name": "ไซรัปแอปเปิ้ลเขียวติ่งฟง",
+    "priceSource": "https://www.bigc.co.th/product/ding-fong-apple-squash-formula-2-760-ml.72891",
+    "source": "https://shopee.co.th/%E0%B8%95%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%9F%E0%B8%87-%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B9%81%E0%B8%AD%E0%B8%9B%E0%B9%80%E0%B8%9B%E0%B8%B4%E0%B9%89%E0%B8%A5-%E0%B8%A2%E0%B8%B5%E0%B9%88%E0%B8%AB%E0%B9%89%E0%B8%AD%E0%B8%95%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%9F%E0%B8%87-%E0%B8%9B%E0%B8%A3%E0%B8%B4%E0%B8%A1%E0%B8%B2%E0%B8%93-760-%E0%B8%A1%E0%B8%A5.-i.216938359.25415618335",
+    "image": "https://down-th.img.susercontent.com/file/th-11134207-7r98t-ls9jasqq9h7y53",
+    "title": "Ding Fong Green Apple Juice",
+    "illustrative": false,
+    "asset": "/ingredient-images/dc6c5902a9a3.jpg"
+  },
+  {
+    "name": "ไซรัปบลูฮาวายติ่งฟง",
+    "priceSource": "https://www.bigc.co.th/product/ding-fong-blue-hawaii-squash-formula-2-760-ml.72893",
+    "source": "https://www.makro.pro/th/p/210430-6915007283395",
+    "image": "https://images.mango-prod.siammakro.cloud/product-images/6915007283395-22a3c70e-9f67-4996-bf46-6948ffdf8db9.jpeg",
+    "title": "ติ่งฟง น้ำผลไม้ บลูฮาวาย 760 มล.",
+    "illustrative": false,
+    "asset": "/ingredient-images/b4fc247e5f3f.jpg"
+  },
+  {
+    "name": "ไซรัปสตรอว์เบอร์รีติ่งฟง",
+    "priceSource": "https://www.bigc.co.th/product/ding-fong-strawberry-squash-formula-2-760-ml.72892",
+    "source": "https://shopee.co.th/%E0%B8%95%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%9F%E0%B8%87-%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%AB%E0%B8%A7%E0%B8%B2%E0%B8%99%E0%B8%A3%E0%B8%AA%E0%B8%AA%E0%B8%95%E0%B8%A3%E0%B8%AD%E0%B9%80%E0%B8%9A%E0%B8%AD%E0%B8%A3%E0%B8%B5%E0%B9%88-760ml.-%E0%B8%AB%E0%B8%A2%E0%B8%81%E0%B8%AD%E0%B8%AD%E0%B8%99%E0%B9%84%E0%B8%A5%E0%B8%99%E0%B9%8C-i.180194493.4353273997",
+    "image": "https://down-th.img.susercontent.com/file/th-11134201-23030-c22x04ef5gov0a",
+    "title": "Ting Fong Strawberry Syrup 760ml",
+    "illustrative": false,
+    "asset": "/ingredient-images/68f0e18443d1.jpg"
+  },
+  {
+    "name": "ไซรัปลิ้นจี่ติ่งฟง",
+    "priceSource": "https://www.bigc.co.th/product/ding-fong-lychee-squash-formula-2-760-ml.72890",
+    "source": "https://shopee.co.th/%E0%B8%95%E0%B8%B4%E0%B9%88%E0%B8%87%E0%B8%9F%E0%B8%87-%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%AB%E0%B8%A7%E0%B8%B2%E0%B8%99%E0%B8%A3%E0%B8%AA%E0%B8%A5%E0%B8%B4%E0%B9%89%E0%B8%99%E0%B8%88%E0%B8%B5%E0%B9%88-760ml.-%E0%B8%AB%E0%B8%A2%E0%B8%81%E0%B8%AD%E0%B8%AD%E0%B8%99%E0%B9%84%E0%B8%A5%E0%B8%99%E0%B9%8C-i.180194493.14855646466",
+    "image": "https://down-th.img.susercontent.com/file/th-11134201-23030-sh6b28404gova4",
+    "title": "Ding Fong Lychee Syrup 760ml",
+    "illustrative": false,
+    "asset": "/ingredient-images/3b88e4fb969e.jpg"
+  },
+  {
+    "name": "ชา",
+    "priceSource": "https://www.bigc.co.th/product/chatramue-black-tea-200-g-8850370420166.12734121",
+    "source": "https://www.allforbaking.co.th/product/%E0%B8%8A%E0%B8%B2%E0%B8%95%E0%B8%A3%E0%B8%B2%E0%B8%A1%E0%B8%B7%E0%B8%AD-%E0%B8%89%E0%B8%A5%E0%B8%B2%E0%B8%81%E0%B9%81%E0%B8%94%E0%B8%87-%E0%B8%81%E0%B8%A3%E0%B8%B0%E0%B8%9B%E0%B9%8B%E0%B8%AD%E0%B8%87-200-g/11000173065005376",
+    "image": "https://cg.lnwfile.com/_webp_max_images/600/600/bd/ii/aj.webp",
+    "title": "ChaTraMue Red Label Thai Tea Mix",
+    "illustrative": false,
+    "asset": "/ingredient-images/a28ee10948b6.jpg"
+  },
+  {
+    "name": "ซอสสตรอว์เบอร์รี่",
+    "priceSource": "https://www.bigc.co.th/product/freshy-syrup-with-strawberry-710-ml.5533747",
+    "source": "https://www.allonline.7eleven.co.th/p/%E0%B9%80%E0%B8%9F%E0%B8%A3%E0%B8%8A%E0%B8%8A%E0%B8%B5%E0%B9%88-%E0%B9%84%E0%B8%8B%E0%B8%A3%E0%B8%B1%E0%B8%9B%E0%B8%9C%E0%B8%AA%E0%B8%A1%E0%B9%80%E0%B8%99%E0%B8%B7%E0%B9%89%E0%B8%AD%E0%B8%AA%E0%B8%95%E0%B8%A3%E0%B8%AD%E0%B9%80%E0%B8%9A%E0%B8%AD%E0%B8%A3%E0%B9%8C%E0%B8%A3%E0%B8%B5-710-%E0%B8%A1%E0%B8%A5/362695/",
+    "image": "https://media.allonline.7eleven.co.th/pdmain/656289-01-mixer-freshy.jpg",
+    "title": "Freshy Strawberry Syrup Bottle",
+    "illustrative": false,
+    "asset": "/ingredient-images/3e9f7b4dbb91.jpg"
+  },
+  {
+    "name": "เกลือ",
+    "priceSource": "https://www.bigc.co.th/product/prungthip-salt-1000-g.31287",
+    "source": "https://www.makro.pro/th/p/106971-6761192980675",
+    "image": "https://images.mango-prod.siammakro.cloud/SOURCE/62eef4544bc544df9da5c24f3b1be6be",
+    "title": "ปรุงทิพย์ เกลือบริโภคเสริมไอโอดีน 1 กก.",
+    "illustrative": false,
+    "asset": "/ingredient-images/de5ac681e1e9.jpg"
+  },
+  {
+    "name": "โซดา",
+    "priceSource": "https://www.bigc.co.th/product/singha-soda-water-325-ml-pack-24.18139",
+    "source": "https://gourmetmarketthailand.com/en/singha_soda_water_325ml_8850999220000",
+    "image": "https://media-stark.gourmetmarketthailand.com/products/cover/8850999220000-1.webp",
+    "title": "Singha Soda Water 325 ml",
+    "illustrative": false,
+    "asset": "/ingredient-images/824210d5a8b1.jpg"
+  },
+  {
+    "name": "ผงเนสกาแฟ",
+    "priceSource": "https://www.bigc.co.th/product/nescafe-instant-coffee-red-cup-200-g.136",
+    "source": "https://shopee.co.th/%E0%B9%80%E0%B8%99%E0%B8%AA%E0%B8%81%E0%B8%B2%E0%B9%81%E0%B8%9F%E0%B9%80%E0%B8%A3%E0%B8%94%E0%B8%84%E0%B8%B1%E0%B8%9E%E0%B8%81%E0%B8%B2%E0%B9%81%E0%B8%9F%E0%B8%AA%E0%B8%B3%E0%B9%80%E0%B8%A3%E0%B9%87%E0%B8%88%E0%B8%A3%E0%B8%B9%E0%B8%9B%E0%B8%9C%E0%B8%AA%E0%B8%A1%E0%B8%81%E0%B8%B2%E0%B9%81%E0%B8%9F%E0%B8%84%E0%B8%B1%E0%B9%88%E0%B8%A7%E0%B8%9A%E0%B8%94%E0%B8%A5%E0%B8%B0%E0%B9%80%E0%B8%AD%E0%B8%B5%E0%B8%A2%E0%B8%94%E0%B8%96%E0%B8%B8%E0%B8%87%E0%B8%95%E0%B8%B1%E0%B9%89%E0%B8%87-165%E0%B8%81%E0%B8%A3%E0%B8%B1%E0%B8%A1-Nescafe-Red-Cup-Coffee-165g.-%E0%B8%9A%E0%B8%B2%E0%B8%A3%E0%B9%8C%E0%B9%82%E0%B8%84%E0%B9%89%E0%B8%94-8850128030067--i.1667864539.51102391164",
+    "image": "https://down-th.img.susercontent.com/file/sg-11134275-8225x-mhlvalhgk1du46",
+    "title": "Nescafé Red Cup Classic Instant Coffee",
+    "illustrative": false,
+    "asset": "/ingredient-images/5ad740165317.jpg"
+  },
+  {
+    "name": "น้ำส้มคั้น",
+    "priceSource": "https://www.bigc.co.th/product/malee-orange-juice-with-pulp-100-1-l.46947",
+    "source": "",
+    "image": "https://www.shopping-d.com/cdn/shop/products/03_38e8d253-5da9-41c5-b82f-a8abca271422.png?v=1667379077",
+    "title": "Malee Sainampeung Orange Juice with Pulp",
+    "illustrative": false,
+    "asset": "/ingredient-images/9237c3a329b2.jpg"
+  },
+  {
+    "name": "ผงโกโก้",
+    "priceSource": "https://www.bigc.co.th/product/cocoa-dutch-100-cocoa-powder-refill-plastic-container-500g.92549",
+    "source": "https://shopee.co.th/%E0%B9%82%E0%B8%81%E0%B9%82%E0%B8%81%E0%B9%89%E0%B8%94%E0%B8%B1%E0%B8%97%E0%B8%8A%E0%B9%8C-%E0%B9%82%E0%B8%81%E0%B9%82%E0%B8%81%E0%B9%89%E0%B8%8A%E0%B8%99%E0%B8%B4%E0%B8%94%E0%B8%9C%E0%B8%87-100-450-%E0%B8%81%E0%B8%A3%E0%B8%B1%E0%B8%A1-i.71556502.27536909185",
+    "image": "https://down-th.img.susercontent.com/file/th-11134207-7rasj-ma7d667gq3kx4c",
+    "title": "Cocoa Dutch 100% Cocoa Powder",
+    "illustrative": false,
+    "asset": "/ingredient-images/812d6c93a3f0.jpg"
+  },
+  {
+    "name": "ส้มสด",
+    "priceSource": "https://www.simummuangonline.com/product/tangerine/KY17730575921CL",
+    "source": "https://www.makro.pro/th/p/320840-586357888701287",
+    "image": "https://images.mango-prod.siammakro.cloud/SOURCE/05f6802a355f49bb806dab84be3dd6e4",
+    "title": "ส้มเขียวหวานเบอร์ 0 จากแม็คโคร",
+    "illustrative": true,
+    "asset": "/ingredient-images/7e330d1f8046.jpg"
+  },
+  {
+    "name": "ฝรั่ง",
+    "priceSource": "https://ppe-shopping.lotuss.com/th/product/jenju-guava-14479664",
+    "source": "https://shop.villamarket.com/product/179020",
+    "image": "https://d19oj5aeuefgv.cloudfront.net/0179020",
+    "title": "KM Kimju Guava Display",
+    "illustrative": true,
+    "asset": "/ingredient-images/57b223126c87.jpg"
+  },
+  {
+    "name": "มะนาว",
+    "priceSource": "https://www.simummuangonline.com/product/lime/RC16465974671CY",
+    "source": "https://www.makro.pro/th/p/157062-7275697373379",
+    "image": "https://images.mango-prod.siammakro.cloud/SOURCE/4c3e281db521497ab71f587099e8cd2c",
+    "title": "มะนาวแป้นสดจากแม็คโคร",
+    "illustrative": true,
+    "asset": "/ingredient-images/717827965eff.jpg"
+  }
+]
