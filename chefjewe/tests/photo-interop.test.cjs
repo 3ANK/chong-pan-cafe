@@ -141,3 +141,15 @@ test('recipe search ignores stale import strings and hidden purchase metadata af
  delete context.fixture.details['โอเลี้ยง'].ingredientRows;
  assert.equal(vm.runInContext("recipeMatchesSearch(fixture,'โอเลี้ยง','น้ำกาแฟ')",context),true);
 });
+
+test('ingredient usage links list current exact ingredient references and open the chosen recipe',()=>{
+ const {context,document}=loadBook();
+ vm.runInContext(`recipes=[{category:'กาแฟ',names:['โอเลี้ยง','เลิกใช้แล้ว'],details:{'โอเลี้ยง':{ingredientRows:[{name:'น้ำกาแฟ',actual:150,unit:'มล.'},{name:'น้ำกาแฟ',actual:5,unit:'มล.'}]},'เลิกใช้แล้ว':{ingredients:['น้ำกาแฟ 150 มล.'],ingredientRows:[{name:'กาแฟโบราณ',actual:15,unit:'กรัม'}]}}},{category:'หมวดอื่น',names:['โอเลี้ยง'],details:{'โอเลี้ยง':{ingredientRows:[{name:'น้ำกาแฟ',actual:100,unit:'มล.'}]}}}];ingredientCosts=[{name:'ไม่มีคนใช้'}];document.querySelector('#category').innerHTML='<option value=""></option><option value="กาแฟ">กาแฟ</option><option value="หมวดอื่น">หมวดอื่น</option>';`,context);
+ assert.equal(vm.runInContext("ingredientRecipeUses(currentState(),'น้ำกาแฟ').length",context),2);
+ assert.equal(vm.runInContext("ingredientRecipeUses(currentState(),'ไม่มีคนใช้').length",context),0);
+ document.defaultView.HTMLElement.prototype.showModal=function(){this.setAttribute('open','')};document.defaultView.HTMLElement.prototype.close=function(){this.removeAttribute('open')};
+ vm.runInContext("showIngredientRecipes('น้ำกาแฟ')",context);
+ const buttons=document.querySelectorAll('.ingredient-usage-list button');assert.equal(buttons.length,2);assert.match(buttons[1].textContent,/หมวดอื่น/);
+ buttons[1].onclick();assert.equal(document.querySelector('.ingredient-usage-dialog'),null);assert.equal(vm.runInContext('activeView',context),'recipes');assert.equal(document.querySelectorAll('#cards .recipe-card').length,1);assert.equal(document.querySelector('#cards .recipe-card').dataset.recipeName,'โอเลี้ยง');
+ vm.runInContext("showIngredientRecipes('ไม่มีคนใช้')",context);assert.match(document.querySelector('.ingredient-usage-dialog').textContent,/ยังไม่มีเมนู/);
+});
