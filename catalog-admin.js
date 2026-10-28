@@ -43,11 +43,10 @@
  function productCard(p){
   return '<article class="admin-product catalog-row" data-id="'+escape(p.id)+'"><div class="catalog-row-head"><div class="catalog-thumb">'+previewMarkup(p)+'</div><div class="catalog-product-title"><strong>'+escape(p.name)+'</strong><small>'+escape(p.category)+' · '+(p.available?'เปิดขาย':'ปิดขาย')+(!p.verified?' · รอยืนยันราคา':'')+'</small></div></div>'+
   '<div class="admin-product-edit catalog-quick-edit"><label>ราคา (บาท)<input aria-label="ราคา '+escape(p.name)+'" type="number" data-price min="0" max="100000" step="1" value="'+Number(p.price)+'"></label><label class="admin-check"><input type="checkbox" data-available '+(p.available?'checked':'')+'> เปิดขาย</label><button type="button" class="primary" data-save>บันทึก</button></div>'+
-  (canEditImages?'<button type="button" class="secondary catalog-delete" data-delete aria-label="ลบเมนู '+escape(p.name)+'">ลบเมนู</button>':'')+
   '<p class="catalog-save-status caption" data-save-status role="status"></p><details class="catalog-product-details"><summary>รูปและรายละเอียด'+(!p.verified?' · รอยืนยันราคา':'')+'</summary>'+
   (canEditImages?'<label class="admin-category-edit">หมวดหมู่<input type="text" data-category maxlength="70" value="'+escape(p.category)+'"></label>':'')+
   '<label class="admin-check"><input type="checkbox" data-verified '+(p.verified?'checked':'')+'> ยืนยันราคาจากหน้าร้านแล้ว</label>'+imageControls(p)+
-  (p.price<=0?'<p class="admin-draft">ฉบับร่าง: ต้องกำหนดราคาและยืนยันก่อนเปิดขาย</p>':'')+'</details></article>';
+  (p.price<=0?'<p class="admin-draft">ฉบับร่าง: ต้องกำหนดราคาและยืนยันก่อนเปิดขาย</p>':'')+(canEditImages?'<div class="catalog-delete-area"><button type="button" class="catalog-delete" data-delete aria-label="ลบเมนู '+escape(p.name)+'">ลบเมนู</button></div>':'')+'</details></article>';
  }
  function cards(){return records.map(productCard).join('')}
 
@@ -138,6 +137,8 @@
    const card=remove.closest('[data-id]'),id=card.dataset.id,p=records.find(x=>String(x.id)===id);
    if(!p||card.dataset.saving==='true'||card.querySelector('[data-image]:disabled'))return;
    if(!confirm('ลบเมนู “'+p.name+'” ออกจากระบบสั่งอาหารหรือไม่?\nเมนูจะหายจากหน้าลูกค้าและหลังบ้าน ประวัติออเดอร์เดิมยังอยู่\nการลบนี้ไม่สามารถยกเลิกได้'))return;
+   const confirmation=prompt('ยืนยันอีกครั้ง: พิมพ์คำว่า ลบ เพื่อลบเมนู “'+p.name+'”\nกดยกเลิกหากไม่ต้องการลบ','');
+   if(confirmation?.trim()!=='ลบ')return;
    const controls=[...card.querySelectorAll('input,button')];controls.forEach(c=>c.disabled=true);card.dataset.saving='true';
    card.querySelector('[data-save-status]').textContent='กำลังลบเมนู…';
    try{
