@@ -127,3 +127,17 @@ test('web transfer fixture includes real product images with priced and unpriced
  assert.equal(result.ingredients.length,2);assert.equal(result.ingredients.find(i=>i.name==='Web photo unpriced').price,0);assert.ok(result.ingredients.every(i=>i.photo===image));
  if(process.env.CHEFJEWE_FIXTURE)fs.writeFileSync(process.env.CHEFJEWE_FIXTURE,JSON.stringify(result));
 });
+
+test('recipe search ignores stale import strings and hidden purchase metadata after an ingredient is renamed',()=>{
+ const {context}=loadBook();
+ vm.runInContext(`ingredientCosts=[{name:'กาแฟโบราณ งูเห่า',packageQuantity:350,packageUnit:'กรัม',packagePrice:45,note:'น้ำกาแฟ ราคาเดิม',brand:'น้ำกาแฟ',grade:'น้ำกาแฟ'}];ingredientAliases={'น้ำกาแฟ':'กาแฟโบราณ งูเห่า'};`,context);
+ context.fixture={category:'กาแฟ',names:['โอเลี้ยง'],details:{'โอเลี้ยง':{title:'โอเลี้ยง',ingredients:['น้ำกาแฟ 150 มล.'],ingredientRows:[{name:'กาแฟโบราณ งูเห่า',original:'น้ำกาแฟ 150 มล.',actual:'15',unit:'กรัม'}],notes:['น้ำกาแฟ ข้อมูลเก่า'],steps:['ชงแล้วเติมน้ำแข็ง']}}};
+ assert.equal(vm.runInContext("recipeMatchesSearch(fixture,'โอเลี้ยง','น้ำกาแฟ')",context),false);
+ for(const query of ['โอเลี้ยง','กาแฟโบราณ','น้ำแข็ง']){context.query=query;assert.equal(vm.runInContext("recipeMatchesSearch(fixture,'โอเลี้ยง',query)",context),true);}
+ context.fixture.details['โอเลี้ยง'].ingredientRows[0].name='น้ำกาแฟ';
+ assert.equal(vm.runInContext("recipeMatchesSearch(fixture,'โอเลี้ยง','น้ำกาแฟ')",context),true);
+ context.fixture.details['โอเลี้ยง'].ingredientRows=[];
+ assert.equal(vm.runInContext("recipeMatchesSearch(fixture,'โอเลี้ยง','น้ำกาแฟ')",context),false);
+ delete context.fixture.details['โอเลี้ยง'].ingredientRows;
+ assert.equal(vm.runInContext("recipeMatchesSearch(fixture,'โอเลี้ยง','น้ำกาแฟ')",context),true);
+});
