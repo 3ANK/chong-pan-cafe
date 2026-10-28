@@ -29,6 +29,53 @@ function makeIngredientThumbnail(row,name){
  else {box.textContent='ยังไม่มีรูป';box.classList.add('photo-empty');}
  return box;
 }
+async function prepareIngredientPhoto(file){
+ if(!file||!['image/jpeg','image/png','image/webp'].includes(file.type))throw Error('เลือกรูป JPG, PNG หรือ WebP');
+ if(file.size>20*1024*1024)throw Error('รูปต้นฉบับใหญ่เกิน 20 MB กรุณาเลือกรูปที่เล็กลง');
+ const data=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(reader.result);reader.onerror=()=>reject(Error('อ่านไฟล์รูปไม่สำเร็จ'));reader.readAsDataURL(file)});
+ const image=new Image();image.src=data;
+ try{await image.decode();}catch{throw Error('เปิดรูปไม่ได้ กรุณาเลือกไฟล์รูปอื่น');}
+ if(!image.naturalWidth||!image.naturalHeight||image.naturalWidth*image.naturalHeight>80000000)throw Error('ขนาดรูปไม่รองรับ กรุณาเลือกรูปที่เล็กลง');
+ const scale=Math.min(1,1024/Math.max(image.naturalWidth,image.naturalHeight)),canvas=document.createElement('canvas');
+ canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));
+ const ctx=canvas.getContext('2d');if(!ctx)throw Error('อุปกรณ์นี้เตรียมรูปไม่สำเร็จ');
+ ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);ctx.drawImage(image,0,0,canvas.width,canvas.height);
+ return cleanIngredientPhoto(canvas.toDataURL('image/jpeg',0.84));
+}
+function stateWithIngredientPhoto(state,name,photo){
+ const result={...state,ingredientCosts:(state.ingredientCosts||[]).map(row=>({...row}))};
+ const source=findIngredientCost(name,result.ingredientCosts,state.ingredientAliases||{}),key=photoName(source?.name||name);
+ const index=result.ingredientCosts.findIndex(row=>photoName(row.name)===key);
+ if(index<0)result.ingredientCosts.push({name,packageQuantity:'',packageUnit:'',packagePrice:'0',photo:cleanIngredientPhoto(photo)});
+ else result.ingredientCosts[index]={...result.ingredientCosts[index],photo:cleanIngredientPhoto(photo)};
+ return result;
+}
+function makeIngredientPhotoButton(row,name){
+ const button=document.createElement('button');button.type='button';button.className='ingredient-photo-edit';
+ const hasPhoto=!!row.photo||!!productPhotoFor(row);button.textContent=hasPhoto?'เปลี่ยนรูป':'เพิ่มรูป';
+ button.setAttribute('aria-label',(hasPhoto?'เปลี่ยนรูป ':'เพิ่มรูป ')+name);button.onclick=()=>openIngredientPhotoEditor(name);return button;
+}
+function openIngredientPhotoEditor(name){
+ if(busy||editing)return;if(costsDirty){$('saveStatus').textContent='กรุณาบันทึกราคาที่กำลังแก้ไขก่อนเปลี่ยนรูป';return;}
+ const source=findIngredientCost(name)||{name},dialog=document.createElement('dialog');dialog.className='ingredient-transfer-dialog ingredient-photo-dialog';dialog.setAttribute('aria-label','แก้ไขรูปวัตถุดิบ');
+ const title=document.createElement('h2');title.textContent='รูปวัตถุดิบ · '+name;dialog.append(title);
+ if(source.name!==name){const shared=document.createElement('p');shared.textContent='ใช้รูปเดียวกับ '+source.name+' · บันทึกแล้วมีผลกับวัตถุดิบที่ใช้รายการนี้ร่วมกัน';dialog.append(shared);}
+ const preview=document.createElement('div');preview.className='ingredient-photo-preview';preview.append(makeIngredientThumbnail(source,name));dialog.append(preview);
+ const help=document.createElement('p');help.textContent='เลือกรูป JPG, PNG หรือ WebP จากมือถือหรือคอม · ระบบย่อรูปให้อัตโนมัติ · รูปจะบันทึกเมื่อกดบันทึกรูป';dialog.append(help);
+ const file=document.createElement('input');file.type='file';file.accept='image/jpeg,image/png,image/webp';file.hidden=true;
+ const choose=document.createElement('button');choose.type='button';choose.textContent='เลือกรูปจากเครื่อง';choose.onclick=()=>file.click();dialog.append(choose,file);
+ const error=document.createElement('p');error.setAttribute('role','alert');dialog.append(error);
+ const status=document.createElement('p');status.setAttribute('role','status');dialog.append(status);
+ const actions=document.createElement('div');actions.className='category-tools';const cancel=document.createElement('button');cancel.type='button';cancel.textContent='ยกเลิก';const save=document.createElement('button');save.type='button';save.textContent='บันทึกรูป';save.disabled=true;actions.append(cancel,save);dialog.append(actions);
+ let pending='',sequence=0,saving=false;
+ const close=()=>{if(saving)return;sequence++;dialog.close();dialog.remove();editing=false;};cancel.onclick=close;dialog.addEventListener('cancel',event=>{event.preventDefault();close()});
+ file.onchange=async()=>{const selected=file.files?.[0];if(!selected)return;const ticket=++sequence;pending='';save.disabled=true;error.textContent='';status.textContent='กำลังเตรียมรูป…';try{const photo=await prepareIngredientPhoto(selected);if(ticket!==sequence)return;pending=photo;preview.replaceChildren(makeIngredientThumbnail({name,photo},name));status.textContent='รูปพร้อมบันทึก · '+selected.name;save.disabled=false;}catch(e){if(ticket!==sequence)return;status.textContent='';error.textContent=e.message;}finally{file.value='';}};
+ save.onclick=async()=>{if(!pending||saving||busy)return;error.textContent='';saving=true;choose.disabled=true;save.disabled=true;cancel.disabled=true;
+ try{const state=stateWithIngredientPhoto(currentState(),name,pending);if(new TextEncoder().encode(JSON.stringify(state)).length>TRANSFER_LIMIT)throw Error('ข้อมูลรวมใหญ่เกิน 12 MB กรุณาเลือกรูปที่เล็กลง');
+ if(await persistState(state)){saving=false;close();$('saveStatus').textContent='บันทึกรูป '+name+' และซิงก์แล้ว';return;}error.textContent=$('saveStatus').textContent||'บันทึกรูปไม่สำเร็จ กรุณาลองอีกครั้ง';
+ }catch(e){error.textContent=e.message;}finally{saving=false;choose.disabled=false;save.disabled=!pending;cancel.disabled=false;}};
+ document.body.append(dialog);editing=true;dialog.showModal();choose.focus();
+}
 function ingredientRowsFromTransfer(data){
  if(!data||Number(data.version)!==1||!['chef-jewe','chefjewe-category'].includes(data.format))throw Error('ไม่ใช่ไฟล์วัตถุดิบ ChefJewe รุ่นที่รองรับ');
  const rows=new Map();

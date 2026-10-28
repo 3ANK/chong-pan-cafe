@@ -44,8 +44,25 @@ test('compiled web book renders standalone ingredients, photos and transfer butt
  assert.equal(document.querySelector('.ingredient-table img').getAttribute('src'),'data:image/png;base64,'+photo);
  assert.match(document.getElementById('ingredientCostsList').textContent,/รับไฟล์วัตถุดิบพร้อมรูปจากแอป/);
  assert.match(document.getElementById('ingredientCostsList').textContent,/ส่งออกวัตถุดิบพร้อมรูปไปแอป/);
+ assert.equal(document.querySelector('.ingredient-photo-edit').getAttribute('aria-label'),'เปลี่ยนรูป Milk');
  const result=JSON.parse(vm.runInContext('JSON.stringify(buildIngredientTransfer(currentState()))',context));
  assert.equal(result.recipes.length,0);assert.equal(result.ingredients[0].quantity,2);assert.equal(result.ingredients[0].unit,'L');assert.equal(result.ingredients[0].price,90);assert.equal(result.ingredients[0].photo,photo);
+});
+test('editing one photo preserves purchase costs, metadata and recipes, and exports the selected photo',()=>{
+ const {context}=loadBook();const state={version:1,recipes:[{category:'Drinks',names:['Coffee']}],ingredientCosts:[{name:'Milk',packageQuantity:'2',packageUnit:'L',packagePrice:'90',note:'Original seller',sourceUrl:'https://example.com/milk',checkedAt:'2026-10-28',unitWeights:{ml:1.03},photo:''},{name:'Sugar',packagePrice:'20',photo}],ingredientAliases:{},recipeOrder:[],categoryOrder:[],favoriteRecipes:[],recipeMigrations:[]};
+ const next=JSON.parse(vm.runInContext('JSON.stringify(stateWithIngredientPhoto('+JSON.stringify(state)+',"Milk",'+JSON.stringify(photo)+'))',context));
+ assert.deepEqual(next,{...state,ingredientCosts:[{...state.ingredientCosts[0],photo},state.ingredientCosts[1]]});assert.equal(state.ingredientCosts[0].photo,'');
+ const result=JSON.parse(vm.runInContext('JSON.stringify(buildIngredientTransfer('+JSON.stringify(next)+'))',context));assert.equal(result.ingredients.find(i=>i.name==='Milk').photo,photo);assert.equal(result.ingredients.find(i=>i.name==='Milk').price,90);
+});
+test('photo edits follow shared ingredient aliases without creating duplicate purchase rows',()=>{
+ const {context}=loadBook();const state={recipes:[],ingredientCosts:[{name:'Milk',packagePrice:'90',unitWeights:{ml:1.03}}],ingredientAliases:{'milk alias':'Milk'}};
+ const result=JSON.parse(vm.runInContext('JSON.stringify(stateWithIngredientPhoto('+JSON.stringify(state)+',"Milk alias",'+JSON.stringify(photo)+'))',context));
+ assert.equal(result.ingredientCosts.length,1);assert.equal(result.ingredientCosts[0].name,'Milk');assert.equal(result.ingredientCosts[0].photo,photo);assert.equal(result.ingredientCosts[0].packagePrice,'90');
+ const fresh=JSON.parse(vm.runInContext('JSON.stringify(stateWithIngredientPhoto('+JSON.stringify(state)+',"Unused",'+JSON.stringify(photo)+'))',context));assert.equal(fresh.ingredientCosts[1].packagePrice,'0');assert.equal(fresh.ingredientCosts[1].packageQuantity,'');
+});
+test('photo picker rejects unsupported or oversized input before decoding',async()=>{
+ const {context}=loadBook();await assert.rejects(vm.runInContext('prepareIngredientPhoto({type:"image/svg+xml",size:20})',context),/JPG/);
+ await assert.rejects(vm.runInContext('prepareIngredientPhoto({type:"image/jpeg",size:21*1024*1024})',context),/20 MB/);
 });
 test('full web export includes unused ingredient photos and leaves recipe data intact',()=>{
  const {context}=loadBook();
