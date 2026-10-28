@@ -64,7 +64,7 @@ function parseMakroProduct(html,source){
 }
 function productImageUrl(value,supplier){
  const u=new URL(value);if(u.protocol!=='https:'||u.port||u.username||u.password||u.search||u.hash)throw Error('image');
- if(supplier==='Makro PRO'&&u.hostname==='images.mango-prod.siammakro.cloud'&&/^\/SOURCE\/[A-Za-z0-9_.-]+$/.test(u.pathname))return u;
+ if(supplier==='Makro PRO'&&u.hostname==='images.mango-prod.siammakro.cloud'&&/^(?:\/SOURCE\/[A-Za-z0-9_.-]+|\/product-images\/[A-Za-z0-9_-]+\.(?:jpe?g|png|webp))$/.test(u.pathname))return u;
  if(supplier==='สี่มุมเมืองออนไลน์'&&u.hostname==='www.simummuangonline.com'&&/^\/files\/product\/(?:thumb_405|original)\/[A-Za-z0-9_.-]+$/.test(u.pathname))return u;
  throw Error('image');
 }
