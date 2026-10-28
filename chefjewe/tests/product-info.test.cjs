@@ -35,7 +35,7 @@ test('unsupported suppliers and unavailable stock return errors instead of inven
 
 test('Makro sugar photo supports product-images CDN path while retaining host and file restrictions',async()=>{
  const photoUrl='https://images.mango-prod.siammakro.cloud/product-images/6761204875459-dc4fa045-b97d-4fc6-9c66-c16a72ee8d9f.jpeg';
- const c=server(async(url)=>url.includes('makro.pro/p/')?new Response(html({...product,imageUrls:[photoUrl]})):new Response(Buffer.from(image,'base64'),{headers:{'content-type':'image/png'}}));
+ const c=server(async(url)=>url.includes('makro.pro/p/')?new Response(html({...product,imageUrls:[photoUrl]})):new Response(Buffer.from(image,'base64'),{headers:{'content-type':'binary/octet-stream'}}));
  const data=await (await vm.runInContext(`productInfo(new Request('https://chefjewe.pages.dev/api/product-info?url='+encodeURIComponent('https://www.makro.pro/p/155848-6761203007683')))`,c)).json();
  assert.equal(data.photo,image);assert.equal(data.price,79);
  for(const url of [photoUrl+'?url=private',photoUrl.replace('.jpeg','.svg'),photoUrl.replace('siammakro.cloud','siammakro.cloud.evil.test')])assert.throws(()=>vm.runInContext('productImageUrl('+JSON.stringify(url)+',"Makro PRO")',c));
