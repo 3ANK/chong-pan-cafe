@@ -86,13 +86,13 @@ async function productInfo(request){
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),18000);
  try{
   const response=await fetch(source.href,{redirect:'manual',signal:controller.signal,headers:{Accept:'text/html'},cf:{cacheTtl:0}});
-  if(!response.ok){await response.body?.cancel();throw Error('upstream');}
+  if(!response.ok){await response.body?.cancel();throw Error('upstream_'+response.status);}
   const html=new TextDecoder().decode(await boundedProductBytes(response,2*1024*1024));let data;
   if(source.hostname==='www.makro.pro')data=parseMakroProduct(html,source);
   else {data={...parseSupplierPrice(html,source),supplier:'สี่มุมเมืองออนไลน์',sourceUrl:source.href};data.imageUrl=html.match(/<img\b[^>]*\bsrc=["'](https:\/\/www\.simummuangonline\.com\/files\/product\/thumb_405\/[^"']+)["']/i)?.[1]||'';}
   data.photo='';if(data.imageUrl){try{data.photo=await fetchProductPhoto(data.imageUrl,data.supplier,controller.signal);}catch{data.photoWarning='ดึงรูปไม่สำเร็จ กรุณาเลือกรูปเอง';}}
   delete data.imageUrl;return json(data);
- }catch(error){return json({message:error.message==='unavailable'?'สินค้าไม่พร้อมขาย จึงยังไม่ใช้ราคา':error.message==='weighted'?'สินค้าชั่งน้ำหนัก กรุณาตรวจราคาต่อหน่วยและกรอกเอง':error.message==='unreadable'?'อ่านข้อมูลสินค้าหรือราคาปัจจุบันไม่ชัดเจน กรุณาตรวจลิงก์หรือกรอกเอง':'ติดต่อหน้าสินค้าไม่ได้ กรุณาลองใหม่หรือกรอกข้อมูลเอง'},502);}
+ }catch(error){const upstream=/^upstream_(\d{3})$/.exec(error.message);return json({code:upstream?'upstream_'+upstream[1]:controller.signal.aborted?'timeout':['large','empty','unavailable','weighted','unreadable'].includes(error.message)?error.message:'network',message:upstream?'หน้าสินค้าตอบกลับ HTTP '+upstream[1]+' กรุณาตรวจลิงก์หรือกรอกข้อมูลเอง':controller.signal.aborted?'หน้าสินค้าตอบกลับช้าเกินไป กรุณาลองใหม่':error.message==='large'?'ข้อมูลหน้าสินค้ามีขนาดเกินที่รองรับ กรุณากรอกเอง':error.message==='unavailable'?'สินค้าไม่พร้อมขาย จึงยังไม่ใช้ราคา':error.message==='weighted'?'สินค้าชั่งน้ำหนัก กรุณาตรวจราคาต่อหน่วยและกรอกเอง':error.message==='unreadable'?'อ่านข้อมูลสินค้าหรือราคาปัจจุบันไม่ชัดเจน กรุณาตรวจลิงก์หรือกรอกเอง':'ติดต่อหน้าสินค้าไม่ได้ กรุณาลองใหม่หรือกรอกข้อมูลเอง'},502);}
  finally{clearTimeout(timer);}
 }
 // PRODUCT_INFO_SERVER_END
