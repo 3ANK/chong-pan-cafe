@@ -76,7 +76,7 @@ async function boundedProductBytes(response,limit){
 async function fetchProductPhoto(value,supplier,signal){
  const u=productImageUrl(value,supplier),response=await fetch(u.href,{redirect:'manual',signal,headers:{Accept:'image/jpeg,image/png,image/webp'}});
  if(!response.ok){await response.body?.cancel();throw Error('image');}
- if(!/^image\/(?:jpeg|png|webp)(?:;|$)/i.test(response.headers.get('content-type')||'')){await response.body?.cancel();throw Error('image');}
+ if(!/^(?:image\/(?:jpeg|png|webp)|(?:application|binary)\/octet-stream)(?:;|$)/i.test(response.headers.get('content-type')||'')){await response.body?.cancel();throw Error('image');}
  const bytes=await boundedProductBytes(response,4*1024*1024),head=String.fromCharCode(...bytes.slice(0,12));
  if(!(head.startsWith('\xff\xd8\xff')||head.startsWith('\x89PNG\r\n\x1a\n')||head.startsWith('RIFF')&&head.slice(8,12)==='WEBP'))throw Error('image');
  let binary='';for(let i=0;i<bytes.length;i+=16384)binary+=String.fromCharCode(...bytes.subarray(i,i+16384));return btoa(binary);
