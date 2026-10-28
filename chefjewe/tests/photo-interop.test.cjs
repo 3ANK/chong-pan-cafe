@@ -34,7 +34,11 @@ test('legacy website ingredient JSON remains accepted',()=>{
 function loadBook(){
  const {parseHTML}=require('linkedom');const raw=fs.readFileSync(path.join(__dirname,'../public/_worker.js'),'utf8');
  const html=JSON.parse(raw.match(/const HTML = ("(?:[^"\\]|\\.)*");/)[1]);const script=html.match(/<script[^>]*>([\s\S]*?)<\/script>/)[1];
- const {document}=parseHTML(html);const context=vm.createContext({document,window:{addEventListener(){}},navigator:{},crypto:crypto.webcrypto,TextEncoder,TextDecoder,URL,Blob,atob,btoa,console,setTimeout,clearTimeout,setInterval,clearInterval,alert(){},confirm:()=>false,fetch:()=>{throw Error('Unexpected network')}});
+ const {document,HTMLSelectElement}=parseHTML(html);
+ // Linkedom omits the browser's select.value setter.
+ const descriptor=Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value');
+ if(!descriptor.set)Object.defineProperty(HTMLSelectElement.prototype,'value',{...descriptor,set(value){const options=[...this.querySelectorAll('option')];for(const option of options)option.removeAttribute('selected');options.find(option=>option.value===String(value))?.setAttribute('selected','');}});
+ const context=vm.createContext({document,window:{addEventListener(){}},navigator:{},crypto:crypto.webcrypto,TextEncoder,TextDecoder,URL,Blob,atob,btoa,console,setTimeout,clearTimeout,setInterval,clearInterval,alert(){},confirm:()=>false,fetch:()=>{throw Error('Unexpected network')}});
  new vm.Script(script).runInContext(context);return {context,document,html};
 }
 test('compiled web book renders standalone ingredients, photos and transfer buttons',()=>{
@@ -63,6 +67,22 @@ test('photo edits follow shared ingredient aliases without creating duplicate pu
 test('photo picker rejects unsupported or oversized input before decoding',async()=>{
  const {context}=loadBook();await assert.rejects(vm.runInContext('prepareIngredientPhoto({type:"image/svg+xml",size:20})',context),/JPG/);
  await assert.rejects(vm.runInContext('prepareIngredientPhoto({type:"image/jpeg",size:21*1024*1024})',context),/20 MB/);
+});
+test('recipe ingredient picker exposes all ingredients even with an existing name and preserves row quantities',()=>{
+ const {context,document}=loadBook();
+ vm.runInContext(`ingredientCosts=[{name:'น้ำกาแฟสกัด'},{name:'กาแฟโบราณ งูเห่า'},{name:'น้ำตาล'}];renderStructuredIngredients([{name:'น้ำกาแฟสกัด',min:'150',max:'',actual:'',unit:'มล.',note:'Keep note',original:'น้ำกาแฟสกัด 150 มล.'}])`,context);
+ const select=document.querySelector('#ingredientRows select[aria-label="ชื่อวัตถุดิบ"]');assert.equal(select.value,'น้ำกาแฟสกัด');
+ assert.ok([...select.querySelectorAll('option')].some(o=>o.value==='กาแฟโบราณ งูเห่า'));
+ select.value='กาแฟโบราณ งูเห่า';select.dispatchEvent(new document.defaultView.Event('change'));
+ const rows=JSON.parse(vm.runInContext('JSON.stringify(readStructuredIngredients())',context));assert.equal(rows[0].name,'กาแฟโบราณ งูเห่า');assert.equal(rows[0].min,'150');assert.equal(rows[0].unit,'มล.');assert.equal(rows[0].note,'Keep note');
+ assert.equal(document.querySelectorAll('#ingredientRows [data-field="name"]').length,1);
+});
+test('recipe picker accepts a new name and can return to an existing ingredient',()=>{
+ const {context,document}=loadBook();vm.runInContext(`ingredientCosts=[{name:'น้ำตาล'}];renderStructuredIngredients([{name:'ชื่อเดิมนอกบัญชี',min:'2',unit:'กรัม'}])`,context);
+ const select=document.querySelector('#ingredientRows select[aria-label="ชื่อวัตถุดิบ"]');assert.equal(select.value,'ชื่อเดิมนอกบัญชี');
+ select.value='';select.dispatchEvent(new document.defaultView.Event('change'));const input=document.querySelector('#ingredientRows input[aria-label="ชื่อวัตถุดิบใหม่"]');input.value='ชื่อใหม่';
+ assert.equal(JSON.parse(vm.runInContext('JSON.stringify(readStructuredIngredients())',context))[0].name,'ชื่อใหม่');
+ select.value='น้ำตาล';select.dispatchEvent(new document.defaultView.Event('change'));assert.equal(JSON.parse(vm.runInContext('JSON.stringify(readStructuredIngredients())',context))[0].name,'น้ำตาล');assert.equal(document.querySelectorAll('#ingredientRows [data-field="name"]').length,1);
 });
 test('full web export includes unused ingredient photos and leaves recipe data intact',()=>{
  const {context}=loadBook();
