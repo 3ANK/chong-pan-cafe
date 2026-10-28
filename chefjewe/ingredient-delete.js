@@ -1,0 +1,26 @@
+function ingredientDeletionInfo(state,name){
+ const costs=state.ingredientCosts||[],source=findIngredientCost(name,costs,state.ingredientAliases||{}),key=normalizeIngredientLabel(source?.name||name),used=[];
+ for(const group of state.recipes||[])for(const recipe of group.names||[]){
+  if(getDetailRows(group.details?.[recipe]||{}).some(row=>{const cost=findIngredientCost(row.name,costs,state.ingredientAliases||{});return normalizeIngredientLabel(cost?.name||row.name)===key;}))used.push(recipe);
+ }
+ return {source,key,used};
+}
+function stateWithoutIngredient(state,name){
+ const info=ingredientDeletionInfo(state,name);if(info.used.length)throw Error('วัตถุดิบนี้ยังใช้ใน '+info.used.length+' สูตร กรุณาเปลี่ยนหรือนำออกจากสูตรก่อนลบ');
+ if(!info.source)throw Error('ไม่พบวัตถุดิบในบัญชีราคาซื้อ');
+ const aliases={...(state.ingredientAliases||{})};for(const [key,value] of Object.entries(aliases))if(normalizeIngredientLabel(key)===info.key||normalizeIngredientLabel(value)===info.key)delete aliases[key];
+ return {...state,ingredientAliases:aliases,ingredientCosts:(state.ingredientCosts||[]).filter(row=>normalizeIngredientLabel(row.name)!==info.key)};
+}
+function openIngredientDeleteConfirmation(name,onDeleted){
+ if(busy)return;const info=ingredientDeletionInfo(currentState(),name),dialog=document.createElement('dialog');dialog.className='ingredient-transfer-dialog ingredient-delete-confirm';dialog.setAttribute('aria-label','ยืนยันลบวัตถุดิบ');
+ const title=document.createElement('h2');title.textContent='ลบวัตถุดิบ · '+name;dialog.append(title);
+ const message=document.createElement('p');message.textContent=info.used.length?'วัตถุดิบนี้ยังใช้ใน '+info.used.length+' สูตร กรุณาเปลี่ยนหรือนำวัตถุดิบออกจากสูตรเหล่านี้ก่อนลบ เพื่อให้สูตรและต้นทุนยังครบถ้วน':'ลบวัตถุดิบนี้ พร้อมราคาซื้อและรูป ออกจากรายการใช่ไหม? การลบนี้ไม่มีปุ่มกู้คืน';dialog.append(message);
+ if(info.used.length){const list=document.createElement('ul');for(const name of info.used){const li=document.createElement('li');li.textContent=name;list.append(li);}dialog.append(list);}
+ const error=document.createElement('p');error.setAttribute('role','alert');dialog.append(error);
+ const actions=document.createElement('div');actions.className='category-tools';const cancel=document.createElement('button');cancel.type='button';cancel.textContent=info.used.length?'กลับไปแก้ไข':'ยกเลิก';actions.append(cancel);
+ let saving=false;const close=()=>{if(saving)return;dialog.close();dialog.remove();};cancel.onclick=close;dialog.addEventListener('cancel',event=>{event.preventDefault();close()});
+ if(!info.used.length&&info.source){const remove=document.createElement('button');remove.type='button';remove.className='ingredient-delete-button';remove.textContent='ยืนยันลบวัตถุดิบ';actions.append(remove);
+ remove.onclick=async()=>{if(saving||busy)return;saving=true;remove.disabled=true;cancel.disabled=true;error.textContent='';try{const next=stateWithoutIngredient(currentState(),name);if(await persistState(next)){saving=false;close();onDeleted();$('saveStatus').textContent='ลบวัตถุดิบ '+name+' และซิงก์แล้ว';return;}error.textContent=$('saveStatus').textContent||'ลบไม่สำเร็จ กรุณาลองอีกครั้ง';}catch(e){error.textContent=e.message;}finally{saving=false;remove.disabled=false;cancel.disabled=false;}};
+ }
+ dialog.append(actions);document.body.append(dialog);dialog.showModal();cancel.focus();
+}

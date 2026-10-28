@@ -84,6 +84,15 @@ test('recipe picker accepts a new name and can return to an existing ingredient'
  assert.equal(JSON.parse(vm.runInContext('JSON.stringify(readStructuredIngredients())',context))[0].name,'ชื่อใหม่');
  select.value='น้ำตาล';select.dispatchEvent(new document.defaultView.Event('change'));assert.equal(JSON.parse(vm.runInContext('JSON.stringify(readStructuredIngredients())',context))[0].name,'น้ำตาล');assert.equal(document.querySelectorAll('#ingredientRows [data-field="name"]').length,1);
 });
+test('deleting an unused ingredient removes only its purchase row and obsolete aliases',()=>{
+ const {context}=loadBook();const state={recipes:[],ingredientCosts:[{name:'Unused',packagePrice:'95',photo},{name:'Keep',packagePrice:'20',note:'Preserve'}],ingredientAliases:{unused:'Unused','unused alias':'Unused',keep:'Keep'},favoriteRecipes:['Keep recipe']};
+ const result=JSON.parse(vm.runInContext('JSON.stringify(stateWithoutIngredient('+JSON.stringify(state)+',"Unused"))',context));
+ assert.deepEqual(result,{...state,ingredientCosts:[state.ingredientCosts[1]],ingredientAliases:{keep:'Keep'}});assert.equal(state.ingredientCosts.length,2);
+});
+test('deleting ingredients used directly or through a shared alias is blocked',()=>{
+ const {context}=loadBook();const state={recipes:[{category:'Drinks',names:['Tea drink','Alias drink'],details:{'Tea drink':{ingredientRows:[{name:'Tea',min:'10',unit:'g'}]},'Alias drink':{ingredientRows:[{name:'Tea alias',min:'20',unit:'g'}]}}}],ingredientCosts:[{name:'Tea',packagePrice:'95'}],ingredientAliases:{'tea alias':'Tea'}};
+ const info=JSON.parse(vm.runInContext('JSON.stringify(ingredientDeletionInfo('+JSON.stringify(state)+',"Tea"))',context));assert.deepEqual(info.used,['Tea drink','Alias drink']);assert.throws(()=>vm.runInContext('stateWithoutIngredient('+JSON.stringify(state)+',"Tea")',context),/2 สูตร/);
+});
 test('full web export includes unused ingredient photos and leaves recipe data intact',()=>{
  const {context}=loadBook();
  const source={version:1,recipes:[{category:'Drinks',names:['Coffee'],details:{Coffee:{ingredientRows:[{name:'Milk',min:'100',unit:'ml'}],steps:['Mix'],chefJewe:{photo}}}}],ingredientCosts:[{name:'Milk',packageQuantity:1000,packageUnit:'ml',packagePrice:50,photo},{name:'Unused',packageQuantity:2,packageUnit:'kg',packagePrice:80,photo}],ingredientAliases:{},favoriteRecipes:[],recipeOrder:[],categoryOrder:[],recipeMigrations:[]};
