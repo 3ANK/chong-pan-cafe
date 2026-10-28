@@ -93,6 +93,17 @@ test('deleting ingredients used directly or through a shared alias is blocked',(
  const {context}=loadBook();const state={recipes:[{category:'Drinks',names:['Tea drink','Alias drink'],details:{'Tea drink':{ingredientRows:[{name:'Tea',min:'10',unit:'g'}]},'Alias drink':{ingredientRows:[{name:'Tea alias',min:'20',unit:'g'}]}}}],ingredientCosts:[{name:'Tea',packagePrice:'95'}],ingredientAliases:{'tea alias':'Tea'}};
  const info=JSON.parse(vm.runInContext('JSON.stringify(ingredientDeletionInfo('+JSON.stringify(state)+',"Tea"))',context));assert.deepEqual(info.used,['Tea drink','Alias drink']);assert.throws(()=>vm.runInContext('stateWithoutIngredient('+JSON.stringify(state)+',"Tea")',context),/2 สูตร/);
 });
+test('link fetch stages price, net quantity and photo in the form without persisting the original ingredient',async()=>{
+ const {context,document}=loadBook();context.File=File;context.Event=document.defaultView.Event;context.Uint8Array=Uint8Array;context.fetch=async()=>({ok:true,json:async()=>({supplier:'Makro PRO',name:'ชาเขียวนม 200 ก.',price:79,quantity:200,unit:'กรัม',photo,checkedAt:'2026-10-28'})});
+ vm.runInContext(`ingredientCosts=[{name:'Tea',packageQuantity:'1',packageUnit:'kg',packagePrice:'95',note:'Original'}];prepareIngredientPhoto=async()=>${JSON.stringify(photo)};var testLine=makeCostRow({...ingredientCosts[0],sourceUrl:'https://www.makro.pro/p/155848-6761203007683'});document.body.append(testLine);var testButton=testLine.querySelector('[data-product-fetch]');`,context);
+ await vm.runInContext('pullProductInfo(testLine,testButton)',context);const line=context.testLine;
+ assert.equal(line.querySelector('[data-cost-field="packagePrice"]').value,'79');assert.equal(line.querySelector('[data-cost-field="packageQuantity"]').value,'200');assert.equal(line.querySelector('[data-cost-field="packageUnit"]').value,'กรัม');assert.equal(line.dataset.pendingPhoto,photo);assert.match(line.querySelector('[data-cost-field="note"]').value,/Original/);
+ assert.equal(vm.runInContext('ingredientCosts[0].packagePrice',context),'95');assert.equal(vm.runInContext('ingredientCosts[0].photo',context),undefined);
+});
+test('a failed fetch leaves existing draft purchase fields and photo untouched',async()=>{
+ const {context,document}=loadBook();context.fetch=async()=>({ok:false,json:async()=>({message:'ไม่รองรับลิงก์'})});vm.runInContext(`var testLine=makeCostRow({name:'Tea',packageQuantity:'200',packageUnit:'กรัม',packagePrice:'95',sourceUrl:'https://example.com/product'});document.body.append(testLine);testLine.dataset.pendingPhoto=${JSON.stringify(photo)};var testButton=testLine.querySelector('[data-product-fetch]');`,context);
+ await vm.runInContext('pullProductInfo(testLine,testButton)',context);assert.equal(context.testLine.querySelector('[data-cost-field="packagePrice"]').value,'95');assert.equal(context.testLine.dataset.pendingPhoto,photo);assert.equal(context.testLine.dataset.productLoading,undefined);assert.equal(context.testButton.disabled,false);
+});
 test('full web export includes unused ingredient photos and leaves recipe data intact',()=>{
  const {context}=loadBook();
  const source={version:1,recipes:[{category:'Drinks',names:['Coffee'],details:{Coffee:{ingredientRows:[{name:'Milk',min:'100',unit:'ml'}],steps:['Mix'],chefJewe:{photo}}}}],ingredientCosts:[{name:'Milk',packageQuantity:1000,packageUnit:'ml',packagePrice:50,photo},{name:'Unused',packageQuantity:2,packageUnit:'kg',packagePrice:80,photo}],ingredientAliases:{},favoriteRecipes:[],recipeOrder:[],categoryOrder:[],recipeMigrations:[]};
