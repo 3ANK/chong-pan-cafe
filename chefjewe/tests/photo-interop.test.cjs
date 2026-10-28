@@ -153,3 +153,10 @@ test('ingredient usage links list current exact ingredient references and open t
  buttons[1].onclick();assert.equal(document.querySelector('.ingredient-usage-dialog'),null);assert.equal(vm.runInContext('activeView',context),'recipes');assert.equal(document.querySelectorAll('#cards .recipe-card').length,1);assert.equal(document.querySelector('#cards .recipe-card').dataset.recipeName,'โอเลี้ยง');
  vm.runInContext("showIngredientRecipes('ไม่มีคนใช้')",context);assert.match(document.querySelector('.ingredient-usage-dialog').textContent,/ยังไม่มีเมนู/);
 });
+
+test('ingredient usage count includes shared-cost aliases and agrees with deletion protection',()=>{
+ const {context}=loadBook();
+ vm.runInContext(`recipes=[{category:'กาแฟ',names:['โอเลี้ยง'],details:{'โอเลี้ยง':{ingredientRows:[{name:'น้ำกาแฟ',actual:150,unit:'มล.'}]}}}];ingredientCosts=[{name:'น้ำกาแฟสกัด',packagePrice:20,packageQuantity:1000,packageUnit:'มล.'}];ingredientAliases={[normalizeIngredientLabel('น้ำกาแฟ')]:'น้ำกาแฟสกัด'};`,context);
+ for(const name of ['น้ำกาแฟสกัด','น้ำกาแฟ']){context.ingredientName=name;assert.equal(vm.runInContext('ingredientRecipeUses(currentState(),ingredientName).length',context),1);assert.equal(vm.runInContext('ingredientDeletionInfo(currentState(),ingredientName).used.length',context),1);}
+ assert.throws(()=>vm.runInContext("stateWithoutIngredient(currentState(),'น้ำกาแฟสกัด')",context),/ยังใช้ใน 1 สูตร/);
+});
