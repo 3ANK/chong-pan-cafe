@@ -194,3 +194,23 @@ test('recipe ingredient edit opens the currently selected ingredient and preserv
  context.Option=function(text,value){const option=document.createElement('option');option.textContent=text;option.value=value;return option;};vm.runInContext('persistState=async state=>{globalThis.savedState=state;applyRecipeState(state);return true;}',context);
  dialog.querySelector('.ingredient-price-save').click();await new Promise(resolve=>setImmediate(resolve));assert.equal(vm.runInContext("savedState.ingredientCosts.find(row=>row.name===\"ชาเขียว ตรามือ\").packagePrice",context),'80');assert.equal(document.querySelector('#newRecipeName').value,'สูตรที่ยังไม่บันทึก');assert.equal(select.value,'ชาเขียว ตรามือ');assert.equal(box.querySelector('[data-field=unit]').value,'10g(1ช้อน)');assert.equal(vm.runInContext('editing',context),true);
 });
+
+test('a measured pack yield calculates kg purchases used in ml without assuming density',()=>{
+ const {context}=loadBook();
+ vm.runInContext(`ingredientCosts=[{name:'นม',packageQuantity:'1',packageUnit:'กิโลกรัม',packagePrice:'66',usableQuantity:900,usableUnit:'มล.',usablePackQuantity:1,usablePackUnit:'กิโลกรัม'}];`,context);
+ assert.equal(vm.runInContext("convertRecipeQuantity(30,'มล.','กิโลกรัม',null)",context),null);
+ const result=vm.runInContext("calculateRecipeCost({ingredientRows:[{name:'นม',min:'30',unit:'มล.'}]})",context);assert.ok(Math.abs(result.total-2.2)<1e-10,JSON.stringify(result));assert.equal(result.missing,0);
+ assert.ok(Math.abs(vm.runInContext("convertRecipeQuantity(0.03,'ลิตร','กิโลกรัม',ingredientCosts[0])",context)-1/30)<1e-10);
+ vm.runInContext("ingredientCosts[0].packageQuantity='2'",context);assert.equal(vm.runInContext("convertRecipeQuantity(30,'มล.','กิโลกรัม',ingredientCosts[0])",context),null);
+});
+test('pack editor automatically converts compatible units and clears measurements when fetched pack size changes',()=>{
+ const {context,document}=loadBook();
+ vm.runInContext(`sourceFixture={name:'นม',packageQuantity:'1',packageUnit:'กิโลกรัม',packagePrice:'66',unitWeights:{ลูก:120}};rowFixture=makeCostRow(sourceFixture);editorFixture=makeUsablePackEditor(rowFixture,sourceFixture,{name:'นม',units:new Set(['มล.'])});`,context);
+ const editor=vm.runInContext('editorFixture',context),row=vm.runInContext('rowFixture',context),unit=editor.box.querySelector('[data-usable-unit]'),qty=editor.box.querySelector('[data-usable-quantity]');
+ assert.equal(unit.value,'มล.');assert.equal(qty.disabled,false);qty.value='900';qty.dispatchEvent(new document.defaultView.Event('input'));assert.match(editor.box.textContent,/0.0733/);
+ const saved=editor.read({packageQuantity:'1',packageUnit:'กิโลกรัม'});assert.equal(saved.usableQuantity,900);assert.equal(saved.usableUnit,'มล.');
+ row.querySelector('[data-cost-field=packageQuantity]').value='2';row.querySelector('[data-cost-field=packageQuantity]').dispatchEvent(new document.defaultView.Event('input',{bubbles:true}));assert.equal(qty.value,'');
+ unit.value='กรัม';unit.dispatchEvent(new document.defaultView.Event('change'));assert.equal(qty.disabled,true);assert.match(editor.box.textContent,/2,000/);assert.equal(editor.read({...saved}).usableQuantity,undefined);
+ // Existing per-unit weights remain on the purchase row; only relevant units are shown in the advanced form.
+ assert.equal(vm.runInContext('sourceFixture.unitWeights.ลูก',context),120);
+});
