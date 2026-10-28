@@ -160,3 +160,26 @@ test('ingredient usage count includes shared-cost aliases and agrees with deleti
  for(const name of ['น้ำกาแฟสกัด','น้ำกาแฟ']){context.ingredientName=name;assert.equal(vm.runInContext('ingredientRecipeUses(currentState(),ingredientName).length',context),1);assert.equal(vm.runInContext('ingredientDeletionInfo(currentState(),ingredientName).used.length',context),1);}
  assert.throws(()=>vm.runInContext("stateWithoutIngredient(currentState(),'น้ำกาแฟสกัด')",context),/ยังใช้ใน 1 สูตร/);
 });
+
+test('plain water has a dash price and no missing cost or unit conversion warnings',()=>{
+ const {context,document}=loadBook();
+ vm.runInContext(`ingredientCosts=[{name:'น้ำ',packagePrice:'1',packageQuantity:'1',packageUnit:'1'}];`,context);
+ for(const name of ['น้ำ','น้ำเปล่า','น้ำร้อน','น้ำอุ่น']){context.waterName=name;
+ const result=vm.runInContext("calculateRecipeCost({ingredientRows:[{name:waterName,actual:150,unit:'มล.'}]})",context);assert.equal(result.total,0);assert.equal(result.missing,0);assert.equal(result.zeroPriced,0);assert.equal(result.breakdown[0].noCost,true);
+ const row=vm.runInContext("makeCostRow({name:waterName,packagePrice:'0'})",context);assert.equal(row.querySelector('[data-cost-field=packagePrice]').value,'–');assert.notEqual(row.querySelector('[data-cost-field=packagePrice]').readOnly,true);
+ assert.match(vm.runInContext("ingredientCostStatus({name:waterName}).detail",context),/ไม่มีต้นทุน/);
+ }
+ assert.equal(vm.runInContext("freeIngredient('น้ำกาแฟ')",context),false);assert.equal(vm.runInContext("freeIngredient('น้ำมะพร้าว')",context),false);
+ vm.runInContext("recipes=[{category:'กาแฟ',names:['ทดสอบ'],details:{'ทดสอบ':{ingredientRows:[{name:'น้ำ',actual:150,unit:'มล.'}]}}}];renderCostSection();",context);
+ assert.doesNotMatch(document.querySelector('.ingredient-table').textContent,/1 1 \/ 1 บาท/);assert.match(document.querySelector('.ingredient-table').textContent,/–/);
+});
+
+test('a dash marks any ingredient as no cost while zero and blank remain pending',()=>{
+ const {context}=loadBook();
+ for(const dash of ['-','–','—']){context.dash=dash;const row=vm.runInContext("normalizeCostPrice({name:'ของแถม',packagePrice:dash})",context);assert.equal(row.noCost,true);assert.equal(row.packagePrice,'0');context.fixture=row;
+ const result=vm.runInContext("ingredientCosts=[fixture];calculateRecipeCost({ingredientRows:[{name:'ของแถม',actual:1,unit:'ชิ้น'}]})",context);assert.equal(result.missing,0);assert.equal(result.zeroPriced,0);assert.equal(result.total,0);
+ assert.equal(vm.runInContext("ingredientCostStatus({name:'ของแถม'}).kind",context),'free');
+ }
+ for(const price of ['0','','50']){context.price=price;assert.equal(vm.runInContext("normalizeCostPrice({name:'ของแถม',noCost:true,packagePrice:price}).noCost",context),false);}
+ vm.runInContext("ingredientCosts=[{name:'ของแถม',packagePrice:'0',noCost:false}]",context);assert.equal(vm.runInContext("ingredientCostStatus({name:'ของแถม'}).kind",context),'price');
+});
