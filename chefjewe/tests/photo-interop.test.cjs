@@ -215,3 +215,10 @@ test('pack editor automatically converts compatible units and clears measurement
  // Existing per-unit weights remain on the purchase row; only relevant units are shown in the advanced form.
  assert.equal(vm.runInContext('sourceFixture.unitWeights.ลูก',context),120);
 });
+
+test('missing ingredient status identifies exact recipes and distinguishes missing quantities from conversion',()=>{
+ const {context,document}=loadBook();
+ vm.runInContext(`recipes=[{category:'ชา',domain:'drinks',names:['ชาเย็น','ชาปั่น','ชาครบ'],details:{'ชาเย็น':{ingredientRows:[{name:'ชา',min:'',unit:''}]},'ชาปั่น':{ingredientRows:[{name:'ชา',min:'1',unit:'ช้อน'}]},'ชาครบ':{ingredientRows:[{name:'ชา',min:'10',unit:'กรัม'}]}}}];ingredientCosts=[{name:'ชา',packageQuantity:'200',packageUnit:'กรัม',packagePrice:'95'}];ingredientAliases={};`,context);
+ const issues=JSON.parse(vm.runInContext("JSON.stringify(ingredientRecipeIssues('ชา'))",context));assert.equal(issues.length,2);assert.equal(issues[0].name,'ชาเย็น');assert.match(issues[0].reason,/ปริมาณ/);assert.equal(issues[1].conversion,true);assert.match(issues[1].reason,/ช้อน เป็น กรัม/);
+ vm.runInContext("renderCostSection()",context);const status=[...document.querySelectorAll('.status-pill')].find(el=>el.getAttribute('aria-label')==='ดูจุดที่ต้องแก้ ชา');assert.ok(status);status.click();const dialog=document.querySelector('.ingredient-usage-dialog');assert.ok(dialog.textContent.includes('ชาเย็น'));assert.ok(dialog.textContent.includes('ชาปั่น'));assert.ok(!dialog.textContent.includes('ชาครบ'));assert.ok(dialog.textContent.includes('แก้การแปลงหน่วยวัตถุดิบ'));vm.runInContext('openRecipeForm=key=>{globalThis.openedIssueKey=key;}',context);dialog.querySelector('button').click();assert.equal(vm.runInContext('openedIssueKey',context),JSON.stringify(['ชา','ชาเย็น']));
+});
