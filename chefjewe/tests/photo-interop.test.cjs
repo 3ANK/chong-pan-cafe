@@ -108,8 +108,8 @@ test('full web export includes unused ingredient photos and leaves recipe data i
  const {context}=loadBook();
  const source={version:1,recipes:[{category:'Drinks',names:['Coffee'],details:{Coffee:{ingredientRows:[{name:'Milk',min:'100',unit:'ml'}],steps:['Mix'],chefJewe:{photo}}}}],ingredientCosts:[{name:'Milk',packageQuantity:1000,packageUnit:'ml',packagePrice:50,photo},{name:'Unused',packageQuantity:2,packageUnit:'kg',packagePrice:80,photo}],ingredientAliases:{},favoriteRecipes:[],recipeOrder:[],categoryOrder:[],recipeMigrations:[]};
  const result=JSON.parse(vm.runInContext('JSON.stringify(buildChefJeweBackup('+JSON.stringify(source)+'))',context));
- assert.equal(result.recipes.length,1);assert.equal(result.recipes[0].photo,photo);assert.equal(result.ingredients.length,2);assert.equal(result.ingredients.find(i=>i.name==='Unused').photo,photo);
- assert.equal(result.recipes[0].parts.length,1);
+ assert.equal(result.recipes.length,1);assert.equal(result.recipes[0].photo,photo);assert.equal(result.ingredients.length,3);assert.equal(result.ingredients.find(i=>i.name==='Unused').photo,photo);
+ assert.equal(result.recipes[0].parts.length,2);
 });
 test('product photos are served by assets without touching authentication or state storage',()=>{
  const raw=fs.readFileSync(path.join(__dirname,'../public/_worker.js'),'utf8');assert.match(raw,/path\.startsWith\('\/ingredient-images\/'\)/);
