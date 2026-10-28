@@ -201,6 +201,7 @@ test('a measured pack yield calculates kg purchases used in ml without assuming 
  assert.equal(vm.runInContext("convertRecipeQuantity(30,'มล.','กิโลกรัม',null)",context),null);
  const result=vm.runInContext("calculateRecipeCost({ingredientRows:[{name:'นม',min:'30',unit:'มล.'}]})",context);assert.ok(Math.abs(result.total-2.2)<1e-10,JSON.stringify(result));assert.equal(result.missing,0);
  assert.ok(Math.abs(vm.runInContext("convertRecipeQuantity(0.03,'ลิตร','กิโลกรัม',ingredientCosts[0])",context)-1/30)<1e-10);
+ vm.runInContext("ingredientCosts[0].usableQuantity=770",context);assert.ok(Math.abs(vm.runInContext("calculateRecipeCost({ingredientRows:[{name:'นม',min:'30',unit:'มล.'}]}).total",context)-66*30/770)<1e-10);
  vm.runInContext("ingredientCosts[0].packageQuantity='2'",context);assert.equal(vm.runInContext("convertRecipeQuantity(30,'มล.','กิโลกรัม',ingredientCosts[0])",context),null);
 });
 test('pack editor automatically converts compatible units and clears measurements when fetched pack size changes',()=>{
