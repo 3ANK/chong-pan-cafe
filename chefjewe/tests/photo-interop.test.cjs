@@ -89,9 +89,9 @@ test('deleting an unused ingredient removes only its purchase row and obsolete a
  const result=JSON.parse(vm.runInContext('JSON.stringify(stateWithoutIngredient('+JSON.stringify(state)+',"Unused"))',context));
  assert.deepEqual(result,{...state,ingredientCosts:[state.ingredientCosts[1]],ingredientAliases:{keep:'Keep'}});assert.equal(state.ingredientCosts.length,2);
 });
-test('deleting ingredients used directly or through a shared alias is blocked',()=>{
+test('deleting used ingredients removes direct and alias rows while preserving recipes',()=>{
  const {context}=loadBook();const state={recipes:[{category:'Drinks',names:['Tea drink','Alias drink'],details:{'Tea drink':{ingredientRows:[{name:'Tea',min:'10',unit:'g'}]},'Alias drink':{ingredientRows:[{name:'Tea alias',min:'20',unit:'g'}]}}}],ingredientCosts:[{name:'Tea',packagePrice:'95'}],ingredientAliases:{'tea alias':'Tea'}};
- const info=JSON.parse(vm.runInContext('JSON.stringify(ingredientDeletionInfo('+JSON.stringify(state)+',"Tea"))',context));assert.deepEqual(info.used,['Tea drink','Alias drink']);assert.throws(()=>vm.runInContext('stateWithoutIngredient('+JSON.stringify(state)+',"Tea")',context),/2 สูตร/);
+ const info=JSON.parse(vm.runInContext('JSON.stringify(ingredientDeletionInfo('+JSON.stringify(state)+',"Tea"))',context));assert.deepEqual(info.used,['Tea drink','Alias drink']);const result=JSON.parse(vm.runInContext('JSON.stringify(stateWithoutIngredient('+JSON.stringify(state)+',"Tea"))',context));assert.equal(result.ingredientCosts.length,0);assert.deepEqual(result.ingredientAliases,{});assert.deepEqual(result.recipes[0].names,state.recipes[0].names);for(const detail of Object.values(result.recipes[0].details)){assert.deepEqual(detail.ingredientRows,[]);assert.deepEqual(detail.ingredients,[]);}assert.equal(state.recipes[0].details['Tea drink'].ingredientRows.length,1);
 });
 test('link fetch stages price, net quantity and photo in the form without persisting the original ingredient',async()=>{
  const {context,document}=loadBook();context.File=File;context.Event=document.defaultView.Event;context.Uint8Array=Uint8Array;context.fetch=async()=>({ok:true,json:async()=>({supplier:'Makro PRO',name:'ชาเขียวนม 200 ก.',price:79,quantity:200,unit:'กรัม',photo,checkedAt:'2026-10-28'})});
@@ -154,11 +154,11 @@ test('ingredient usage links list current exact ingredient references and open t
  vm.runInContext("showIngredientRecipes('ไม่มีคนใช้')",context);assert.match(document.querySelector('.ingredient-usage-dialog').textContent,/ยังไม่มีเมนู/);
 });
 
-test('ingredient usage count includes shared-cost aliases and agrees with deletion protection',()=>{
+test('ingredient usage count includes shared-cost aliases and agrees with deletion',()=>{
  const {context}=loadBook();
  vm.runInContext(`recipes=[{category:'กาแฟ',names:['โอเลี้ยง'],details:{'โอเลี้ยง':{ingredientRows:[{name:'น้ำกาแฟ',actual:150,unit:'มล.'}]}}}];ingredientCosts=[{name:'น้ำกาแฟสกัด',packagePrice:20,packageQuantity:1000,packageUnit:'มล.'}];ingredientAliases={[normalizeIngredientLabel('น้ำกาแฟ')]:'น้ำกาแฟสกัด'};`,context);
  for(const name of ['น้ำกาแฟสกัด','น้ำกาแฟ']){context.ingredientName=name;assert.equal(vm.runInContext('ingredientRecipeUses(currentState(),ingredientName).length',context),1);assert.equal(vm.runInContext('ingredientDeletionInfo(currentState(),ingredientName).used.length',context),1);}
- assert.throws(()=>vm.runInContext("stateWithoutIngredient(currentState(),'น้ำกาแฟสกัด')",context),/ยังใช้ใน 1 สูตร/);
+ assert.equal(vm.runInContext("ingredientDeletionInfo(stateWithoutIngredient(currentState(),'น้ำกาแฟสกัด'),'น้ำกาแฟ').used.length",context),0);
 });
 
 test('plain water has a dash price and no missing cost or unit conversion warnings',()=>{
@@ -221,4 +221,21 @@ test('missing ingredient status identifies exact recipes and distinguishes missi
  vm.runInContext(`recipes=[{category:'ชา',domain:'drinks',names:['ชาเย็น','ชาปั่น','ชาครบ'],details:{'ชาเย็น':{ingredientRows:[{name:'ชา',min:'',unit:''}]},'ชาปั่น':{ingredientRows:[{name:'ชา',min:'1',unit:'ช้อน'}]},'ชาครบ':{ingredientRows:[{name:'ชา',min:'10',unit:'กรัม'}]}}}];ingredientCosts=[{name:'ชา',packageQuantity:'200',packageUnit:'กรัม',packagePrice:'95'}];ingredientAliases={};`,context);
  const issues=JSON.parse(vm.runInContext("JSON.stringify(ingredientRecipeIssues('ชา'))",context));assert.equal(issues.length,2);assert.equal(issues[0].name,'ชาเย็น');assert.match(issues[0].reason,/ปริมาณ/);assert.equal(issues[1].conversion,true);assert.match(issues[1].reason,/ช้อน เป็น กรัม/);
  vm.runInContext("renderCostSection()",context);const status=[...document.querySelectorAll('.status-pill')].find(el=>el.getAttribute('aria-label')==='ดูจุดที่ต้องแก้ ชา');assert.ok(status);status.click();const dialog=document.querySelector('.ingredient-usage-dialog');assert.ok(dialog.textContent.includes('ชาเย็น'));assert.ok(dialog.textContent.includes('ชาปั่น'));assert.ok(!dialog.textContent.includes('ชาครบ'));assert.ok(dialog.textContent.includes('แก้การแปลงหน่วยวัตถุดิบ'));vm.runInContext('openRecipeForm=key=>{globalThis.openedIssueKey=key;}',context);dialog.querySelector('button').click();assert.equal(vm.runInContext('openedIssueKey',context),JSON.stringify(['ชา','ชาเย็น']));
+});
+
+
+test('used ingredient deletion handles legacy rows and preserves other ingredients and metadata',()=>{
+ const {context}=loadBook();const state={recipes:[{category:'Drinks',names:['Mixed','Legacy','Keep'],details:{Mixed:{notes:['Keep note'],steps:['Keep step'],ingredientRows:[{name:'Tea',actual:'2',unit:'g'},{name:'Tea alias',actual:'3',unit:'g'},{name:'Milk',actual:'10',unit:'ml'}]},Legacy:{ingredients:['Tea 5 g','Milk 20 ml']},Keep:{ingredients:['Tea powder 5 g']}}}],ingredientCosts:[{name:'Tea'},{name:'Milk'},{name:'Tea powder'}],ingredientAliases:{'tea alias':'Tea',milk:'Milk'},favoriteRecipes:['Keep'],recipeOrder:['Keep']};
+ const original=JSON.stringify(state);context.fixture=state;const next=JSON.parse(vm.runInContext('JSON.stringify(stateWithoutIngredient(fixture,"Tea alias"))',context));
+ assert.equal(JSON.stringify(state),original);assert.deepEqual(next.recipes[0].names,state.recipes[0].names);const details=next.recipes[0].details;
+ assert.deepEqual(details.Mixed.ingredientRows,[state.recipes[0].details.Mixed.ingredientRows[2]]);assert.equal(details.Mixed.ingredients.length,1);assert.deepEqual(details.Mixed.steps,['Keep step']);assert.deepEqual(details.Mixed.notes,['Keep note']);assert.equal(details.Legacy.ingredientRows.length,1);assert.equal(details.Legacy.ingredientRows[0].name,'Milk');assert.deepEqual(details.Keep,state.recipes[0].details.Keep);assert.deepEqual(next.favoriteRecipes,state.favoriteRecipes);assert.deepEqual(next.recipeOrder,state.recipeOrder);assert.deepEqual(next.ingredientAliases,{milk:'Milk'});
+ context.fixture=next;assert.equal(vm.runInContext('collectIngredientNames(fillMissingZeroCosts(fixture)).some(i=>i.name==="Tea"||i.name==="Tea alias")',context),false);
+});
+
+test('used ingredient confirmation allows cancellation, retry after failure and successful deletion',async()=>{
+ const {context,document}=loadBook();document.defaultView.HTMLElement.prototype.showModal=function(){this.setAttribute('open','')};document.defaultView.HTMLElement.prototype.close=function(){this.removeAttribute('open')};
+ vm.runInContext(`recipes=[{category:'Drinks',names:['Tea drink'],details:{'Tea drink':{ingredientRows:[{name:'Tea',actual:'2',unit:'g'}]}}}];ingredientCosts=[{name:'Tea'}];var savedState=null;var deleted=false;persistState=async state=>{savedState=state;return false;};openIngredientDeleteConfirmation('Tea',()=>{deleted=true});`,context);
+ let dialog=document.querySelector('.ingredient-delete-confirm');assert.match(dialog.textContent,/Tea drink/);assert.match(dialog.textContent,/ต้นทุนจะคำนวณใหม่/);assert.equal(dialog.querySelectorAll('button').length,2);dialog.querySelector('button').onclick();assert.equal(document.querySelector('.ingredient-delete-confirm'),null);assert.equal(context.savedState,null);
+ vm.runInContext("openIngredientDeleteConfirmation('Tea',()=>{deleted=true})",context);dialog=document.querySelector('.ingredient-delete-confirm');const remove=dialog.querySelector('.ingredient-delete-button');await remove.onclick();assert.ok(document.querySelector('.ingredient-delete-confirm'));assert.match(dialog.querySelector('[role=alert]').textContent,/ลบไม่สำเร็จ/);assert.equal(remove.disabled,false);assert.equal(vm.runInContext('recipes[0].details["Tea drink"].ingredientRows.length',context),1);
+ vm.runInContext('persistState=async state=>{savedState=state;return true}',context);await remove.onclick();assert.equal(document.querySelector('.ingredient-delete-confirm'),null);assert.equal(context.deleted,true);assert.equal(context.savedState.recipes[0].details['Tea drink'].ingredientRows.length,0);
 });
