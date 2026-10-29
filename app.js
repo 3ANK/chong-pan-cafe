@@ -64,6 +64,8 @@ function menuGroups(){
   return p.category===state.selectedCategory;
  });
  const groups={};for(const p of valid)(groups[p.category]||=[]).push(p);
+ // Sort within each category by price; preserve catalog order for equal prices.
+ for(const items of Object.values(groups))items.sort((a,b)=>Number(a.price||0)-Number(b.price||0));
  const rank=c=>c==='ข้าวกระเพรา'||c==='กะเพรา'?-1:c==='ข้าวและไข่สั่งแยก'?1:0;
  return Object.fromEntries(Object.entries(groups).sort(([a],[b])=>rank(a)-rank(b)));
 }
