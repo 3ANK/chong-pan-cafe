@@ -20,8 +20,10 @@ async function isAdmin(s,env,db){
  if(!s?.sub)return false;
  return !!await db.prepare('SELECT 1 AS ok FROM shop_admins WHERE line_user_id=?').bind(s.sub).first();
 }
-function eggPrice(s){return({fried:10,omelet:10,creamy:20})[s]??null}
-const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'};
+function eggPrice(s){return({fried:10,omelet:10,creamy:20,shrimp:15,crab:15})[s]??null}
+const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น',shrimp:'กุ้ง',crab:'ปูอัด'};
+const eggRiceNames=new Set(['ข้าวไข่ข้น','ข้าวไข่เจียว','ข้าวไข่ดาว']);
+const isTopping=code=>code==='shrimp'||code==='crab';
 const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระเพรา','ข้าวกระเทียม']);
 const validSweet=new Set(['','ปกติ','หวานน้อย','ไม่หวาน','ไม่เติมน้ำตาล','เติมหวานน้อย','เติมหวานปกติ']);
 const validStatus=new Set(['accepted','preparing','ready','completed','cancelled']);
@@ -143,7 +145,7 @@ async function createOrder(req,env,db,s){
   const sweetness=safe(raw.sweetness,40),egg=safe(raw.egg,20);
   if(!validSweet.has(sweetness)||(sweetness&&!p.drink))return fail('ตัวเลือกความหวานไม่ถูกต้อง');
   const baseEggPrice=egg?eggPrice(egg):0,eggQty=raw.eggQty===undefined?(egg?1:0):raw.eggQty;
-  if(baseEggPrice===null||(egg&&!eggEligibleCategories.has(p.category))||!Number.isInteger(eggQty)||eggQty<0||eggQty>5||(egg&&eggQty===0)||(!egg&&eggQty!==0))return fail('ตัวเลือกหรือจำนวนไข่ไม่ถูกต้อง');
+  if(baseEggPrice===null||(egg&&(isTopping(egg)?!eggRiceNames.has(p.name)||eggQty!==1:!eggEligibleCategories.has(p.category)))||!Number.isInteger(eggQty)||eggQty<0||eggQty>5||(egg&&eggQty===0)||(!egg&&eggQty!==0))return fail('ตัวเลือกหรือจำนวนไข่ไม่ถูกต้อง');
   const extra=baseEggPrice*eggQty;
   const item={id:p.id,name:p.name,qty,price:p.price,egg,eggQty,sweetness,note:safe(raw.note,140),extra};
   const pair=extra===0?(p.id==='30'&&p.price===15?25:(p.id==='31'||p.id==='32')&&p.price===20?35:null):null;
@@ -178,7 +180,7 @@ async function createOrder(req,env,db,s){
  const balance=await db.prepare('SELECT points FROM members WHERE line_user_id=?').bind(s.sub).first();
  let alertOk=false;
  try{
-  const lines=validated.map(i=>i.qty+'× '+i.name+(i.sweetness?' ('+i.sweetness+')':'')+(i.egg?' +'+eggNames[i.egg]+' '+i.eggQty+' ฟอง/จาน (+'+i.extra+' บาท/จาน)':'')+(i.note?' | '+i.note:''));
+  const lines=validated.map(i=>i.qty+'× '+i.name+(i.sweetness?' ('+i.sweetness+')':'')+(i.egg?' +'+eggNames[i.egg]+ (isTopping(i.egg)?'':' '+i.eggQty+' ฟอง/จาน')+' (+'+i.extra+' บาท/จาน)':'')+(i.note?' | '+i.note:''));
   const msg=['มีออเดอร์ใหม่ #'+id.slice(0,8),
    ...(redeemOnly?['ประเภท: แลกแต้มเป็นเมนู']:[]),
    'ลูกค้า: '+name,...(redeemOnly?[]:['ยอดชำระ: '+total+' บาท']),
