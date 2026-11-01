@@ -109,9 +109,9 @@ $('adminContent').addEventListener('click',e=>{
 });
 
 function orderCard(o){
- const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น'};
+ const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น',shrimp:'กุ้ง',crab:'ปูอัด'};
  const items=(o.items||[]).map(i=>{
-  const egg=i.egg?'เพิ่ม'+(eggNames[i.egg]||'ไข่')+' '+(i.eggQty??1)+' ฟอง (+'+Number(i.eggPrice||0)+' บาท)':'';
+  const egg=i.egg?'เพิ่ม'+(eggNames[i.egg]||'ไข่')+(['shrimp','crab'].includes(i.egg)?'':' '+(i.eggQty??1)+' ฟอง')+' (+'+Number(i.eggPrice||0)+' บาท)':'';
   const modifiers=[i.sweetness||'',egg,i.note||''].filter(Boolean);
   return '<li style="margin:0 0 .7rem;line-height:1.5"><div style="display:flex;align-items:baseline;gap:.75rem;justify-content:space-between"><span>'+escapeText(i.name)+'</span><strong style="white-space:nowrap">×'+Number(i.qty)+'</strong></div>'+(modifiers.length?'<div class="order-modifiers">'+modifiers.map(escapeText).join(' · ')+'</div>':'')+'</li>';
  }).join('');
@@ -131,7 +131,7 @@ function orderCard(o){
  '<div class="admin-order-details"><ul class="order-items">'+items+'</ul>'+
  (o.note&&o.note.trim()&&o.note.trim()!=='ไม่มี'?'<p class="order-note"><strong>หมายเหตุ:</strong> '+escapeText(o.note)+'</p>':'')+
  '<p class="order-total"><strong>'+(redeem?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม · ไม่มียอดชำระเป็นเงิน':fmt(o.total))+'</strong>'+(Number(o.points_used)>0&&!redeem?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p></div>'+
- '<details class="order-extra" data-order-detail="prices"><summary>ดูรายละเอียดราคา</summary><ul>'+ (o.items||[]).map(i=>'<li>'+escapeText(i.name)+' · '+fmt(i.price)+' × '+Number(i.qty)+(i.egg?' · เพิ่มไข่ '+Number(i.eggQty??1)+' ฟอง':'')+' · '+(redeem?'แลกแต้ม':fmt(orderItemSubtotal(i)))+'</li>').join('')+'</ul></details>'+
+ '<details class="order-extra" data-order-detail="prices"><summary>ดูรายละเอียดราคา</summary><ul>'+ (o.items||[]).map(i=>'<li>'+escapeText(i.name)+' · '+fmt(i.price)+' × '+Number(i.qty)+(i.egg?(['shrimp','crab'].includes(i.egg)?' · เพิ่ม'+({shrimp:'กุ้ง',crab:'ปูอัด'})[i.egg]:' · เพิ่มไข่ '+Number(i.eggQty??1)+' ฟอง'):'')+' · '+(redeem?'แลกแต้ม':fmt(orderItemSubtotal(i)))+'</li>').join('')+'</ul></details>'+
  '<div class="payment-chip '+(o.payment_status==='verified'?'success':'warning')+'">'+escapeText(paymentText(o))+'</div>'+
  '<details class="order-extra order-points" data-order-detail="points"><summary>แต้มสะสม</summary><div class="loyalty-points '+(o.status==='completed'&&credited!==null?'awarded':'')+'">'+escapeText(pointsInfo)+'</div></details>'+
  (typeof window.renderLoyverseStatus==='function'?window.renderLoyverseStatus(o):'')+
