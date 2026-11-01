@@ -58,10 +58,11 @@ export function buildReceipt(order,items,config){
   // Match createOrder's per-row bread promotion, preserving the single-slice SKU
   // and stock quantity. Explicit net prices need no invented discount object.
   const pair=!i.egg&&Number(i.egg_price||0)===0?(String(i.catalog_id)==='30'&&Number(i.unit_price)===15?25:['31','32'].includes(String(i.catalog_id))&&Number(i.unit_price)===20?35:null):null;
-  const line=(quantity,price,promo=false)=>({variant_id:variant,quantity,price,line_taxes:[],line_discounts:[],line_modifiers:[],line_note:[promo?'โปรขนมปัง 2 แผ่น '+pair+' บาท':'',i.sweetness,i.note].filter(Boolean).join(' · ')});
+  const topping=['shrimp','crab'].includes(i.egg);
+  const line=(quantity,price,promo=false)=>({variant_id:variant,quantity,price,line_taxes:[],line_discounts:[],line_modifiers:[],line_note:[promo?'โปรขนมปัง 2 แผ่น '+pair+' บาท':'',i.sweetness,topping?'เพิ่ม'+({shrimp:'กุ้ง',crab:'ปูอัด'})[i.egg]+' +15 บาท':'',i.note].filter(Boolean).join(' · ')});
   if(pair!==null&&i.qty>=2){lines.push(line(Math.floor(i.qty/2)*2,pair/2,true));if(i.qty%2)lines.push(line(1,Number(i.unit_price)))}
-  else lines.push(line(i.qty,Number(i.unit_price)));
-  if(i.egg){const egg=config.eggMappings?.[i.egg];if(!uuid(egg))throw Error('ยังไม่จับคู่ไข่เพิ่มเติม');lines.push({variant_id:egg,quantity:i.qty*(i.egg_qty||1),price:i.egg_price/(i.egg_qty||1),line_taxes:[],line_discounts:[],line_modifiers:[]})}
+  else lines.push(line(i.qty,Number(i.unit_price)+(topping?Number(i.egg_price||0):0)));
+  if(i.egg&&!topping){const egg=config.eggMappings?.[i.egg];if(!uuid(egg))throw Error('ยังไม่จับคู่ไข่เพิ่มเติม');lines.push({variant_id:egg,quantity:i.qty*(i.egg_qty||1),price:i.egg_price/(i.egg_qty||1),line_taxes:[],line_discounts:[],line_modifiers:[]})}
  }
  const subtotal=lines.reduce((n,l)=>n+l.quantity*l.price,0),discount=subtotal-Number(order.total);
  if(discount<0||!Number.isFinite(discount)||!lines.length)throw Error('ยอดรายการไม่ตรงกับยอดออเดอร์');
