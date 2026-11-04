@@ -1,8 +1,8 @@
 import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import assert from 'node:assert/strict';
-const source=readFileSync(new URL('../admin/admin.js',import.meta.url),'utf8').split("$('adminContent').addEventListener")[0];
-const context={URLSearchParams,location:{search:''},window:{}};
+const source=readFileSync(new URL('../admin/admin.js',import.meta.url),'utf8').split("$('adminContent').addEventListener('click',async")[0];
+const context={URLSearchParams,location:{search:''},window:{},document:{getElementById:()=>({addEventListener(){}})}};
 runInNewContext(source,context);
 const base={id:'completed-cash',status:'completed',payment_method:'cash',payment_status:'unpaid',total:85,pointsAwarded:3,items:[]};
 const html=o=>context.orderCard({...base,...o});
@@ -13,9 +13,10 @@ assert.doesNotMatch(html({}),/data-complete-order=/);
 for(const status of ['pending','accepted','preparing','ready','completed'])assert.doesNotMatch(html({status}),/data-confirm-pay=/);
 assert.match(html({status:'pending'}),/data-status="accepted"/);
 assert.match(html({status:'accepted'}),/เริ่มทำ/);
-assert.match(html({status:'preparing'}),/พร้อมส่ง/);
+assert.match(html({status:'preparing',fulfillment:'delivery'}),/พร้อมส่ง/);
 assert.match(html({status:'ready'}),/data-complete-order=/);
 assert.match(html({payment_method:'qr',status:'pending'}),/data-payment-method="qr"/);
 assert.match(html({payment_method:'qr',status:'ready',payment_status:'unpaid'}),/disabled title="ต้องตรวจยอดเงินก่อนส่งมอบ"/);
 assert.doesNotMatch(html({status:'completed'}),/data-status=/);
 console.log('ADMIN PAYMENT: completed unpaid orders retain confirmation; paid/cancelled/redemption orders hide it PASSED');
+

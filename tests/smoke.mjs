@@ -56,7 +56,7 @@ assert.ok(appJS.includes("show('sweetnessGroup',!!p.drink)"));
 assert.ok(appJS.includes("show('eggGroup',supportsEgg(p))"));
 assert.ok(appJS.includes("egg:supportsEgg(p)?$('egg').value:''"));
 assert.ok(appJS.includes("egg:supportsEgg(p)?it.egg:''"));
-assert.ok(appJS.includes("const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระเทียม'])"));
+assert.ok(appJS.includes("const eggEligibleCategories=new Set(['ข้าวกระเพรา','กะเพรา','ข้าวกระเทียม'])"));
 assert.ok(html.includes('id="eggQuantityGroup"')&&html.includes('id="increaseEggQty"'));
 assert.ok(appJS.includes('function setOptionEggQuantity(next)'));
 assert.ok(appJS.includes('eggQty:egg?(eggQty??1):0'));
@@ -92,7 +92,7 @@ assert.equal(Math.floor(539/25),21);
 assert.ok(appJS.includes("https://line.me/R/oaMessage/")&&appJS.includes('paymentMethod'));
 assert.ok(appJS.includes("const link='https://line.me/R/oaMessage/'+encodeURIComponent(cfg.oaId);"));
 assert.ok(!appJS.includes('encodeURIComponent(message)')&&!appJS.includes('แจ้งส่งสลิปชำระเงิน'));
-assert.ok(html.includes('ไม่มีข้อความเตรียมไว้หรือคัดลอกให้อัตโนมัติ'));
+assert.ok(html.includes('ส่งรูปสลิปในแชตร้าน'));
 
 assert.ok(appJS.includes("liff.login({redirectUri:location.origin+location.pathname+(state.redeemMode?'?redeem=1':'')})"));
 assert.ok(appJS.includes("await request('auth/line'"));
@@ -257,6 +257,9 @@ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfi
  r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'55',qty:1,egg:'creamy',eggQty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
  assert.equal(r.status,201);assert.equal(r.data.total,69);
  assert.ok(lastOwnerOrderNotification.includes('1× ข้าวหมูกระเทียม +ไข่ข้น 1 ฟอง/จาน'));
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'55',qty:2,egg:'century',eggQty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+ assert.equal(r.status,201);assert.equal(r.data.total,158);
+ assert.ok(lastOwnerOrderNotification.includes('ไข่เยี่ยวม้า 2 ฟอง/จาน (+30 บาท/จาน)'));
  for(const badEggQty of [0,6,-1,1.5,'2']){
   r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:1,egg:'fried',eggQty:badEggQty}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
   assert.equal(r.status,400);
@@ -393,8 +396,8 @@ assert.ok(css.includes('.option-quantity-controls{display:flex'));
 
 // Customer UX: 3 sticky main groups, focused subcategories, cross-sell prompt.
 assert.ok(html.includes('id="menuGroupTabs"')&&html.includes('id="nextStepBar"'));
-assert.ok(html.includes('วันนี้รับอะไรดีคะ?'));
-assert.ok(html.includes('น้องชงปั่นยินดีต้อนรับค่ะ'));
+assert.ok(!html.includes('วันนี้รับอะไรดีคะ?'));
+assert.ok(html.includes('น้องชงปั่นยินดีต้อนรับ'));
 assert.ok(!html.includes('วันนี้รับอะไรดีครับ?'));
 
 assert.ok(html.includes('data-menu-group="food"')&&html.includes('data-menu-group="drinks"')&&html.includes('data-menu-group="dessert"'));
@@ -421,11 +424,13 @@ assert.ok(css.includes('.order-history-actions{display:flex'));
 const reorderSection=appJS.slice(appJS.indexOf('function buildRepeatBasket('),appJS.indexOf('\nasync function repeatOrder('));
 assert.ok(reorderSection.startsWith('function buildRepeatBasket('));
 const rerunHelper=[
- "const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระเทียม']);",
- "const supportsEgg=p=>!!p&&eggEligibleCategories.has(p.category);",
+ "const eggEligibleCategories=new Set(['ข้าวกระเพรา','กะเพรา','ข้าวกระเทียม']);",
+ "const supportsTopping=p=>!!p&&['ข้าวไข่ข้น','ข้าวไข่เจียว','ข้าวไข่ดาว'].includes(p.name);",
+ "const isTopping=e=>['shrimp','crab'].includes(e);",
+ "const supportsEgg=p=>!!p&&(eggEligibleCategories.has(p.category)||supportsTopping(p));",
  "const repeatSweetness=new Set(['','ปกติ','หวานน้อย','ไม่หวาน','ไม่เติมน้ำตาล','เติมหวานน้อย','เติมหวานปกติ']);",
- "const repeatEggTypes=new Set(['fried','omelet','creamy']);",
- "const extra=item=>(({fried:10,omelet:10,creamy:20})[item.egg]||0)*(item.eggQty||0);",
+ "const repeatEggTypes=new Set(['fried','omelet','creamy','century','shrimp','crab']);",
+ "const extra=item=>(({fried:10,omelet:10,creamy:20,century:15,shrimp:15,crab:15})[item.egg]||0)*(item.eggQty||0);",
  "const keyOf=item=>JSON.stringify([item.id,item.sweetness,item.egg,item.egg?item.eggQty??1:0,item.note]);",
  reorderSection,
  "return buildRepeatBasket(order,products,currentBasket);"
@@ -464,3 +469,4 @@ const invalidSweet=repeatTest({items:[{id:'8',qty:1,egg:'fried'}]},repeatProduct
 assert.equal(invalidSweet.added.length,0);
 assert.equal(invalidSweet.skipped.length,1);
 console.log('PASS: repeat-order uses current prices, original quantity and options, stock checks, and cart limits');
+
