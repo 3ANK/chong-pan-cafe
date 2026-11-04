@@ -109,7 +109,7 @@ $('adminContent').addEventListener('click',e=>{
 });
 
 function orderCard(o){
- const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น',shrimp:'กุ้ง',crab:'ปูอัด'};
+ const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น',century:'ไข่เยี่ยวม้า',shrimp:'กุ้ง',crab:'ปูอัด'};
  const items=(o.items||[]).map(i=>{
   const egg=i.egg?'เพิ่ม'+(eggNames[i.egg]||'ไข่')+(['shrimp','crab'].includes(i.egg)?'':' '+(i.eggQty??1)+' ฟอง')+' (+'+Number(i.eggPrice||0)+' บาท)':'';
   const modifiers=[i.sweetness||'',egg,i.note||''].filter(Boolean);

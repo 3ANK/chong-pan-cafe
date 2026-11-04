@@ -20,8 +20,8 @@ async function isAdmin(s,env,db){
  if(!s?.sub)return false;
  return !!await db.prepare('SELECT 1 AS ok FROM shop_admins WHERE line_user_id=?').bind(s.sub).first();
 }
-function eggPrice(s){return({fried:10,omelet:10,creamy:20,shrimp:15,crab:15})[s]??null}
-const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น',shrimp:'กุ้ง',crab:'ปูอัด'};
+function eggPrice(s){return({fried:10,omelet:10,creamy:20,century:15,shrimp:15,crab:15})[s]??null}
+const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น',century:'ไข่เยี่ยวม้า',shrimp:'กุ้ง',crab:'ปูอัด'};
 const eggRiceNames=new Set(['ข้าวไข่ข้น','ข้าวไข่เจียว','ข้าวไข่ดาว']);
 const isTopping=code=>code==='shrimp'||code==='crab';
 const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระเพรา','ข้าวกระเทียม']);
