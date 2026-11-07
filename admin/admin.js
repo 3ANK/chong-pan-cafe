@@ -124,12 +124,15 @@ function orderCard(o){
  const payPending=o.payment_method==='qr'&&o.payment_status!=='verified';
  const pointsButton=o.status==='ready'?'<button type="button" class="primary award-points-button" data-complete-order="'+escapeText(o.id)+'" data-points="'+reward+'" '+(payPending?'disabled title="ต้องตรวจยอดเงินก่อนส่งมอบ"':'')+'>ส่งมอบแล้ว</button>':'';
  const actions=(nextStatuses[o.status]||[]).filter(s=>s!=='completed').map(s=>'<button type="button" class="'+(s==='cancelled'?'secondary order-cancel':'primary order-next')+'" data-status="'+s+'" data-order="'+escapeText(o.id)+'" data-payment-method="'+escapeText(o.payment_method)+'">'+escapeText(s==='accepted'?'รับออเดอร์':s==='preparing'?'เริ่มทำ':s==='ready'?(o.fulfillment==='delivery'?'พร้อมส่ง':'พร้อมรับ'):statuses[s]||s)+'</button>').join('');
+ // New pickup orders store the time label before the phone in the order note.
+ const pickupTime=o.fulfillment==='pickup'?(o.note||'').match(/^(รับเร็วที่สุด|คาดว่าถึง [0-9]{2}:[0-9]{2} น\.) · เบอร์โทร: /):null;
+ const orderNote=pickupTime?o.note.slice(pickupTime[1].length+' · '.length):o.note;
  return '<article class="ordercard status-'+escapeText(o.status)+'" data-order-id="'+escapeText(o.id)+'" tabindex="-1"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statuses[o.status]||o.status)+'</span></div>'+
  orderTimeMarkup(o)+
- '<div class="order-context"><strong class="fulfillment-tag">'+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+'</strong>'+(o.display_name?'<span>ลูกค้า: '+escapeText(o.display_name)+'</span>':'')+'</div>'+
+ '<div class="order-context"><strong class="fulfillment-tag">'+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+'</strong>'+(pickupTime?'<strong>'+escapeText(pickupTime[1])+'</strong>':'')+(o.display_name?'<span>ลูกค้า: '+escapeText(o.display_name)+'</span>':'')+'</div>'+
  (o.fulfillment==='delivery'&&o.delivery_address?'<details class="order-extra" data-order-detail="address"><summary>ดูที่อยู่จัดส่ง</summary><p>'+escapeText(o.delivery_address)+'</p></details>':'')+
  '<div class="admin-order-details"><ul class="order-items">'+items+'</ul>'+
- (o.note&&o.note.trim()&&o.note.trim()!=='ไม่มี'?'<p class="order-note"><strong>หมายเหตุ:</strong> '+escapeText(o.note)+'</p>':'')+
+ (orderNote&&orderNote.trim()&&orderNote.trim()!=='ไม่มี'?'<p class="order-note"><strong>หมายเหตุ:</strong> '+escapeText(orderNote)+'</p>':'')+
  '<p class="order-total"><strong>'+(redeem?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม · ไม่มียอดชำระเป็นเงิน':fmt(o.total))+'</strong>'+(Number(o.points_used)>0&&!redeem?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p></div>'+
  '<details class="order-extra" data-order-detail="prices"><summary>ดูรายละเอียดราคา</summary><ul>'+ (o.items||[]).map(i=>'<li>'+escapeText(i.name)+' · '+fmt(i.price)+' × '+Number(i.qty)+(i.egg?(['shrimp','crab'].includes(i.egg)?' · เพิ่ม'+({shrimp:'กุ้ง',crab:'ปูอัด'})[i.egg]:' · เพิ่มไข่ '+Number(i.eggQty??1)+' ฟอง'):'')+' · '+(redeem?'แลกแต้ม':fmt(orderItemSubtotal(i)))+'</li>').join('')+'</ul></details>'+
  '<div class="payment-chip '+(o.payment_status==='verified'?'success':'warning')+'">'+escapeText(paymentText(o))+'</div>'+

@@ -137,6 +137,12 @@ async function createOrder(req,env,db,s){
  if(!['pickup','delivery'].includes(data.fulfillment))return fail('วิธีรับอาหารไม่ถูกต้อง');
  const pickupPhone=data.fulfillment==='pickup'&&typeof data.pickupPhone==='string'?data.pickupPhone.trim().replace(/[\s()-]/g,''):'';
  if(data.fulfillment==='pickup'&&!/^\+?[0-9]{9,15}$/.test(pickupPhone))return fail('กรุณากรอกเบอร์โทรให้ถูกต้องก่อนยืนยันรับที่ร้าน');
+ const eta=data.fulfillment==='pickup'?data.pickupEta:'';
+ if(data.fulfillment==='pickup'&&eta!=='asap'){
+  const now=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format();
+  if(typeof eta!=='string'||!/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/.test(eta)||eta<now)return fail('กรุณาเลือกเวลารับของวันนี้ที่ยังไม่ผ่าน');
+ }
+ const pickupTimeLabel=eta==='asap'?'รับเร็วที่สุด':eta?'คาดว่าถึง '+eta+' น.':'';
  const address=safe(data.deliveryAddress,500);
  if(data.fulfillment==='delivery'&&!address)return fail('โปรดระบุที่อยู่จัดส่ง');
  const stock=new Map(config.products.map(p=>[p.id,p])),validated=[];
@@ -160,7 +166,7 @@ async function createOrder(req,env,db,s){
  const paymentMethod=redeemOnly?'points':requestedPayment,storedPaymentMethod=redeemOnly?'cash':requestedPayment;
  if(total>0&&paymentMethod==='qr'&&!paymentSettings.qrEnabled)return fail('ยังไม่เปิดสแกนจ่าย กรุณาเลือกเงินสด',409);
  const id=crypto.randomUUID(),name=safe(s.name||'สมาชิก LINE',80),customerNote=safe(data.note,300);
- const note=[pickupPhone&&'เบอร์โทร: '+pickupPhone,customerNote].filter(Boolean).join(' · ');
+ const note=[pickupTimeLabel,pickupPhone&&'เบอร์โทร: '+pickupPhone,customerNote].filter(Boolean).join(' · ');
  const orderInsert=db.prepare('INSERT INTO orders(id,request_key,line_user_id,display_name,fulfillment,delivery_address,note,total,points_used,status,payment_method,payment_status) SELECT ?,?,?,?,?,?,?,?,?,?,?,? WHERE ?=0 OR COALESCE((SELECT points FROM members WHERE line_user_id=?),0)>=?')
   .bind(id,requestKey,s.sub,name,data.fulfillment,address,note,total,pointsUsed,'pending',storedPaymentMethod,total===0?'verified':'unpaid',pointsUsed,s.sub,pointsUsed);
  const steps=[
@@ -191,6 +197,7 @@ async function createOrder(req,env,db,s){
    'ชำระเงิน: '+(paymentMethod==='points'?'แลกแต้ม · ไม่ต้องรับเงิน':paymentMethod==='qr'?'สแกน QR · รอตรวจสลิปใน LINE OA':'เงินสด · รอรับเงินจริง'),
    'วิธีรับ: '+(data.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน'),
    ...(data.fulfillment==='delivery'?['ที่อยู่: '+address]:[]),
+   ...(pickupTimeLabel?['เวลารับ: '+pickupTimeLabel]:[]),
    ...(pickupPhone?['เบอร์โทร: '+pickupPhone]:[]),
    ...(customerNote?['หมายเหตุ: '+customerNote]:[]),...lines].join('\n').slice(0,4350)+
    '\n\n📲 กดรับ / จัดการออเดอร์นี้:\nhttps://chongpan-ordering-v2.pages.dev/admin/?order='+encodeURIComponent(id);

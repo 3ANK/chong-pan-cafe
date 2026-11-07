@@ -340,3 +340,6 @@ background:linear-gradient(145deg,#faf4e7,#eee3cd);
 box-shadow:inset 1px 1px 3px #766c4720,inset -1px -1px 2px #ffffffa6;
 }
 .catalog{row-gap:5px}
+
+.pickup-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.pickup-choices button[aria-pressed="true"]{outline:2px solid var(--deep);background:#e4ebd6;color:var(--deep)}
