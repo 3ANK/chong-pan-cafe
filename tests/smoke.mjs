@@ -119,7 +119,7 @@ r=await call('admin/orders/payment','PATCH',{id:'bad',confirmed:true});assert.eq
 r=await call('admin/readiness');assert.equal(r.status,403);
 r=await call('admin/shop','POST',{enabled:true,ownerConfirmed:true});assert.equal(r.status,403);
 r=await call('admin/line/test','POST',{});assert.equal(r.status,403);
-r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()});assert.equal(r.status,401);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:1}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()});assert.equal(r.status,401);
 r=await call('orders','POST',{paymentMethod:'cash',items:[]},'', 'https://evil.invalid');assert.equal(r.status,403);
 const realFetch=globalThis.fetch;
 let lastOwnerOrderNotification='';
@@ -144,7 +144,7 @@ r=await call('payment/config');assert.equal(r.data.oaId,'@chongpanTest');
 r=await call('admin/line/test','POST',{},cookie);assert.equal(r.status,409);
 r=await call('admin/shop','POST',{enabled:true,ownerConfirmed:true},cookie);assert.equal(r.status,409);
 r=await call('points','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.member.points,0);assert.deepEqual(r.data.history,[]);
-r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:1}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
 // Only test mode: explicitly switch on both the environment flag and DB flag.
 env.SHOP_ENABLED='true'; db.raw.exec("UPDATE shop_settings SET value='1' WHERE key='shop_enabled'");
 db.raw.exec("UPDATE catalog_price_reviews SET verified=0 WHERE product_id='7'"); // simulate a pending price review
@@ -160,15 +160,20 @@ r=await call('admin/shop','POST',{enabled:true,ownerConfirmed:false},cookie);ass
 r=await call('admin/shop','POST',{enabled:true,ownerConfirmed:true},cookie);assert.equal(r.status,200);assert.equal(r.data.shopEnabled,true);
 r=await call('health');assert.equal(r.data.ordersEnabled,true);
 r=await call('admin/readiness','GET',undefined,cookie);assert.equal(r.data.checks.every(c=>c.ok),true);
-r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'not-in-menu',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,400);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'not-in-menu',qty:1}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,400);
+for(const pickupPhone of [undefined,'   ','abc123']){
+ r=await call('orders','POST',{items:[{id:'7',qty:1}],fulfillment:'pickup',pickupPhone,requestKey:crypto.randomUUID()},cookie);
+ assert.equal(r.status,400);assert.match(JSON.stringify(r.data),/เบอร์โทร/);
+}
 const requestKey=crypto.randomUUID();
-r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:2,price:1,sweetness:'ปกติ'}],fulfillment:'pickup',requestKey},cookie);assert.equal(r.status,201);assert.equal(r.data.total,90);assert.equal(r.data.ownerAlertOk,true);const orderId=r.data.orderId;
-r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:2}],fulfillment:'pickup',requestKey},cookie);assert.equal(r.status,200);assert.equal(r.data.reused,true);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:2,price:1,sweetness:'ปกติ'}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey},cookie);assert.equal(r.status,201);assert.equal(r.data.total,90);assert.equal(r.data.ownerAlertOk,true);const orderId=r.data.orderId;
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:2}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey},cookie);assert.equal(r.status,200);assert.equal(r.data.reused,true);
 r=await call('orders','GET',undefined,cookie);assert.equal(r.data.orders.length,1);
 for(const status of ['accepted','preparing','ready','completed']){r=await call('admin/orders','PATCH',{id:orderId,status},cookie);assert.equal(r.status,200,JSON.stringify(r));}
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,3);
 r=await call('admin/orders','GET',undefined,cookie);
 assert.equal(r.data.orders.find(o=>o.id===orderId).pointsAwarded,3);
+assert.equal(r.data.orders.find(o=>o.id===orderId).note,'เบอร์โทร: 0812345678');
 assert.equal(r.data.orders.find(o=>o.id===orderId).payment_status,'verified');
 // Reproduce an old completed cash order: payment confirmation repairs only payment status.
 db.raw.prepare("UPDATE orders SET payment_status='unpaid' WHERE id=?").run(orderId);
@@ -183,7 +188,7 @@ r=await call('points','GET',undefined,cookie);assert.equal(r.status,200);assert.
 r=await call('admin/orders','PATCH',{id:orderId,status:'completed'},cookie);assert.equal(r.status,409);
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,3);
 // QR paid orders cannot complete or earn points until owner has verified funds.
-r=await call('orders','POST',{paymentMethod:'qr',items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+r=await call('orders','POST',{paymentMethod:'qr',items:[{id:'7',qty:1}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);
 assert.equal(r.status,201);const qrOrderId=r.data.orderId;
 r=await call('orders','GET',undefined,cookie);assert.ok(r.data.orders.some(x=>x.id===qrOrderId&&x.payment_method==='qr'&&x.payment_status==='unpaid'));
 assert.equal(r.data.orders.find(x=>x.id===qrOrderId).pointsAwarded,null);
@@ -203,23 +208,23 @@ r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,9);
 r=await call('points','GET',undefined,cookie);assert.equal(r.data.member.points,9);assert.ok(r.data.history.some(x=>x.kind==='legacy'&&x.delta===5));assert.equal(r.data.history.length,3);
 r=await call('admin/legacy/assign','POST',{legacyCode:'ABCDEF12',lineUserId:env.OWNER_LINE_USER_ID,ownerVerified:true},cookie);assert.equal(r.status,409);
 const req2=crypto.randomUUID();
-r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:1}],fulfillment:'pickup',requestKey:req2},cookie);assert.equal(r.status,201);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'7',qty:1}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:req2},cookie);assert.equal(r.status,201);
 for(const status of ['accepted','preparing','ready','completed']) {const x=await call('admin/orders','PATCH',{id:r.data.orderId,status},cookie);assert.equal(x.status,200)}
 r=await call('me','GET',undefined,cookie);assert.equal(r.data.member.points,10);
 // Bread and milk bundle must be calculated on server, not only visual cart.
-r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,25);
-r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:3}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,40);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:2}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,25);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:3}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,40);
 for(const id of ['31','32']){
- r=await call('orders','POST',{paymentMethod:'cash',items:[{id,qty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,35);
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id,qty:2}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,35);
 }
-r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,40);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.total,40);
 
  // Regression: LINE push uses readable Thai egg names (and per-plate extras), never raw internal codes.
  r=await call('orders','POST',{paymentMethod:'cash',items:[
   {id:'1',qty:3,sweetness:'หวานน้อย'},
   {id:'33',qty:1,egg:'omelet'},
   {id:'33',qty:2,egg:'creamy'}
- ],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+ ],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);
  assert.equal(r.status,201);
  assert.ok(lastOwnerOrderNotification.includes('1× กะเพราหมู +ไข่เจียว 1 ฟอง/จาน (+10 บาท/จาน)'));
  assert.ok(lastOwnerOrderNotification.includes('3× เอสเพรสโซ (หวานน้อย)'));
@@ -231,7 +236,7 @@ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfi
  assert.ok(lastOwnerOrderNotification.includes('https://chongpan-ordering-v2.pages.dev/admin/?order='+r.data.orderId));
  assert.ok(!lastOwnerOrderNotification.includes('chongpan-members.oakenzebra4.chatgpt.site'));
  // Two dishes with two fried eggs EACH: 4 eggs and 138 THB total.
- r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:2,egg:'fried',eggQty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:2,egg:'fried',eggQty:2}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);
  assert.equal(r.status,201);assert.equal(r.data.total,138);
  const eggOrderId=r.data.orderId;
  assert.ok(lastOwnerOrderNotification.includes('2× กะเพราหมู +ไข่ดาว 2 ฟอง/จาน (+20 บาท/จาน)'));
@@ -240,31 +245,31 @@ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfi
  assert.equal(eggOrder.items[0].eggQty,2);
  assert.equal(eggOrder.items[0].eggPrice,20);
  // Mixed egg quantities must remain separate. Existing clients without eggQty imply one per plate.
- r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:1,egg:'fried'}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:1,egg:'fried'}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);
  assert.equal(r.status,201);assert.equal(r.data.total,59);
  assert.ok(lastOwnerOrderNotification.includes('1× กะเพราหมู +ไข่ดาว 1 ฟอง/จาน'));
  // Garlic rice dishes can choose fried egg, omelet or creamy egg with per-plate quantity.
- r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'55',qty:2,egg:'fried',eggQty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'55',qty:2,egg:'fried',eggQty:2}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);
  assert.equal(r.status,201);assert.equal(r.data.total,138);
  assert.ok(lastOwnerOrderNotification.includes('2× ข้าวหมูกระเทียม +ไข่ดาว 2 ฟอง/จาน (+20 บาท/จาน)'));
  const garlicOrderId=r.data.orderId;
  r=await call('orders','GET',undefined,cookie);
  const garlicItem=r.data.orders.find(o=>o.id===garlicOrderId)?.items?.[0];
  assert.equal(garlicItem.egg,'fried');assert.equal(garlicItem.eggQty,2);assert.equal(garlicItem.eggPrice,20);
- r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'56',qty:1,egg:'omelet',eggQty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'56',qty:1,egg:'omelet',eggQty:1}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);
  assert.equal(r.status,201);assert.equal(r.data.total,59);
  assert.ok(lastOwnerOrderNotification.includes('1× ข้าวไก่กระเทียม +ไข่เจียว 1 ฟอง/จาน'));
- r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'55',qty:1,egg:'creamy',eggQty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'55',qty:1,egg:'creamy',eggQty:1}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);
  assert.equal(r.status,201);assert.equal(r.data.total,69);
  assert.ok(lastOwnerOrderNotification.includes('1× ข้าวหมูกระเทียม +ไข่ข้น 1 ฟอง/จาน'));
- r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'55',qty:2,egg:'century',eggQty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'55',qty:2,egg:'century',eggQty:2}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);
  assert.equal(r.status,201);assert.equal(r.data.total,158);
  assert.ok(lastOwnerOrderNotification.includes('ไข่เยี่ยวม้า 2 ฟอง/จาน (+30 บาท/จาน)'));
  for(const badEggQty of [0,6,-1,1.5,'2']){
-  r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:1,egg:'fried',eggQty:badEggQty}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);
+  r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:1,egg:'fried',eggQty:badEggQty}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);
   assert.equal(r.status,400);
  }
- r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'1',qty:1,eggQty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,400);
+ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'1',qty:1,eggQty:2}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,400);
 
 
 r=await call('admin/menu','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.products.length,90);assert.equal(r.data.canEditImages,true);
@@ -306,13 +311,13 @@ r=await call('admin/orders','GET',undefined,hungryCookie);assert.equal(r.status,
 db.raw.prepare("INSERT INTO points_adjustments(source_key,line_user_id,delta,reason) VALUES(?,?,?,'screenshot-migration')").run('smoke-redemption-seed',hungrySub,30);
 db.raw.prepare('UPDATE members SET points=30 WHERE line_user_id=?').run(hungrySub);
 const redemptionKey=crypto.randomUUID();
-r=await call('orders','POST',{paymentMethod:'points',redeemOnly:true,pointsToUse:25,items:[{id:'30',qty:2}],fulfillment:'pickup',requestKey:redemptionKey},hungryCookie);
+r=await call('orders','POST',{paymentMethod:'points',redeemOnly:true,pointsToUse:25,items:[{id:'30',qty:2}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:redemptionKey},hungryCookie);
 assert.equal(r.status,201);assert.equal(r.data.total,0);assert.equal(r.data.pointsUsed,25);assert.equal(r.data.pointsRemaining,5);assert.equal(r.data.paymentMethod,'points');
 assert.ok(lastOwnerOrderNotification.includes('ประเภท: แลกแต้มเป็นเมนู'));
 assert.ok(lastOwnerOrderNotification.includes('ใช้แลกเมนู: 25 แต้ม · ไม่ต้องรับเงิน'));
 const redemptionOrderId=r.data.orderId;
 r=await call('admin/orders/payment','PATCH',{id:redemptionOrderId,confirmed:true},cookie);assert.equal(r.status,409);
-r=await call('orders','POST',{paymentMethod:'cash',pointsToUse:25,items:[{id:'30',qty:2}],fulfillment:'pickup',requestKey:crypto.randomUUID()},hungryCookie);
+r=await call('orders','POST',{paymentMethod:'cash',pointsToUse:25,items:[{id:'30',qty:2}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},hungryCookie);
 assert.equal(r.status,400); // No discount endpoint remains.
 r=await call('admin/orders','PATCH',{id:redemptionOrderId,status:'cancelled'},cookie);
 assert.equal(r.status,200);assert.equal(r.data.pointsRefunded,25);
@@ -329,7 +334,7 @@ const hungryItems=[
  {id:'31',qty:3}
 ];
 const hungryOrderKey=crypto.randomUUID();
-r=await call('orders','POST',{paymentMethod:'qr',items:hungryItems,fulfillment:'pickup',requestKey:hungryOrderKey},hungryCookie);
+r=await call('orders','POST',{paymentMethod:'qr',items:hungryItems,fulfillment:'pickup',pickupPhone:'0812345678',requestKey:hungryOrderKey},hungryCookie);
 assert.equal(r.status,201);assert.equal(r.data.total,129);assert.equal(r.data.ownerAlertOk,true);
 const hungryOrderId=r.data.orderId;
 assert.ok(lastOwnerOrderNotification.includes('1× กะเพราหมู | ไม่เผ็ด'));
@@ -340,11 +345,11 @@ const hungryOrder=r.data.orders.find(x=>x.id===hungryOrderId);
 assert.ok(hungryOrder);assert.equal(hungryOrder.total,129);assert.equal(hungryOrder.items.length,3);
 assert.equal(hungryOrder.payment_method,'qr');assert.equal(hungryOrder.payment_status,'unpaid');
 assert.equal(hungryOrder.status,'pending');
-r=await call('orders','POST',{paymentMethod:'qr',items:hungryItems,fulfillment:'pickup',requestKey:hungryOrderKey},hungryCookie);
+r=await call('orders','POST',{paymentMethod:'qr',items:hungryItems,fulfillment:'pickup',pickupPhone:'0812345678',requestKey:hungryOrderKey},hungryCookie);
 assert.equal(r.status,200);assert.equal(r.data.reused,true);assert.equal(r.data.orderId,hungryOrderId);
 // Real-world bad connectivity problem: browser loses the server response and retries
 // with a fresh key (currently the client generates a fresh UUID on each click).
-r=await call('orders','POST',{paymentMethod:'qr',items:hungryItems,fulfillment:'pickup',requestKey:crypto.randomUUID()},hungryCookie);
+r=await call('orders','POST',{paymentMethod:'qr',items:hungryItems,fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},hungryCookie);
 assert.equal(r.status,201);assert.notEqual(r.data.orderId,hungryOrderId);
 r=await call('orders','GET',undefined,hungryCookie);
 assert.equal(r.data.orders.filter(x=>x.payment_method==='qr'&&x.total===129).length,2);
@@ -352,23 +357,25 @@ console.log('HUNGRY CUSTOMER: slow mock LINE identity + 3 item/5 unit QR order 1
 let attemptedPush=false;
 r=await call('admin/line/test','POST',{},cookie);assert.equal(r.status,200); // the default mock still accepts
 
+r=await call('orders','POST',{items:[{id:'30',qty:1}],fulfillment:'delivery',deliveryAddress:'ที่อยู่ทดสอบ',requestKey:crypto.randomUUID()},cookie);
+assert.equal(r.status,201,JSON.stringify(r.data));
 globalThis.fetch=async url=>{
  if(String(url)==='https://api.line.me/v2/bot/message/push'){attemptedPush=true;return new Response('LINE temporarily unavailable',{status:503})}
  throw Error('Unexpected external URL');
 };
 const failedNotificationKey=crypto.randomUUID();
-r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',requestKey:failedNotificationKey},cookie);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:failedNotificationKey},cookie);
 assert.equal(r.status,201);const failedOrderId=r.data.orderId;assert.equal(attemptedPush,true);assert.equal(r.data.ownerAlertOk,false);assert.equal(r.data.shopAutoPaused,true);
 assert.equal(db.raw.prepare("SELECT value FROM shop_settings WHERE key='shop_enabled'").get().value,'0');
 assert.equal(db.raw.prepare("SELECT COUNT(*) AS n FROM order_notifications WHERE delivered=0").get().n,1);
 // Recover the SAME order even when a failed alert automatically disables checkout.
 const ordersBeforeRetry=db.raw.prepare("SELECT COUNT(*) AS n FROM orders").get().n;
-r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',requestKey:failedNotificationKey},cookie);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:failedNotificationKey},cookie);
 assert.equal(r.status,200);assert.equal(r.data.reused,true);assert.equal(r.data.orderId,failedOrderId);
 assert.equal(r.data.ownerAlertOk,false);
 assert.equal(db.raw.prepare("SELECT COUNT(*) AS n FROM orders").get().n,ordersBeforeRetry);
 r=await call('health');assert.equal(r.data.ordersEnabled,false);
-r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',pickupPhone:'0812345678',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
 globalThis.fetch=realFetch;
 console.log('PASS: health, 90 products reconciled to old order display, verification gate, closed checkout, origin blocking, LINE verification mock, signed cookie, total server-side 90 not 2, idempotency, owner/admin transitions, no double points, order notification fail-closed, catalog edit');
 

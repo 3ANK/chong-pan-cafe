@@ -8,7 +8,7 @@ const escapeText=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;'
 const show=(id,visible)=>$(id).hidden=!visible;
 let timer;
 function toast(message){$('toast').textContent=message;$('toast').style.display='block';clearTimeout(timer);timer=setTimeout(()=>$('toast').style.display='none',3800)}
-let checkoutMessageOverride='';
+let checkoutMessageOverride='', orderSubmitting=false;
 function checkoutStatus(message,error=false){const el=$('checkoutHint');if(!el)return;el.textContent=message;el.classList.toggle('checkout-error',error);el.setAttribute('role',error?'alert':'status')}
 async function request(path,opts={}){
  const controller=new AbortController();
@@ -248,6 +248,14 @@ function addItem(){
  toast('เพิ่ม '+item.name+' '+item.qty+' รายการลงตะกร้าแล้ว');
 }
 function pointsUsedForOrder(){return state.redeemMode?subTotal():0}
+function pickupPhoneNumber(){return $('pickupPhone').value.trim().replace(/[\s()-]/g,'')}
+function validPickupPhone(){return /^\+?[0-9]{9,15}$/.test(pickupPhoneNumber())}
+function syncFulfillmentUi(){
+ const pickup=$('fulfillment').value==='pickup';
+ show('addressLabel',!pickup);show('pickupPhoneLabel',pickup);
+ $('pickupPhone').required=pickup;
+ syncPointSpendUi();
+}
 function syncPointSpendUi(){
  const balance=Math.max(0,Number(state.member?.points)||0),total=subTotal(),used=pointsUsedForOrder();
  show('regularPointsControls',false);show('redemptionPointsDetails',state.redeemMode);
@@ -259,12 +267,15 @@ function syncPointSpendUi(){
  $('pointsAvailableText').textContent='แต้มคงเหลือ '+balance.toLocaleString('th-TH')+' แต้ม';
  $('cartPointsUsed').textContent=used.toLocaleString('th-TH')+' แต้ม';
  $('pointsRemainingAfter').textContent=Math.max(0,balance-used).toLocaleString('th-TH')+' แต้ม';
- $('placeOrder').textContent=state.redeemMode?'ยืนยันแลกเมนู':'ยืนยันสั่งอาหาร';
- $('placeOrder').disabled=!state.canOrder||!state.member||!state.basket.length||(state.redeemMode&&balance<used);
+ const qrSelected=document.querySelector('input[name="paymentMethod"]:checked')?.value==='qr';
+ $('placeOrder').textContent=state.redeemMode?'ยืนยันแลกเมนู':qrSelected?'ส่งออเดอร์และไปสแกนจ่าย':'ยืนยันสั่งอาหาร';
+ const needsPhone=$('fulfillment').value==='pickup'&&!validPickupPhone();
+ $('placeOrder').disabled=orderSubmitting||!state.canOrder||!state.member||!state.basket.length||needsPhone||(state.redeemMode&&balance<used);
  if(!checkoutMessageOverride){
   if(!state.canOrder)checkoutStatus('ร้านยังไม่เปิดรับออเดอร์ในขณะนี้');
   else if(!state.member)checkoutStatus('เข้าสู่ LINE ก่อนยืนยันออเดอร์');
   else if(state.redeemMode&&balance<used)checkoutStatus('แต้มไม่พอสำหรับเมนูที่เลือก · ต้องใช้ '+used.toLocaleString('th-TH')+' แต้ม');
+  else if(needsPhone)checkoutStatus('กรุณากรอกเบอร์โทรให้ถูกต้องก่อนยืนยันรับที่ร้าน');
   else checkoutStatus(state.redeemMode?'ตรวจสอบเมนูและแต้มที่จะใช้แลกก่อนยืนยัน':'ตรวจสอบรายการก่อนยืนยันออเดอร์');
  }
 }
@@ -278,9 +289,7 @@ function paintBasket(){
  $('cartItems').innerHTML=state.basket.map((it,i)=>'<div class="cartline"><div><strong>'+escapeText(it.name)+'</strong><br><small>'+escapeText([it.sweetness,it.egg?modifierLabel(it):'',it.note].filter(Boolean).join(' · '))+'</small><div>'+costLabel(lineSubtotal(it))+'</div></div><div class="cartbuttons"><button data-qty="'+i+'" data-step="-1" aria-label="ลดจำนวน">−</button>'+it.qty+'<button data-qty="'+i+'" data-step="1" aria-label="เพิ่มจำนวน">+</button></div></div>').join('')||'<p class="empty">ตะกร้าว่าง</p>';
  for(const b of $('cartItems').querySelectorAll('[data-qty]'))b.addEventListener('click',()=>{const i=Number(b.dataset.qty);state.basket[i].qty+=Number(b.dataset.step);if(state.basket[i].qty<1)state.basket.splice(i,1);if(state.basket[i]?.qty>20)state.basket[i].qty=20;saveBasket();paintBasket()});
  syncPointSpendUi();
- $('placeOrder').disabled=!state.canOrder||!state.member||!count||(state.redeemMode&&Number(state.member?.points||0)<subTotal());
  show('redemptionBanner',state.redeemMode);
- if(!checkoutMessageOverride&&!state.redeemMode)checkoutStatus(!state.canOrder?'ขณะนี้ร้านยังไม่เปิดรับออเดอร์':!state.member?'เข้าสู่ LINE ก่อนยืนยันออเดอร์':'ตรวจสอบราคาและยอดชำระก่อนสั่ง');
 }
 function setTab(tab){hideNextStep();for(const t of ['menu','history'])show(t+'Panel',t===tab);document.querySelectorAll('[data-tab]').forEach(b=>b.classList.toggle('selected',b.dataset.tab===tab));if(tab==='history')loadHistory()}
 function paintMember(){const m=state.member;$('memberName').textContent=m?.name||'ยังไม่ได้เข้าสู่ระบบ';$('points').textContent=m?.points??'–';$('loginBtn').textContent=m?'บัญชี LINE ✓':'เข้าสู่ LINE';state.admin=!!m?.isOwner;show('adminShortcut',state.admin);paintBasket()}
@@ -458,10 +467,13 @@ function showQrPayment(orderId,total){
  $('paymentDialog').showModal();
 }
 async function placeOrder(){
+ if(orderSubmitting)return;
  if(!state.canOrder){checkoutStatus('ร้านยังไม่เปิดรับออเดอร์ในขณะนี้ กรุณาติดต่อร้าน',true);return}
  if(!state.member){checkoutStatus('กรุณาเข้าสู่ระบบ LINE ก่อนยืนยันออเดอร์',true);return authenticate(true)}
  if(!state.basket.length){checkoutStatus('ยังไม่มีสินค้าในตะกร้า',true);return}
  const fulfillment=$('fulfillment').value,deliveryAddress=$('deliveryAddress').value.trim();
+ const pickupPhone=fulfillment==='pickup'?pickupPhoneNumber():'';
+ if(fulfillment==='pickup'&&!validPickupPhone()){checkoutStatus('กรุณากรอกเบอร์โทรให้ถูกต้องก่อนยืนยันรับที่ร้าน',true);$('pickupPhone').focus();return}
  if(fulfillment==='delivery'&&!deliveryAddress){checkoutStatus('กรุณากรอกที่อยู่จัดส่งก่อนส่งออเดอร์',true);$('deliveryAddress').focus();return}
  const redeemOnly=state.redeemMode;
  const paymentMethod=redeemOnly?'points':(document.querySelector('input[name="paymentMethod"]:checked')?.value||'cash');
@@ -469,16 +481,17 @@ async function placeOrder(){
  if(redeemOnly&&Number(state.member?.points||0)<pointsToUse){checkoutStatus('แต้มคงเหลือไม่พอสำหรับเมนูที่เลือก กรุณาอัปเดตยอดแต้ม',true);return}
  if(paymentMethod==='qr'&&payable>0&&!state.paymentConfig.qrEnabled){checkoutStatus('สแกนจ่ายยังไม่พร้อม กรุณาเลือกเงินสดหรือติดต่อร้าน',true);return}
  const items=state.basket.map(({id,qty,sweetness,egg,eggQty,note})=>({id,qty,sweetness,egg,eggQty:egg?(eggQty??1):0,note}));
- const payloadFingerprint=JSON.stringify({items,fulfillment,deliveryAddress,paymentMethod,redeemOnly,pointsToUse,note:$('orderNote').value.trim()});
+ const orderDetails={items,fulfillment,deliveryAddress,paymentMethod,redeemOnly,pointsToUse,note:$('orderNote').value.trim()};
+ const payloadFingerprint=JSON.stringify(orderDetails);
  const pendingKeyName='chongpan-v2-pending-checkout';
  let previous=null;try{previous=JSON.parse(localStorage.getItem(pendingKeyName)||'null')}catch{}
  const reqKey=previous?.fingerprint===payloadFingerprint&&/^[0-9a-f-]{36}$/i.test(previous.key)?previous.key:crypto.randomUUID();
  try{localStorage.setItem(pendingKeyName,JSON.stringify({key:reqKey,fingerprint:payloadFingerprint}))}catch{}
- try{sessionStorage.setItem('chongpan-v2-pending-checkout-details',JSON.stringify({key:reqKey,fingerprint:payloadFingerprint,savedAt:Date.now(),payload:{items,fulfillment,deliveryAddress,paymentMethod,redeemOnly,pointsToUse,note:$('orderNote').value.trim()},basket:state.basket}))}catch{}
+ try{sessionStorage.setItem('chongpan-v2-pending-checkout-details',JSON.stringify({key:reqKey,fingerprint:payloadFingerprint,savedAt:Date.now(),payload:{...orderDetails,pickupPhone},basket:state.basket}))}catch{}
  checkoutMessageOverride='กำลังส่งคำสั่งซื้อ กรุณารอสักครู่และอย่ากดซ้ำ';
- checkoutStatus(checkoutMessageOverride);$('placeOrder').disabled=true;
+ orderSubmitting=true;checkoutStatus(checkoutMessageOverride);$('placeOrder').disabled=true;
  try{
-  const r=await request('orders',{method:'POST',body:JSON.stringify({items,fulfillment,deliveryAddress,paymentMethod,redeemOnly,pointsToUse,note:$('orderNote').value.trim(),requestKey:reqKey})});
+  const r=await request('orders',{method:'POST',body:JSON.stringify({...orderDetails,pickupPhone,requestKey:reqKey})});
   try{localStorage.removeItem(pendingKeyName);sessionStorage.removeItem('chongpan-v2-pending-checkout-details')}catch{}
   checkoutMessageOverride='';
   state.basket=[];state.usePoints=false;state.pointsToUse=0;
@@ -494,7 +507,7 @@ async function placeOrder(){
   setTab('history');
   if(r.paymentMethod==='qr'&&Number(r.total)>0&&r.ownerAlertOk===true)showQrPayment(r.orderId,r.total);
  }catch(e){checkoutMessageOverride='ส่งออเดอร์ยังไม่สำเร็จ: '+e.message+'. หากไม่แน่ใจว่าระบบได้รับออเดอร์หรือไม่ ให้ลองกดอีกครั้งด้วยรายการเดิม ระบบจะตรวจคำขอเดิมและป้องกันการสร้างซ้ำ';}
- finally{$('placeOrder').disabled=!state.canOrder;paintBasket();if(checkoutMessageOverride)checkoutStatus(checkoutMessageOverride,true)}
+ finally{orderSubmitting=false;paintBasket();if(checkoutMessageOverride)checkoutStatus(checkoutMessageOverride,true)}
 }
 function restorePendingCheckout(){
  try{
@@ -511,7 +524,8 @@ function restorePendingCheckout(){
   $('orderNote').value=String(p.note||'').slice(0,300);
   const method=document.querySelector('input[name="paymentMethod"][value="'+(p.paymentMethod==='qr'?'qr':'cash')+'"]');
   if(method)method.checked=true;
-  show('addressLabel',$('fulfillment').value==='delivery');
+  $('pickupPhone').value=String(p.pickupPhone||'').slice(0,30);
+  syncFulfillmentUi();
   if(state.member)paintMember();else paintBasket();
   toast('กู้คืนรายการสั่งซื้อที่ส่งค้างไว้แล้ว · กรุณาเปิดตะกร้าเพื่อลองส่งรายการเดิม');
   return true;
@@ -554,7 +568,7 @@ $('increaseOptionQty').addEventListener('click',()=>setOptionQuantity(optionQuan
 $('egg').addEventListener('change',()=>setOptionEggQuantity(1));
 $('decreaseEggQty').addEventListener('click',()=>setOptionEggQuantity(optionEggQuantity-1));
 $('increaseEggQty').addEventListener('click',()=>setOptionEggQuantity(optionEggQuantity+1));
-$('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>{hideNextStep();checkoutMessageOverride='';$('cartDialog').showModal();paintBasket();void bootPayments()});$('fulfillment').addEventListener('change',()=>show('addressLabel',$('fulfillment').value==='delivery'));document.querySelectorAll('input[name="paymentMethod"]').forEach(el=>el.addEventListener('change',()=>{
+$('addSelectedItem').addEventListener('click',addItem);$('openBasket').addEventListener('click',()=>{hideNextStep();checkoutMessageOverride='';$('cartDialog').showModal();paintBasket();void bootPayments()});$('fulfillment').addEventListener('change',syncFulfillmentUi);$('pickupPhone').addEventListener('input',syncPointSpendUi);document.querySelectorAll('input[name="paymentMethod"]').forEach(el=>el.addEventListener('change',()=>{
  $('placeOrder').textContent=el.value==='qr'?'ส่งออเดอร์และไปสแกนจ่าย':'ยืนยันสั่งอาหาร';
 }));
 
