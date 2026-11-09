@@ -378,7 +378,7 @@ function orderCard(o,admin=false){
  return '<div class="ordercard"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statusName(o.status))+'</span></div>'+
  '<p class="small">'+new Date(o.created_at).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})+'</p>'+
  '<p class="history-items">'+itemLines+'</p>'+
- '<p><strong>'+(o.isPointsRedemption||o.payment_method==='points'?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':o.fulfillment==='dinein'?'ทานที่ร้าน':'รับที่ร้าน')+(Number(o.points_used)>0&&o.payment_method!=='points'?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
+ '<p><strong>'+(o.isPointsRedemption||o.payment_method==='points'?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':o.fulfillment==='dinein'?'สั่งจากในร้าน':'รับที่ร้าน')+(Number(o.points_used)>0&&o.payment_method!=='points'?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
  '<p class="pay-label">'+escapeText(paymentLabel(o))+'</p>'+
  '<div class="order-history-actions">'+repeatButton+slipButton+'</div>'+adminTools+'</div>';
 }
