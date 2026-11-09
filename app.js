@@ -466,6 +466,7 @@ function paymentLabel(o){
 async function bootPayments(){
  try{
   state.paymentConfig=await request('payment/config');
+  if(state.paymentConfig.oaId){$('chatShopLink').href='https://line.me/R/oaMessage/'+encodeURIComponent(state.paymentConfig.oaId);$('chatShopLink').hidden=false;}
   $('payQrOption').disabled=!state.paymentConfig.qrEnabled;
   $('qrPayStatus').textContent=state.paymentConfig.qrEnabled?'แสดง QR หลังส่งออเดอร์ · ส่งสลิปใน LINE OA':'ยังไม่เปิดรับ QR กรุณาเลือกเงินสด';
   if(!state.paymentConfig.qrEnabled&&$('payQrOption').checked)document.querySelector('[name=paymentMethod][value=cash]').checked=true;
