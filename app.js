@@ -261,8 +261,9 @@ function validPickupEta(){
  return eta==='asap'||(/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/.test(eta)&&eta>=now);
 }
 function syncFulfillmentUi(){
- const pickup=$('fulfillment').value==='pickup';
- show('addressLabel',!pickup);show('pickupPhoneLabel',pickup);show('pickupTiming',pickup);
+ const fulfillment=$('fulfillment').value;
+ const pickup=fulfillment==='pickup';
+ show('addressLabel',fulfillment==='delivery');show('pickupPhoneLabel',pickup);show('pickupTiming',pickup);
  const scheduled=pickup&&pickupTiming==='scheduled';
  show('pickupTimeLabel',scheduled);$('pickupTime').required=scheduled;
  for(const button of document.querySelectorAll('[data-pickup-timing]')){
@@ -377,7 +378,7 @@ function orderCard(o,admin=false){
  return '<div class="ordercard"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statusName(o.status))+'</span></div>'+
  '<p class="small">'+new Date(o.created_at).toLocaleString('th-TH',{timeZone:'Asia/Bangkok'})+'</p>'+
  '<p class="history-items">'+itemLines+'</p>'+
- '<p><strong>'+(o.isPointsRedemption||o.payment_method==='points'?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน')+(Number(o.points_used)>0&&o.payment_method!=='points'?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
+ '<p><strong>'+(o.isPointsRedemption||o.payment_method==='points'?'แลกด้วย '+Number(o.points_used||0).toLocaleString('th-TH')+' แต้ม':fmt(o.total))+'</strong> · '+(o.fulfillment==='delivery'?'จัดส่ง':o.fulfillment==='dinein'?'ทานที่ร้าน':'รับที่ร้าน')+(Number(o.points_used)>0&&o.payment_method!=='points'?' · ใช้แต้ม '+Number(o.points_used).toLocaleString('th-TH')+' แต้ม':'')+'</p>'+
  '<p class="pay-label">'+escapeText(paymentLabel(o))+'</p>'+
  '<div class="order-history-actions">'+repeatButton+slipButton+'</div>'+adminTools+'</div>';
 }
@@ -539,7 +540,7 @@ function restorePendingCheckout(){
   const basket=x.basket.filter(it=>it&&typeof it.id==='string'&&Number.isInteger(it.qty)&&it.qty>0&&typeof it.name==='string'&&Number.isFinite(Number(it.price))).slice(0,70);
   if(!basket.length)return false;
   state.basket=basket;
-  if(['pickup','delivery'].includes(p.fulfillment))$('fulfillment').value=p.fulfillment;
+  if(['dinein','pickup','delivery'].includes(p.fulfillment))$('fulfillment').value=p.fulfillment;
   $('deliveryAddress').value=String(p.deliveryAddress||'').slice(0,500);
   $('orderNote').value=String(p.note||'').slice(0,300);
   const method=document.querySelector('input[name="paymentMethod"][value="'+(p.paymentMethod==='qr'?'qr':'cash')+'"]');
