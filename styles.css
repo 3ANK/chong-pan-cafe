@@ -343,3 +343,6 @@ box-shadow:inset 1px 1px 3px #766c4720,inset -1px -1px 2px #ffffffa6;
 
 .pickup-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
 .pickup-choices button[aria-pressed="true"]{outline:2px solid var(--deep);background:#e4ebd6;color:var(--deep)}
+
+.chat-shop-link{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;text-decoration:none;font-size:12px;padding:8px 11px;border-radius:10px;flex:none}
+@media(max-width:619px){.chat-shop-link{font-size:11px;padding:7px 9px}.basket{gap:8px}.basket button{max-width:none}}
