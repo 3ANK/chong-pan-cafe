@@ -346,3 +346,24 @@ box-shadow:inset 1px 1px 3px #766c4720,inset -1px -1px 2px #ffffffa6;
 
 .chat-shop-link{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;text-decoration:none;font-size:12px;padding:8px 11px;border-radius:10px;flex:none}
 @media(max-width:619px){.chat-shop-link{font-size:11px;padding:7px 9px}.basket{gap:8px}.basket button{max-width:none}}
+
+/* Refined sticky basket: keep the chat action grouped with checkout */
+.basket{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.basket-info{display:flex;flex-direction:column;min-width:0}
+.basket-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;min-width:0}
+.chat-shop-link{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;text-decoration:none;font-size:12px;padding:9px 12px;border-radius:11px;flex:none}
+.basket-actions #openBasket{white-space:nowrap}
+@media(max-width:619px){
+ body{padding-bottom:130px}
+ .basket{display:flex;flex-direction:column;align-items:stretch;gap:9px;padding:10px max(13px,env(safe-area-inset-right)) max(10px,env(safe-area-inset-bottom)) max(13px,env(safe-area-inset-left))}
+ .basket-info{flex-direction:row;align-items:center;justify-content:space-between;gap:10px}
+ .basket-info small{font-size:12px}
+ .basket-info strong{font-size:16px}
+ .basket-actions{display:flex;flex-direction:row;align-items:center;gap:9px;width:100%}
+ .chat-shop-link{font-size:12px;padding:10px 13px;min-height:42px}
+ .basket-actions #openBasket{flex:1;max-width:none;width:auto;padding:11px 12px;font-size:13px;min-height:44px}
+}
+@media(min-width:620px){
+ .basket-info{flex:1}
+ .basket-actions #openBasket{min-width:190px}
+}
