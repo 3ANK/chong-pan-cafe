@@ -134,7 +134,7 @@ async function createOrder(req,env,db,s){
  if(!redeemOnly&&Number(data.pointsToUse||0)>0)return fail('แต้มใช้แลกเป็นเมนูได้จากหน้าแลกแต้ม กรุณาโหลดหน้าเว็บใหม่');
  if(!redeemOnly&&!['cash','qr'].includes(requestedPayment))return fail('กรุณาเลือกชำระเงินสดหรือสแกนจ่าย');
  if(!Array.isArray(data.items)||!data.items.length||data.items.length>35)return fail('จำนวนรายการไม่ถูกต้อง');
- if(!['pickup','delivery'].includes(data.fulfillment))return fail('วิธีรับอาหารไม่ถูกต้อง');
+ if(!['dinein','pickup','delivery'].includes(data.fulfillment))return fail('วิธีรับอาหารไม่ถูกต้อง');
  const pickupPhone=data.fulfillment==='pickup'&&typeof data.pickupPhone==='string'?data.pickupPhone.trim().replace(/[\s()-]/g,''):'';
  if(data.fulfillment==='pickup'&&!/^\+?[0-9]{9,15}$/.test(pickupPhone))return fail('กรุณากรอกเบอร์โทรให้ถูกต้องก่อนยืนยันรับที่ร้าน');
  const eta=data.fulfillment==='pickup'?data.pickupEta:'';
@@ -142,7 +142,7 @@ async function createOrder(req,env,db,s){
   const now=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).format();
   if(typeof eta!=='string'||!/^(?:[01][0-9]|2[0-3]):[0-5][0-9]$/.test(eta)||eta<now)return fail('กรุณาเลือกเวลารับของวันนี้ที่ยังไม่ผ่าน');
  }
- const pickupTimeLabel=eta==='asap'?'รับเร็วที่สุด':eta?'คาดว่าถึง '+eta+' น.':'';
+ const pickupTimeLabel=data.fulfillment==='dinein'?'ทานที่ร้าน':eta==='asap'?'รับเร็วที่สุด':eta?'คาดว่าถึง '+eta+' น.':'';
  const address=safe(data.deliveryAddress,500);
  if(data.fulfillment==='delivery'&&!address)return fail('โปรดระบุที่อยู่จัดส่ง');
  const stock=new Map(config.products.map(p=>[p.id,p])),validated=[];
@@ -195,7 +195,7 @@ async function createOrder(req,env,db,s){
    'ลูกค้า: '+name,...(redeemOnly?[]:['ยอดชำระ: '+total+' บาท']),
    ...(pointsUsed?['ใช้แลกเมนู: '+pointsUsed+' แต้ม · ไม่ต้องรับเงิน']:[]),
    'ชำระเงิน: '+(paymentMethod==='points'?'แลกแต้ม · ไม่ต้องรับเงิน':paymentMethod==='qr'?'สแกน QR · รอตรวจสลิปใน LINE OA':'เงินสด · รอรับเงินจริง'),
-   'วิธีรับ: '+(data.fulfillment==='delivery'?'จัดส่ง':'รับที่ร้าน'),
+   'วิธีรับ: '+(data.fulfillment==='delivery'?'จัดส่ง':data.fulfillment==='dinein'?'ทานที่ร้าน':'รับที่ร้าน'),
    ...(data.fulfillment==='delivery'?['ที่อยู่: '+address]:[]),
    ...(pickupTimeLabel?['เวลารับ: '+pickupTimeLabel]:[]),
    ...(pickupPhone?['เบอร์โทร: '+pickupPhone]:[]),
