@@ -129,7 +129,7 @@ function orderCard(o){
  const orderNote=pickupTime?o.note.slice(pickupTime[1].length+' · '.length):o.note;
  return '<article class="ordercard status-'+escapeText(o.status)+'" data-order-id="'+escapeText(o.id)+'" tabindex="-1"><div class="adminrow"><strong>ออเดอร์ #'+escapeText(o.id.slice(0,8).toUpperCase())+'</strong><span class="tag">'+escapeText(statuses[o.status]||o.status)+'</span></div>'+
  orderTimeMarkup(o)+
- '<div class="order-context"><strong class="fulfillment-tag">'+(o.fulfillment==='delivery'?'จัดส่ง':o.fulfillment==='dinein'?'ทานที่ร้าน':'รับที่ร้าน')+'</strong>'+(pickupTime?'<strong>'+escapeText(pickupTime[1])+'</strong>':'')+(o.display_name?'<span>ลูกค้า: '+escapeText(o.display_name)+'</span>':'')+'</div>'+
+ '<div class="order-context"><strong class="fulfillment-tag">'+(o.fulfillment==='delivery'?'จัดส่ง':o.fulfillment==='dinein'?'สั่งจากในร้าน':'รับที่ร้าน')+'</strong>'+(pickupTime?'<strong>'+escapeText(pickupTime[1])+'</strong>':'')+(o.display_name?'<span>ลูกค้า: '+escapeText(o.display_name)+'</span>':'')+'</div>'+
  (o.fulfillment==='delivery'&&o.delivery_address?'<details class="order-extra" data-order-detail="address"><summary>ดูที่อยู่จัดส่ง</summary><p>'+escapeText(o.delivery_address)+'</p></details>':'')+
  '<div class="admin-order-details"><ul class="order-items">'+items+'</ul>'+
  (orderNote&&orderNote.trim()&&orderNote.trim()!=='ไม่มี'?'<p class="order-note"><strong>หมายเหตุ:</strong> '+escapeText(orderNote)+'</p>':'')+
