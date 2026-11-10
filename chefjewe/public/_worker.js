@@ -131,7 +131,7 @@ if(path.startsWith('/api/')){
    if(!env.SESSION_SECRET||!await signedIn(request,env))return new Response(null,{status:302,headers:{Location:'/', 'Cache-Control':'no-store'}});
    return new Response(request.method==='HEAD'?null:UNIT_COST_HTML,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin','X-Frame-Options':'DENY'}});
   }
-  if(path==='/logo.webp'||path==='/pastel.css'||path.startsWith('/ingredient-images/'))return env.ASSETS.fetch(request);
+  if(path==='/logo.webp'||path==='/pastel.css'||path.startsWith('/ingredient-images/')||path.startsWith('/assets/fonts/'))return env.ASSETS.fetch(request);
   if(request.method!=='GET'&&request.method!=='HEAD')return new Response('Method not allowed',{status:405});
   return new Response(request.method==='HEAD'?null:HTML,{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Referrer-Policy':'same-origin','X-Frame-Options':'DENY'}});
  }catch{return json({error:'server_error'},500)}
