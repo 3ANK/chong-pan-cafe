@@ -367,3 +367,8 @@ box-shadow:inset 1px 1px 3px #766c4720,inset -1px -1px 2px #ffffffa6;
  .basket-info{flex:1}
  .basket-actions #openBasket{min-width:190px}
 }
+
+/* BANK-JEWE — site-wide typography */
+@font-face{font-family:'BANK-JEWE';src:url('/assets/fonts/BANK.ttf') format('truetype');font-style:normal;font-weight:100 900;font-display:swap}
+html,body,body *,body *::before,body *::after{font-family:'BANK-JEWE',Tahoma,sans-serif!important}
+input,button,textarea,select{font-family:'BANK-JEWE',Tahoma,sans-serif!important}
