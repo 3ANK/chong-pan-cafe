@@ -1,4 +1,6 @@
-/* ChefJewe pastel studio — shared visual layer; recipe data and API stay unchanged. */
+@font-face{font-family:'BANK-JEWE';src:url('/assets/fonts/BANK.ttf') format('truetype');font-style:normal;font-weight:100 900;font-display:swap}
+:root{font-family:'BANK-JEWE',Tahoma,system-ui,sans-serif!important}
+body,body *{font-family:'BANK-JEWE',Tahoma,system-ui,sans-serif!important}/* ChefJewe pastel studio — shared visual layer; recipe data and API stay unchanged. */
 :root{--ink:#393655;--purple:#57509b;--muted:#6a6787;--border:#d0cdeb;--bg:#eeedf8;--soft:#e2e0f4;--surface:#f3f2fb;--raised:8px 8px 22px #7772a624,-7px -7px 20px #ffffffd9;--pressed:inset 4px 4px 9px #908ac124,inset -4px -4px 9px #ffffffc9;color:var(--ink);background:var(--bg);font-family:"Noto Sans Thai",Tahoma,system-ui,sans-serif}
 body.recipe-workspace,body.unit-workspace{color:var(--ink);background:radial-gradient(ellipse at 0 0,#dddbf3 0,transparent 55%),radial-gradient(ellipse at 100% 40%,#e4e2f6 0,transparent 55%),#edecf7;min-height:100vh}
 button,input,select,textarea,a,summary{-webkit-tap-highlight-color:transparent}
