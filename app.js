@@ -320,10 +320,18 @@ function gateStatus(message,retry=false){
  $('lineGateStatus').textContent=message;
  $('lineGateRetry').hidden=!retry;
 }
+async function recordShopVisit(){
+ if(!state.member)return;
+ try{await request('member/visit',{method:'POST',body:'{}'})}catch{}
+}
+document.addEventListener('visibilitychange',()=>{
+ if(!document.hidden&&state.member&&!$('shopShell').hidden)void recordShopVisit();
+});
 function showShopAfterLogin(){
  if(!state.member)return;
  $('lineGate').hidden=true;
  $('shopShell').hidden=false;
+ void recordShopVisit();
  document.body.classList.remove('line-auth-pending');
  paintBasket();
 }

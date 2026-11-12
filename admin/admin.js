@@ -299,6 +299,17 @@ async function loadAdminRoster(){
 let customerPointMembers=[],customerPointPage=1;
 const customerPointPageSize=20;
 const customerLabel=m=>m.shop_name?m.shop_name+' ('+(m.display_name||'สมาชิก LINE')+')':m.display_name||'สมาชิก LINE';
+function memberJoinedTime(value){
+ if(!value)return 0;
+ const date=new Date(/(Z|[+-]\d{2}:?\d{2})$/i.test(value)?value:String(value).replace(' ','T')+'Z');
+ return Number.isFinite(date.getTime())?date.getTime():0;
+}
+function memberVisitLabel(value){
+ const time=Number(value);if(!Number.isFinite(time)||time<=0)return 'ยังไม่มีข้อมูลเข้าใช้งานล่าสุด';
+ const minutes=Math.max(0,Math.floor((Date.now()-time)/60000));
+ const date=new Date(time);
+ return 'เข้าใช้งานล่าสุด '+(minutes<1?'เมื่อสักครู่':minutes<60?minutes+' นาทีที่แล้ว':minutes<1440?Math.floor(minutes/60)+' ชั่วโมงที่แล้ว':date.toLocaleString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}));
+}
 function renderCustomerPoints(){
  const q=$('memberSearch').value.trim().toLocaleLowerCase();
  const pointsFilter=$('memberPointsFilter').value;
@@ -309,6 +320,8 @@ function renderCustomerPoints(){
   return matches&&(pointsFilter==='all'||(pointsFilter==='positive'?points>0:points===0));
  }).sort((a,b)=>{
   const byName=String(a.shop_name||a.display_name||'').localeCompare(String(b.shop_name||b.display_name||''),'th')||String(a.line_user_id||'').localeCompare(String(b.line_user_id||''));
+  if(sort==='recent')return (Number(b.last_seen_at)||0)-(Number(a.last_seen_at)||0)||memberJoinedTime(b.created_at)-memberJoinedTime(a.created_at)||byName;
+  if(sort==='joined')return memberJoinedTime(b.created_at)-memberJoinedTime(a.created_at)||byName;
   return sort==='name'?byName:(sort==='points-asc'?Number(a.points||0)-Number(b.points||0):Number(b.points||0)-Number(a.points||0))||byName;
  });
  const pages=Math.max(1,Math.ceil(filtered.length/customerPointPageSize));
@@ -323,7 +336,7 @@ function renderCustomerPoints(){
  $('membersSummary').textContent='สมาชิก '+customerPointMembers.length+' บัญชี · รวม '+total.toLocaleString('th-TH')+' แต้ม'+' · ตรงเงื่อนไข '+filtered.length+' บัญชี';
  $('membersContent').innerHTML=visible.length?visible.map(m=>{
   const id=String(m.line_user_id||'');
-  return '<article class="ordercard"><div class="adminrow"><strong>'+escapeText(customerLabel(m))+'</strong><strong>'+Math.max(0,Number(m.points)||0).toLocaleString('th-TH')+' แต้ม</strong></div><p class="caption">LINE ลงท้าย '+escapeText(id.slice(-8))+'</p><button type="button" class="primary" data-counter-member="'+escapeText(id)+'">เติมแต้มหน้าร้าน</button> <button type="button" class="secondary" data-rename-member="'+escapeText(id)+'">เปลี่ยนชื่อ</button></article>';
+  return '<article class="ordercard"><div class="adminrow"><strong>'+escapeText(customerLabel(m))+'</strong><strong>'+Math.max(0,Number(m.points)||0).toLocaleString('th-TH')+' แต้ม</strong></div><p class="caption">LINE ลงท้าย '+escapeText(id.slice(-8))+'</p><p class="caption">'+escapeText(memberVisitLabel(m.last_seen_at))+'</p><button type="button" class="primary" data-counter-member="'+escapeText(id)+'">เติมแต้มหน้าร้าน</button> <button type="button" class="secondary" data-rename-member="'+escapeText(id)+'">เปลี่ยนชื่อ</button></article>';
  }).join(''):'<p class="empty">'+(customerPointMembers.length?'ไม่พบลูกค้าที่ตรงกับคำค้นหาหรือตัวกรอง':'ยังไม่มีลูกค้าที่เข้าสู่ระบบ LINE')+'</p>';
 }
 
@@ -354,10 +367,10 @@ $('memberNameForm').addEventListener('submit',async e=>{
  finally{memberNameBusy=false;$('memberNameSave').disabled=false;$('memberNameClose').disabled=false;$('memberShopName').disabled=false}
 });
 
-async function loadCustomerPoints(){
- $('membersContent').textContent='กำลังโหลดรายชื่อลูกค้า…';
+async function loadCustomerPoints({silent=false}={}){
+ if(!silent)$('membersContent').textContent='กำลังโหลดรายชื่อลูกค้า…';
  try{const r=await request('admin/members');customerPointMembers=Array.isArray(r.members)?r.members:[];renderCustomerPoints()}
- catch(e){$('membersSummary').textContent='';$('membersContent').textContent=e.message;$('memberPagination').hidden=true}
+ catch(e){if(!silent){$('membersSummary').textContent='';$('membersContent').textContent=e.message;$('memberPagination').hidden=true}}
 }
 $('manageMembers').addEventListener('click',async()=>{
  const panel=$('membersPanel');panel.hidden=!panel.hidden;if(panel.hidden)return;
@@ -365,7 +378,10 @@ $('manageMembers').addEventListener('click',async()=>{
  panel.scrollIntoView({behavior:'smooth',block:'start'});
  await loadCustomerPoints();
 });
-$('refreshMembers').addEventListener('click',loadCustomerPoints);
+$('refreshMembers').addEventListener('click',()=>loadCustomerPoints());
+setInterval(()=>{
+ if(!document.hidden&&!$('adminPrivate').hidden&&!$('membersPanel').hidden&&!document.querySelector('dialog[open]'))void loadCustomerPoints({silent:true});
+},15000);
 function resetCustomerPointPage(){customerPointPage=1;renderCustomerPoints()}
 $('memberSearch').addEventListener('input',resetCustomerPointPage);
 $('memberPointsFilter').addEventListener('change',resetCustomerPointPage);

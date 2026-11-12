@@ -6,7 +6,7 @@
 <link rel="icon" href="/assets/chongpan-main-logo.webp" type="image/webp">
 <link rel="stylesheet" href="/styles.css?v=rice-category-layout-20261022"><link rel="stylesheet" href="/admin/admin.css?v=member-pages-20261112">
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
-<script src="/admin/admin.js?v=member-names-20261112" defer></script><script src="/catalog-admin.js?v=safer-delete-20261028" defer></script>
+<script src="/admin/admin.js?v=member-recent-20261112" defer></script><script src="/catalog-admin.js?v=safer-delete-20261028" defer></script>
 <script src="/admin/loyverse.js?v=compact-loyverse-20261021" defer></script>
 <style>#olderOrders{margin:18px 0}#olderOrders>summary{cursor:pointer;list-style:none;padding:12px 16px}#olderOrders>summary::-webkit-details-marker{display:none}#olderOrders .older-hide{display:none}#olderOrders[open] .older-hide{display:inline}#olderOrders[open] .older-show{display:none}.older-order-day{margin-top:18px}.older-order-day h3{font-size:16px;margin:10px 0;color:#405a32}</style></head><body>
 <div class="admin-wrap">
@@ -25,7 +25,7 @@
  <label>ค้นหาลูกค้า<input id="memberSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อเรียก ชื่อ LINE หรือเลขท้าย LINE"></label>
  <div class="member-filters">
  <label>แสดงลูกค้า<select id="memberPointsFilter"><option value="all">ทั้งหมด</option><option value="positive">มีแต้มสะสม</option><option value="zero">ยังไม่มีแต้ม</option></select></label>
- <label>เรียงลำดับ<select id="memberSort"><option value="points-desc">แต้มมาก → น้อย</option><option value="points-asc">แต้มน้อย → มาก</option><option value="name">ชื่อลูกค้า ก–ฮ / A–Z</option></select></label>
+ <label>เรียงลำดับ<select id="memberSort"><option value="recent">เข้าใช้งานล่าสุด</option><option value="joined">สมัครใหม่ล่าสุด</option><option value="points-desc">แต้มมาก → น้อย</option><option value="points-asc">แต้มน้อย → มาก</option><option value="name">ชื่อลูกค้า ก–ฮ / A–Z</option></select></label>
  </div>
  <p id="membersSummary" class="caption" role="status" aria-live="polite"></p>
  <div id="membersContent" class="admin-list"></div>

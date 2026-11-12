@@ -26,3 +26,14 @@ assert.equal((await call('PATCH',{lineUserId:id,shopName:''})).status,200);
 rows=(await (await call('GET')).json()).members;assert.equal(rows[0].shop_name,'');assert.equal(rows[0].points,32);
 assert.equal(raw.prepare('SELECT count(*) AS n FROM members').get().n,1);
 console.log('Member names: save, reload, clear, LINE updates, balances, authorization and validation passed.');
+
+const visitCookie=await cookie(id);
+assert.equal((await onRequest({env,request:new Request('https://test.invalid/api/member/visit',{method:'POST'})})).status,401);
+const beforeVisit=Date.now();
+assert.equal((await onRequest({env,request:new Request('https://test.invalid/api/member/visit',{method:'POST',headers:{Cookie:visitCookie,'Content-Type':'application/json'},body:JSON.stringify({lineUserId:other})})})).status,200);
+rows=(await (await call('GET')).json()).members;
+assert.ok(Number(rows[0].last_seen_at)>=beforeVisit);
+assert.ok(rows[0].created_at);
+assert.equal(rows[0].points,32);
+assert.equal(raw.prepare("SELECT value FROM shop_settings WHERE key=?").get('member_seen:'+other),undefined);
+console.log('Member visits: authenticated identity, server timestamp, joined date and unchanged points passed.');
