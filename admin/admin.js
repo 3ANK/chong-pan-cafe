@@ -298,16 +298,17 @@ async function loadAdminRoster(){
 }
 let customerPointMembers=[],customerPointPage=1;
 const customerPointPageSize=20;
+const customerLabel=m=>m.shop_name?m.shop_name+' ('+(m.display_name||'สมาชิก LINE')+')':m.display_name||'สมาชิก LINE';
 function renderCustomerPoints(){
  const q=$('memberSearch').value.trim().toLocaleLowerCase();
  const pointsFilter=$('memberPointsFilter').value;
  const sort=$('memberSort').value;
  const filtered=customerPointMembers.filter(m=>{
-  const matches=(m.display_name||'').toLocaleLowerCase().includes(q)||String(m.line_user_id||'').slice(-8).toLocaleLowerCase().includes(q);
+  const matches=(m.shop_name||'').toLocaleLowerCase().includes(q)||(m.display_name||'').toLocaleLowerCase().includes(q)||String(m.line_user_id||'').slice(-8).toLocaleLowerCase().includes(q);
   const points=Math.max(0,Number(m.points)||0);
   return matches&&(pointsFilter==='all'||(pointsFilter==='positive'?points>0:points===0));
  }).sort((a,b)=>{
-  const byName=String(a.display_name||'').localeCompare(String(b.display_name||''),'th')||String(a.line_user_id||'').localeCompare(String(b.line_user_id||''));
+  const byName=String(a.shop_name||a.display_name||'').localeCompare(String(b.shop_name||b.display_name||''),'th')||String(a.line_user_id||'').localeCompare(String(b.line_user_id||''));
   return sort==='name'?byName:(sort==='points-asc'?Number(a.points||0)-Number(b.points||0):Number(b.points||0)-Number(a.points||0))||byName;
  });
  const pages=Math.max(1,Math.ceil(filtered.length/customerPointPageSize));
@@ -322,9 +323,37 @@ function renderCustomerPoints(){
  $('membersSummary').textContent='สมาชิก '+customerPointMembers.length+' บัญชี · รวม '+total.toLocaleString('th-TH')+' แต้ม'+' · ตรงเงื่อนไข '+filtered.length+' บัญชี';
  $('membersContent').innerHTML=visible.length?visible.map(m=>{
   const id=String(m.line_user_id||'');
-  return '<article class="ordercard"><div class="adminrow"><strong>'+escapeText(m.display_name||'สมาชิก LINE')+'</strong><strong>'+Math.max(0,Number(m.points)||0).toLocaleString('th-TH')+' แต้ม</strong></div><p class="caption">LINE ลงท้าย '+escapeText(id.slice(-8))+'</p><button type="button" class="primary" data-counter-member="'+escapeText(id)+'">เติมแต้มหน้าร้าน</button></article>';
+  return '<article class="ordercard"><div class="adminrow"><strong>'+escapeText(customerLabel(m))+'</strong><strong>'+Math.max(0,Number(m.points)||0).toLocaleString('th-TH')+' แต้ม</strong></div><p class="caption">LINE ลงท้าย '+escapeText(id.slice(-8))+'</p><button type="button" class="primary" data-counter-member="'+escapeText(id)+'">เติมแต้มหน้าร้าน</button> <button type="button" class="secondary" data-rename-member="'+escapeText(id)+'">เปลี่ยนชื่อ</button></article>';
  }).join(''):'<p class="empty">'+(customerPointMembers.length?'ไม่พบลูกค้าที่ตรงกับคำค้นหาหรือตัวกรอง':'ยังไม่มีลูกค้าที่เข้าสู่ระบบ LINE')+'</p>';
 }
+
+let editingCustomerId=null,memberNameBusy=false;
+$('membersContent').addEventListener('click',e=>{
+ const b=e.target.closest('[data-rename-member]');if(!b)return;
+ const m=customerPointMembers.find(m=>m.line_user_id===b.dataset.renameMember);if(!m)return;
+ editingCustomerId=m.line_user_id;
+ $('memberOriginalName').textContent='ชื่อ LINE เดิม: '+(m.display_name||'สมาชิก LINE')+' · LINE ลงท้าย '+m.line_user_id.slice(-8);
+ $('memberShopName').value=m.shop_name||'';
+ $('memberNameStatus').textContent='';
+ $('memberNameDialog').showModal();$('memberShopName').focus();
+});
+$('memberNameClose').addEventListener('click',()=>{if(!memberNameBusy)$('memberNameDialog').close()});
+$('memberNameDialog').addEventListener('cancel',e=>{if(memberNameBusy)e.preventDefault()});
+$('memberNameForm').addEventListener('submit',async e=>{
+ e.preventDefault();if(memberNameBusy||!editingCustomerId)return;
+ const id=editingCustomerId,name=$('memberShopName').value.trim();
+ if(name.length>80){$('memberNameStatus').textContent='ชื่อเรียกต้องไม่เกิน 80 ตัวอักษร';return}
+ memberNameBusy=true;$('memberNameSave').disabled=true;$('memberNameClose').disabled=true;$('memberShopName').disabled=true;
+ $('memberNameStatus').textContent='กำลังบันทึก…';
+ try{
+  const r=await request('admin/members',{method:'PATCH',body:JSON.stringify({lineUserId:id,shopName:name})});
+  const m=customerPointMembers.find(m=>m.line_user_id===id);
+  if(m)m.shop_name=r.shopName;
+  renderCustomerPoints();$('memberNameDialog').close();
+ }catch(err){$('memberNameStatus').textContent='บันทึกไม่ได้: '+err.message}
+ finally{memberNameBusy=false;$('memberNameSave').disabled=false;$('memberNameClose').disabled=false;$('memberShopName').disabled=false}
+});
+
 async function loadCustomerPoints(){
  $('membersContent').textContent='กำลังโหลดรายชื่อลูกค้า…';
  try{const r=await request('admin/members');customerPointMembers=Array.isArray(r.members)?r.members:[];renderCustomerPoints()}

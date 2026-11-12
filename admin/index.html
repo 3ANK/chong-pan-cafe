@@ -6,7 +6,7 @@
 <link rel="icon" href="/assets/chongpan-main-logo.webp" type="image/webp">
 <link rel="stylesheet" href="/styles.css?v=rice-category-layout-20261022"><link rel="stylesheet" href="/admin/admin.css?v=member-pages-20261112">
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
-<script src="/admin/admin.js?v=member-pages-20261112" defer></script><script src="/catalog-admin.js?v=safer-delete-20261028" defer></script>
+<script src="/admin/admin.js?v=member-names-20261112" defer></script><script src="/catalog-admin.js?v=safer-delete-20261028" defer></script>
 <script src="/admin/loyverse.js?v=compact-loyverse-20261021" defer></script>
 <style>#olderOrders{margin:18px 0}#olderOrders>summary{cursor:pointer;list-style:none;padding:12px 16px}#olderOrders>summary::-webkit-details-marker{display:none}#olderOrders .older-hide{display:none}#olderOrders[open] .older-hide{display:inline}#olderOrders[open] .older-show{display:none}.older-order-day{margin-top:18px}.older-order-day h3{font-size:16px;margin:10px 0;color:#405a32}</style></head><body>
 <div class="admin-wrap">
@@ -22,7 +22,7 @@
 <section id="membersPanel" class="admin-section" hidden>
  <div class="admin-section-head"><h2>รายชื่อลูกค้าและแต้ม</h2><button id="refreshMembers" class="secondary" type="button">อัปเดต</button></div>
  <p class="caption">แสดงลูกค้าที่เข้าสู่ระบบด้วย LINE แล้ว ค้นหาด้วยชื่อหรือเลขท้าย LINE ได้จากลูกค้าทั้งหมด · แสดงหน้าละ 20 คน</p>
- <label>ค้นหาลูกค้า<input id="memberSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อหรือเลขท้าย LINE"></label>
+ <label>ค้นหาลูกค้า<input id="memberSearch" type="search" autocomplete="off" placeholder="พิมพ์ชื่อเรียก ชื่อ LINE หรือเลขท้าย LINE"></label>
  <div class="member-filters">
  <label>แสดงลูกค้า<select id="memberPointsFilter"><option value="all">ทั้งหมด</option><option value="positive">มีแต้มสะสม</option><option value="zero">ยังไม่มีแต้ม</option></select></label>
  <label>เรียงลำดับ<select id="memberSort"><option value="points-desc">แต้มมาก → น้อย</option><option value="points-asc">แต้มน้อย → มาก</option><option value="name">ชื่อลูกค้า ก–ฮ / A–Z</option></select></label>
@@ -59,4 +59,5 @@
 <p id="paymentSettingsStatus" class="caption" role="status">กำลังตรวจสอบการตั้งค่า…</p></form>
 <p class="caption">หากยังไม่มีรูป QR บนเว็บ อย่าเพิ่งเปิดวิธีสแกนจ่าย ส่งไฟล์ QR ร้านให้ผู้ดูแลเว็บเพิ่มรูปจริงก่อน</p>
 </section></section></main></div>
+<dialog id="memberNameDialog" aria-labelledby="memberNameTitle"><div class="dialogtop"><h2 id="memberNameTitle">เปลี่ยนชื่อเรียกลูกค้า</h2><button id="memberNameClose" type="button" class="iconbtn" aria-label="ปิด">×</button></div><p id="memberOriginalName"></p><form id="memberNameForm"><label>ชื่อที่ร้านใช้เรียก<input id="memberShopName" type="text" maxlength="80" autocomplete="off" placeholder="เช่น น้องชง"></label><p class="caption">แสดงเป็น น้องชง (ชื่อ LINE เดิม) · เว้นว่างเพื่อกลับไปใช้ชื่อ LINE · ชื่อนี้ใช้เฉพาะหลังบ้านร้าน</p><button id="memberNameSave" type="submit" class="primary full">บันทึกชื่อ</button><p id="memberNameStatus" role="status" aria-live="polite"></p></form></dialog>
 <dialog id="counterDialog" aria-labelledby="counterTitle"><div class="dialogtop"><h2 id="counterTitle">เติมแต้มหน้าร้าน</h2><button id="counterClose" type="button" class="iconbtn" aria-label="ปิด">×</button></div><p id="counterName"></p><form id="counterForm"><label>ยอดซื้อที่รับเงินจริง (บาท)<input id="counterAmount" type="number" min="25" max="100000" step="1" inputmode="numeric" required></label><p id="counterPreview" class="caption"></p><label>หมายเหตุ / เลขบิล (ถ้ามี)<input id="counterNote" maxlength="200"></label><p class="caption">สำหรับยอดซื้อหน้าร้านที่ยังไม่เคยได้รับแต้มเท่านั้น</p><button id="counterSubmit" type="submit" class="primary full">ตรวจสอบและเติมแต้ม</button><p id="counterStatus" role="status" aria-live="polite"></p></form><details><summary>ประวัติเติมแต้มหน้าร้าน 50 รายการล่าสุด</summary><div id="counterHistory"></div></details></dialog><script src="/admin/counter-points.js?v=20261025" defer></script></body></html>

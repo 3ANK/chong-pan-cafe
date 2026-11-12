@@ -5,6 +5,7 @@ import assert from 'node:assert/strict';
 import './admin-payment.mjs';
 import './loyverse.mjs';
 import './logout.mjs';
+import './member-names.mjs';
 import { onRequest } from '../functions/api/[[path]].js';
 
 function createD1(){
