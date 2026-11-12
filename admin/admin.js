@@ -296,48 +296,57 @@ async function loadAdminRoster(){
  try{adminRosterData=await request('admin/admins');renderAdminRoster()}
  catch(e){$('adminRosterSummary').textContent=e.message}
 }
-let customerPointMembers=[];
+let customerPointMembers=[],customerPointPage=1;
+const customerPointPageSize=20;
 function renderCustomerPoints(){
  const q=$('memberSearch').value.trim().toLocaleLowerCase();
- const filtered=customerPointMembers.filter(m=>(m.display_name||'').toLocaleLowerCase().includes(q)||String(m.line_user_id||'').slice(-8).toLocaleLowerCase().includes(q));
+ const pointsFilter=$('memberPointsFilter').value;
+ const sort=$('memberSort').value;
+ const filtered=customerPointMembers.filter(m=>{
+  const matches=(m.display_name||'').toLocaleLowerCase().includes(q)||String(m.line_user_id||'').slice(-8).toLocaleLowerCase().includes(q);
+  const points=Math.max(0,Number(m.points)||0);
+  return matches&&(pointsFilter==='all'||(pointsFilter==='positive'?points>0:points===0));
+ }).sort((a,b)=>{
+  const byName=String(a.display_name||'').localeCompare(String(b.display_name||''),'th')||String(a.line_user_id||'').localeCompare(String(b.line_user_id||''));
+  return sort==='name'?byName:(sort==='points-asc'?Number(a.points||0)-Number(b.points||0):Number(b.points||0)-Number(a.points||0))||byName;
+ });
+ const pages=Math.max(1,Math.ceil(filtered.length/customerPointPageSize));
+ customerPointPage=Math.max(1,Math.min(customerPointPage,pages));
+ const start=(customerPointPage-1)*customerPointPageSize;
+ const visible=filtered.slice(start,start+customerPointPageSize);
+ $('memberPageStatus').textContent='หน้า '+customerPointPage+' / '+pages+(filtered.length?' · แสดง '+(start+1)+'–'+(start+visible.length)+' จาก '+filtered.length+' คน':' · 0 คน');
+ $('memberPrev').disabled=customerPointPage<=1;
+ $('memberNext').disabled=customerPointPage>=pages;
+ $('memberPagination').hidden=!filtered.length;
  const total=customerPointMembers.reduce((sum,m)=>sum+Math.max(0,Number(m.points)||0),0);
- $('membersSummary').textContent='สมาชิก '+customerPointMembers.length+' บัญชี · รวม '+total.toLocaleString('th-TH')+' แต้ม'+(q?' · พบ '+filtered.length+' บัญชี':'');
- $('membersContent').innerHTML=filtered.length?filtered.map(m=>{
+ $('membersSummary').textContent='สมาชิก '+customerPointMembers.length+' บัญชี · รวม '+total.toLocaleString('th-TH')+' แต้ม'+' · ตรงเงื่อนไข '+filtered.length+' บัญชี';
+ $('membersContent').innerHTML=visible.length?visible.map(m=>{
   const id=String(m.line_user_id||'');
   return '<article class="ordercard"><div class="adminrow"><strong>'+escapeText(m.display_name||'สมาชิก LINE')+'</strong><strong>'+Math.max(0,Number(m.points)||0).toLocaleString('th-TH')+' แต้ม</strong></div><p class="caption">LINE ลงท้าย '+escapeText(id.slice(-8))+'</p><button type="button" class="primary" data-counter-member="'+escapeText(id)+'">เติมแต้มหน้าร้าน</button></article>';
- }).join(''):'<p class="empty">'+(q?'ไม่พบลูกค้าที่ค้นหา':'ยังไม่มีลูกค้าที่เข้าสู่ระบบ LINE')+'</p>';
+ }).join(''):'<p class="empty">'+(customerPointMembers.length?'ไม่พบลูกค้าที่ตรงกับคำค้นหาหรือตัวกรอง':'ยังไม่มีลูกค้าที่เข้าสู่ระบบ LINE')+'</p>';
 }
 async function loadCustomerPoints(){
  $('membersContent').textContent='กำลังโหลดรายชื่อลูกค้า…';
  try{const r=await request('admin/members');customerPointMembers=Array.isArray(r.members)?r.members:[];renderCustomerPoints()}
- catch(e){$('membersSummary').textContent='';$('membersContent').textContent=e.message}
+ catch(e){$('membersSummary').textContent='';$('membersContent').textContent=e.message;$('memberPagination').hidden=true}
 }
 $('manageMembers').addEventListener('click',async()=>{
  const panel=$('membersPanel');panel.hidden=!panel.hidden;if(panel.hidden)return;
- $('memberSearch').value='';
+ $('memberSearch').value='';customerPointPage=1;
  panel.scrollIntoView({behavior:'smooth',block:'start'});
  await loadCustomerPoints();
 });
 $('refreshMembers').addEventListener('click',loadCustomerPoints);
-$('memberSearch').addEventListener('input',renderCustomerPoints);
-$('manageLegacy').addEventListener('click',async()=>{
- const panel=$('legacyPanel');panel.hidden=!panel.hidden;if(panel.hidden)return;
- const el=$('legacyContent');el.textContent='กำลังโหลดสมาชิกเก่า…';
- try{
-  const {legacy,members}=await request('admin/legacy');
-  const options='<option value="">เลือกสมาชิก LINE ที่ตรวจสอบตัวตนแล้ว</option>'+members.map(m=>'<option value="'+escapeText(m.line_user_id)+'">'+escapeText(m.display_name)+' · '+Number(m.points)+' แต้ม</option>').join('');
-  const pending=legacy.filter(a=>!a.claimed_line_user_id);
-  el.innerHTML=pending.length?pending.map(a=>'<div class="ordercard"><strong>'+escapeText(a.display_name)+' · '+Number(a.snapshot_points)+' แต้ม</strong><p>รหัสเก่า #'+escapeText(a.legacy_code)+'</p>'+(a.claimed_line_user_id?'<p>โอนแล้ว ✓</p>':'<select data-old="'+escapeText(a.legacy_code)+'">'+options+'</select><button type="button" class="secondary" data-legacy="'+escapeText(a.legacy_code)+'">ยืนยันโอนแต้ม</button>')+'</div>').join(''):'<p class="caption">ไม่มีสมาชิกเก่าที่ยังรอย้ายแต้ม</p>';
-  requestAnimationFrame(()=>panel.scrollIntoView({behavior:'smooth',block:'start'}));
-  el.querySelectorAll('[data-legacy]').forEach(b=>b.addEventListener('click',async()=>{
-   const code=b.dataset.legacy,id=el.querySelector('[data-old="'+code+'"]')?.value;
-   if(!id)return alert('เลือกบัญชี LINE ก่อน');
-   if(!confirm('ยืนยันว่าตรวจสอบตัวตนลูกค้าและบัญชี LINE แล้ว? การโอนแต้มทำได้ครั้งเดียว'))return;
-   b.disabled=true;
-   try{await request('admin/legacy/assign',{method:'POST',body:JSON.stringify({legacyCode:code,lineUserId:id,ownerVerified:true})});panel.hidden=true;$('manageLegacy').click()}catch(e){alert(e.message);b.disabled=false}
-  }));
- }catch(e){el.textContent=e.message}
-});
+function resetCustomerPointPage(){customerPointPage=1;renderCustomerPoints()}
+$('memberSearch').addEventListener('input',resetCustomerPointPage);
+$('memberPointsFilter').addEventListener('change',resetCustomerPointPage);
+$('memberSort').addEventListener('change',resetCustomerPointPage);
+function turnCustomerPointPage(delta){
+ customerPointPage+=delta;renderCustomerPoints();
+ $('memberSearch').scrollIntoView({behavior:'smooth',block:'center'});
+}
+$('memberPrev').addEventListener('click',()=>turnCustomerPointPage(-1));
+$('memberNext').addEventListener('click',()=>turnCustomerPointPage(1));
 async function loadPaymentSettings(){
  try{const s=await request('admin/payment/config');$('oaId').value=s.oaId||'';$('qrPath').value=s.qrImage||'';
  $('paymentSettingsStatus').textContent=s.qrEnabled?'สแกนจ่ายเปิดใช้งานแล้ว':'สแกนจ่ายยังไม่พร้อม (เงินสดใช้งานได้)';

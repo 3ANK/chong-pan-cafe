@@ -179,3 +179,12 @@
 .compact-refresh{font-size:13px;padding:8px 12px;min-height:40px}.admin-section-head h2{margin-bottom:0}
 #systemWarning{margin:12px 0;font-size:14px}
 @media(max-width:619px){.admin-actions{grid-template-columns:repeat(3,minmax(0,1fr))}.admin-actions button{padding:10px 6px;font-size:14px}.shop-controls{padding:12px}.shop-controls strong{font-size:15px}.shop-controls button{font-size:14px;padding:10px}}
+
+/* Customer search, filters and bounded member pages. */
+.member-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:12px 0}
+.member-filters label{min-width:0}
+.member-filters select{width:100%;min-height:44px}
+.member-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:16px;padding:14px 0;border-top:1px solid #d8ddcc}
+.member-pagination span{font-size:13px;color:#526149}
+.member-pagination button{min-height:44px}
+@media(max-width:480px){.member-filters{grid-template-columns:1fr}.member-pagination span{order:-1;flex-basis:100%;text-align:center}}
