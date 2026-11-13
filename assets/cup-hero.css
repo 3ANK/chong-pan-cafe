@@ -24,4 +24,4 @@
 .showcase .dots button{display:none}.showcase .dots button[aria-pressed=true],.showcase .dots button:has(+button[aria-pressed=true]),.showcase .dots button:has(+button+button[aria-pressed=true]),.showcase .dots button[aria-pressed=true]+button,.showcase .dots button[aria-pressed=true]+button+button{display:block}
 
 /* White screen-printed logo follows the same viewBox as the cup, including thumbnails. */
-.cup-logo{filter:brightness(0) invert(1);opacity:.96;pointer-events:none}
+.cup-logo{filter:brightness(0) invert(1) drop-shadow(0 1px 1px #34452b65);opacity:.96;pointer-events:none}
