@@ -1,0 +1,24 @@
+/* A fixed central cup with independent flavor transitions and a curved selector. */
+.showcase .stage{height:390px;max-width:100%;background:radial-gradient(ellipse at 50% 44%,#ffffff16 0%,transparent 63%),var(--scene-color,#b95824);border-radius:12px 12px 35% 35% / 12px 12px 7% 7%;transition:background-color .8s ease;overflow:hidden;isolation:isolate}
+.showcase .stage:before{content:'';position:absolute;inset:4% 15% 0;background:radial-gradient(ellipse,var(--scene-glow,#f7bc74),transparent 68%);opacity:.5;filter:blur(22px);transition:background .8s;pointer-events:none}
+.showcase .stage:after{display:none}
+.cup-options{position:absolute;inset:0;z-index:2}
+.showcase .hero-product{top:26%;height:62%;width:39%;max-width:none;aspect-ratio:auto;transform-origin:center bottom;transition:transform .75s cubic-bezier(.2,.7,.2,1),opacity .6s;outline-offset:-6px}
+.showcase .hero-product img{filter:drop-shadow(0 10px 10px #1c231b35)}
+.cup-feature{position:absolute;z-index:4;left:50%;bottom:49px;transform:translateX(-50%);width:48%;height:83%;pointer-events:none;filter:drop-shadow(0 10px 9px #1b201d40)}
+.cup-feature img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;opacity:0;transition:opacity .7s ease;user-select:none}
+.cup-feature img.visible{opacity:1}
+.cup-pedestal{position:absolute;z-index:3;bottom:20px;left:50%;transform:translateX(-50%);width:43%;height:53px;border-radius:50% / 27%;background:linear-gradient(100deg,#f4e9d0,#d3bea0);box-shadow:0 17px 18px #17221938,inset -5px -5px 12px #b5a07e55}
+.cup-pedestal:before{content:'';position:absolute;inset:0 0 16px;border-radius:50%;background:radial-gradient(ellipse at 35% 25%,#fff9e9,#eaddc4);box-shadow:inset 0 1px 2px #fff9ed}
+.showcase .carousel-controls{margin:12px 0 0;gap:20px}
+.showcase .carousel-controls .round{width:44px;height:44px;font-size:27px}
+.showcase .product-name{font-size:23px;line-height:1.5;margin:8px 0 0;padding:0 12px;min-height:36px}
+.showcase .dots{flex-wrap:wrap;margin-bottom:0;min-height:28px}
+.showcase .dots button{min-height:28px;padding:10px 5px}
+.cup-hint{text-align:center;font-size:12px;color:#6d7c62;margin:0 8px 12px}
+.food-scene .cup-pedestal{opacity:0}
+@media(max-width:760px){.showcase .stage{height:320px}.cup-feature{width:60%;height:81%;bottom:43px}.showcase .hero-product{width:42%;top:28%;height:57%}.cup-pedestal{width:47%;height:43px;bottom:17px}.cup-pedestal:before{bottom:13px}.showcase .product-name{font-size:21px;min-height:32px}.showcase .carousel-controls{margin-top:9px}.cup-hint{font-size:12px}}
+@media(max-width:380px){.showcase .stage{height:285px}.showcase .product-name{font-size:19px}}
+@media(prefers-reduced-motion:reduce){.cup-feature img,.showcase .stage,.showcase .hero-product{transition:none!important}}
+
+.showcase .dots button{display:none}.showcase .dots button[aria-pressed=true],.showcase .dots button:has(+button[aria-pressed=true]),.showcase .dots button:has(+button+button[aria-pressed=true]),.showcase .dots button[aria-pressed=true]+button,.showcase .dots button[aria-pressed=true]+button+button{display:block}
