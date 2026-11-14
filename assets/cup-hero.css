@@ -6,16 +6,16 @@
 .cup-options{position:absolute;inset:0;z-index:2}
 .showcase .hero-product{top:26%;height:62%;width:39%;max-width:none;aspect-ratio:auto;transform-origin:center bottom;transition:transform .75s cubic-bezier(.2,.7,.2,1),opacity .6s;outline-offset:-6px}
 .showcase .hero-product img,.showcase .hero-product svg{width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 2px 3px #05090485)}
-/* Rig coordinates are 1100 x 1120. Changing its width scales BOTH cup and rock. */
+/* Rig coordinates are 1100 x 1120. Changing its width scales BOTH cup and tray. */
 .cup-feature{position:absolute;z-index:4;left:50%;bottom:10px;transform:translateX(-50%);width:min(68%,400px);aspect-ratio:1100/1120;height:auto;pointer-events:none}
 /* Cup rectangle: x=166, y=0, width=768, height=900. Its base is at y=880. */
 .cup-feature>svg{position:absolute;left:15.090909%;top:0;width:69.818182%;height:80.357143%;opacity:0;transition:opacity .7s ease;user-select:none;z-index:2}
 .cup-feature>svg.visible{opacity:1}
-/* Rock contact is calibrated in this same coordinate system, never viewport pixels. */
-.cup-pedestal{position:absolute;z-index:1;left:0;top:51.785714%;bottom:auto;transform:none;width:100%;height:44.642857%;aspect-ratio:auto;background:none;filter:none;pointer-events:none}
+/* Tray contact is calibrated in this same coordinate system, never viewport pixels. */
+.cup-pedestal{position:absolute;z-index:1;left:0;top:66.071429%;bottom:auto;transform:none;width:100%;height:26.785714%;aspect-ratio:auto;background:none;filter:none;pointer-events:none}
 .cup-pedestal:before{content:'';display:block;position:absolute;left:4%;right:4%;bottom:2%;height:12%;border-radius:50%;background:radial-gradient(ellipse,#020502f2,#02050280 48%,transparent 74%);filter:blur(3px);z-index:0}
-.cup-pedestal:after{content:'';position:absolute;inset:0;z-index:1;background:url('drinks-hero/rock-cluster.webp') center/100% 100% no-repeat;filter:drop-shadow(0 1px 1px #020703a0)}
-/* y=880 is shared by the cup foot and its contact patch on the central stone. */
+.cup-pedestal:after{content:'';position:absolute;inset:0;z-index:1;background:url('drinks-hero/wood-tray.webp') center/100% 100% no-repeat;filter:drop-shadow(0 1px 1px #020703a0)}
+/* y=880 is shared by the cup foot and its contact patch on the tray. */
 .cup-feature:before{content:'';position:absolute;bottom:20.714286%;left:50%;transform:translateX(-50%);width:44%;height:1.428571%;border-radius:50%;background:radial-gradient(ellipse,#010501d9,transparent 72%);filter:blur(2px);z-index:2}
 .showcase .hero-product:after{content:'';position:absolute;bottom:1.5%;left:22%;right:22%;height:10px;z-index:-1;border-radius:50%;background:radial-gradient(ellipse,#020502cc,transparent 74%);filter:blur(2.5px)}
 .food-scene .cup-pedestal,.food-scene .cup-feature:before,.food-scene .hero-product:after{display:none}
