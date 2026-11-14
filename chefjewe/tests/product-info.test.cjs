@@ -70,3 +70,7 @@ test('Lotus fetch returns photo and rejects arbitrary image hosts',async()=>{
  const data=await(await vm.runInContext(`productInfo(new Request('https://chefjewe.pages.dev/api/product-info?url='+encodeURIComponent('${lotusUrl}')))`,c)).json();assert.equal(data.photo,image);assert.equal(data.price,55);
  assert.throws(()=>vm.runInContext(`productImageUrl('https://o2o-static.lotuss.com.evil.test/products/1/x.jpg',"Lotus's")`,c));
 });
+
+test('Thai and English multipacks return the total purchased quantity',()=>{
+ const c=server();for(const title of ['สิงห์โซดาวันเวย์325มล. แพ็ค 24','โซดา 325 มล. แพ็ก 24','SINGHA SODA 325 ML. PACK 24','โซดา 325 มล. x 24']){c.title=title;assert.equal(vm.runInContext('productPackFromTitle(title).quantity',c),7800,title);}
+});

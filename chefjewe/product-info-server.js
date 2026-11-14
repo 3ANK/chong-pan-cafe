@@ -9,7 +9,7 @@ function productInfoUrl(value){
 function productPackFromTitle(name){
  const matches=[...String(name).matchAll(/(\d+(?:[.,]\d+)?)\s*(กิโลกรัม|มิลลิลิตร|กรัม|ลิตร|กก\.?|มล\.?|ก\.|kg\b|ml\b|g\b|l\b)(?:\s*[x×]\s*(\d+))?/gi)];
  if(matches.length!==1)return {quantity:null,unit:''};
- const m=matches[0],quantity=Number(m[1].replace(',','.'))*Number(m[3]||1),raw=m[2].toLowerCase();
+ const m=matches[0],tail=String(name).slice(m.index+m[0].length),pack=tail.match(/^\s*\.?\s*(?:[x×]\s*|แพ[็๊]?[คก]\s*|pack(?:\s+of)?\s*)(\d+)\b/i),quantity=Number(m[1].replace(',','.'))*Number(m[3]||pack?.[1]||1),raw=m[2].toLowerCase();
  const unit=/^(กิโลกรัม|กก\.?|kg)$/.test(raw)?'กิโลกรัม':/^(มิลลิลิตร|มล\.?|ml)$/.test(raw)?'มล.':/^(ลิตร|l)$/.test(raw)?'ลิตร':'กรัม';
  if(!Number.isFinite(quantity)||quantity<=0||quantity>1000000)return {quantity:null,unit:''};return {quantity,unit};
 }

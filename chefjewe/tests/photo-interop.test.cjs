@@ -257,3 +257,20 @@ test('bulk update saves successes once, leaves failures and no-cost rows unchang
  await vm.runInContext('updateAllIngredientPrices(bulkButton)',context);
  assert.equal(calls.length,2);assert.ok(calls.every(x=>x.includes('priceOnly=1')));assert.equal(vm.runInContext('savedBulk.ingredientCosts[0].packagePrice',context),'110');assert.equal(vm.runInContext('savedBulk.ingredientCosts[1].packagePrice',context),80);assert.equal(vm.runInContext('savedBulk.ingredientCosts[2].packagePrice',context),'-');assert.match(document.querySelector('dialog[aria-label="อัปเดตราคาทุกรายการ"] p').textContent,/บันทึกแล้ว 1/);
 });
+
+test('audit migration restores missing ingredients without inventing actual quantities and is idempotent',()=>{
+ const {context}=loadBook();context.fixture={recipeMigrations:[],ingredientCosts:[{name:'นมผง',packageQuantity:400,packageUnit:'กรัม',packagePrice:55},{name:'โซดา',packageQuantity:325,packageUnit:'มล.',packagePrice:190,sourceUrl:'https://www.lotuss.com/th/product/singha-150038748'}],recipes:[{category:'น้ำผลไม้',names:['น้ำส้มปั่น [จิว]','มัทฉะโกโก้','มัทฉะโตนด'],details:{'น้ำส้มปั่น [จิว]':{ingredientRows:[{name:'น้ำเชื่อม',min:'60',unit:'ml'}]},'มัทฉะโกโก้':{ingredientRows:[]},'มัทฉะโตนด':{ingredientRows:[]}}}]};
+ assert.equal(vm.runInContext('repairCostAuditState(fixture)',context),true);const d=JSON.parse(vm.runInContext('JSON.stringify(fixture)',context));assert.equal(d.ingredientCosts[0].packagePrice,'122');assert.equal(d.ingredientCosts[0].unitWeights.ช้อนชา,7.5);assert.equal(d.ingredientCosts[0].priceMode,'actual');assert.equal(d.ingredientCosts[1].packageQuantity,'7800');assert.equal(d.ingredientCosts[1].usableQuantity,24);
+ const orange=d.recipes[0].details['น้ำส้มปั่น [จิว]'];assert.equal(orange.ingredientRows.at(-1).name,'ส้มสด');assert.equal(orange.ingredientRows.at(-1).actual,'');assert.equal(orange.ingredientRows.at(-1).max,'4');assert.ok(orange.costAuditOriginal);
+ assert.equal(vm.runInContext('repairCostAuditState(fixture)',context),false);
+});
+test('confirmed milk teaspoons calculate 1.83 baht and packaging follows the editable ledger',()=>{
+ const {context}=loadBook();vm.runInContext(`ingredientCosts=[{name:'นมผง',packageQuantity:1000,packageUnit:'กรัม',packagePrice:122,unitWeights:{'ช้อนชา':7.5}},{name:'ชุดบรรจุภัณฑ์ทุกขนาด',packageQuantity:1,packageUnit:'ชุด',packagePrice:7}];`,context);
+ const d={ingredientRows:[{name:'นมผง',min:'2',unit:'ช้อนชา'}]};context.testDetail=d;const result=vm.runInContext(`calculateRecipeCost(testDetail,'drinks')`,context);assert.equal(result.ingredientTotal,1.83);assert.equal(result.packagingCost,7);assert.equal(result.total,8.83);assert.equal(result.missing,0);
+});
+test('recipe warnings catch duplicated ingredients and uncosted ingredients in instructions',()=>{
+ const {context}=loadBook();context.testDetail={ingredientRows:[{name:'ชา',min:'10',unit:'กรัม'},{name:'ชา',min:'10',unit:'กรัม'}],steps:['ยังไม่รวมในรายการคำนวณ — ต้องตรวจปริมาณ:','โกโก้ 20 กรัม']};const warnings=vm.runInContext('recipeAuditWarnings(testDetail)',context);assert.equal(warnings.length,2);assert.match(warnings.join(' '),/ซ้ำ/);assert.match(warnings.join(' '),/โกโก้/);
+});
+test('actual purchase costs are not overwritten by bulk reference updates',async()=>{
+ const {context,document}=loadBook();vm.runInContext(`ingredientCosts=[{name:'Milk',packageQuantity:1000,packageUnit:'กรัม',packagePrice:122,sourceUrl:'https://www.lotuss.com/th/product/1',priceMode:'actual'}];var bulkActualSaved=false;persistState=async()=>{bulkActualSaved=true;return true;};var actualButton=document.createElement('button');document.body.append(actualButton);`,context);const proto=Object.getPrototypeOf(document.createElement('dialog'));proto.showModal=function(){this.setAttribute('open','')};proto.close=function(){this.removeAttribute('open')};await vm.runInContext('updateAllIngredientPrices(actualButton)',context);assert.equal(vm.runInContext('bulkActualSaved',context),false);assert.match(document.querySelector('dialog[aria-label="อัปเดตราคาทุกรายการ"] li').textContent,/ราคาซื้อจริง/);
+});
