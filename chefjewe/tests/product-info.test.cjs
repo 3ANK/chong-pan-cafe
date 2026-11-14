@@ -74,3 +74,16 @@ test('Lotus fetch returns photo and rejects arbitrary image hosts',async()=>{
 test('Thai and English multipacks return the total purchased quantity',()=>{
  const c=server();for(const title of ['สิงห์โซดาวันเวย์325มล. แพ็ค 24','โซดา 325 มล. แพ็ก 24','SINGHA SODA 325 ML. PACK 24','โซดา 325 มล. x 24']){c.title=title;assert.equal(vm.runInContext('productPackFromTitle(title).quantity',c),7800,title);}
 });
+
+test('Torimart reads matching structured variants, net pack and validated photo',async()=>{
+ const url='https://www.torimartonline.com/product/822/pearl';
+ const variant=(pid,price)=>({'@type':'Product',name:'บุกไข่มุก 600 กรัม',url:url+'?pid='+pid,image:['https://gj.lnwfile.com/_/gj/_raw/07/sh/9u.jpg'],offers:{priceCurrency:'THB',price,availability:'https://schema.org/InStock'}});
+ const fixture=variants=>'<script type="application/ld+json">'+JSON.stringify([{'@type':'ProductGroup',name:'บุกไข่มุก 600 กรัม',url,hasVariant:variants}])+'</script>';
+ const c=server(async u=>u.includes('torimartonline.com')?new Response(fixture([variant(823,60),variant(824,60)])):new Response(Buffer.from(image,'base64'),{headers:{'content-type':'image/png'}}));
+ c.fixture=fixture([variant(823,60),variant(824,70)]);c.source=url;
+ assert.throws(()=>vm.runInContext('parseTorimartProduct(fixture,new URL(source))',c),/unreadable/);
+ assert.equal(vm.runInContext("parseTorimartProduct(fixture,new URL(source+'?pid=824')).price",c),70);
+ const data=await(await vm.runInContext('productInfo(new Request("https://chefjewe.pages.dev/api/product-info?url="+encodeURIComponent(source)))',c)).json();assert.equal(data.price,60);assert.equal(data.quantity,600);assert.equal(data.photo,image);
+ assert.equal(vm.runInContext("productInfoUrl(source+'?pid=823&utm_source=x').search",c),'?pid=823');
+ for(const u of ['https://gj.lnwfile.com.evil.test/_/gj/_raw/07/sh/9u.jpg','https://gj.lnwfile.com/_/gj/_raw/07/sh/9u.svg']){c.bad=u;assert.throws(()=>vm.runInContext('productImageUrl(bad,"Torimart")',c));}
+});
