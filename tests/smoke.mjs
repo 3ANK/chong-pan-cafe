@@ -57,7 +57,7 @@ assert.ok(appJS.includes("show('sweetnessGroup',!!p.drink)"));
 assert.ok(appJS.includes("show('eggGroup',supportsEgg(p))"));
 assert.ok(appJS.includes("egg:supportsEgg(p)?$('egg').value:''"));
 assert.ok(appJS.includes("egg:supportsEgg(p)?it.egg:''"));
-assert.ok(appJS.includes("const eggEligibleCategories=new Set(['ข้าวกระเพรา','กะเพรา','ข้าวกระเทียม'])"));
+assert.ok(appJS.includes("const eggEligibleCategories=new Set(['ข้าวกะเพรา','ข้าวกระเพรา','กะเพรา','ข้าวกระเทียม'])"));
 assert.ok(html.includes('id="eggQuantityGroup"')&&html.includes('id="increaseEggQty"'));
 assert.ok(appJS.includes('function setOptionEggQuantity(next)'));
 assert.ok(appJS.includes('eggQty:egg?(eggQty??1):0'));
@@ -240,6 +240,8 @@ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfi
  assert.ok(lastOwnerOrderNotification.includes('กดรับ / จัดการออเดอร์นี้:'));
  assert.ok(lastOwnerOrderNotification.includes('https://chongpan-ordering-v2.pages.dev/admin/?order='+r.data.orderId));
  assert.ok(!lastOwnerOrderNotification.includes('chongpan-members.oakenzebra4.chatgpt.site'));
+ // Use the current production category for the fried-egg order.
+ db.prepare("UPDATE catalog SET category = ? WHERE id = ?").run("ข้าวกะเพรา", "33");
  // Two dishes with two fried eggs EACH: 4 eggs and 158 THB total.
  r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:2,egg:'fried',eggQty:2}],fulfillment:'pickup',pickupPhone:'0812345678',pickupEta:'asap',requestKey:crypto.randomUUID()},cookie);
  assert.equal(r.status,201);assert.equal(r.data.total,158);
@@ -439,7 +441,7 @@ assert.ok(css.includes('.order-history-actions{display:flex'));
 const reorderSection=appJS.slice(appJS.indexOf('function buildRepeatBasket('),appJS.indexOf('\nasync function repeatOrder('));
 assert.ok(reorderSection.startsWith('function buildRepeatBasket('));
 const rerunHelper=[
- "const eggEligibleCategories=new Set(['ข้าวกระเพรา','กะเพรา','ข้าวกระเทียม']);",
+ "const eggEligibleCategories=new Set(['ข้าวกะเพรา','ข้าวกระเพรา','กะเพรา','ข้าวกระเทียม']);",
  "const supportsTopping=p=>!!p&&['ข้าวไข่ข้น','ข้าวไข่เจียว','ข้าวไข่ดาว'].includes(p.name);",
  "const isTopping=e=>['shrimp','crab'].includes(e);",
  "const supportsEgg=p=>!!p&&(eggEligibleCategories.has(p.category)||supportsTopping(p));",

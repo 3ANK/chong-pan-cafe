@@ -22,7 +22,7 @@ async function request(path,opts={}){
  }catch(e){if(e?.name==='AbortError')throw Error('การเชื่อมต่อช้าเกินไป กรุณาลองอีกครั้ง');if(e instanceof TypeError)throw Error(navigator.onLine===false?'ไม่มีอินเทอร์เน็ต กรุณาเชื่อมต่อแล้วลองอีกครั้ง':'เชื่อมต่อระบบไม่ได้ กรุณาตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง');throw e}
  finally{clearTimeout(timeout)}
 }
-const eggEligibleCategories=new Set(['ข้าวกระเพรา','กะเพรา','ข้าวกระเทียม']);
+const eggEligibleCategories=new Set(['ข้าวกะเพรา','ข้าวกระเพรา','กะเพรา','ข้าวกระเทียม']);
 const eggRiceNames=new Set(['ข้าวไข่ข้น','ข้าวไข่เจียว','ข้าวไข่ดาว']);
 const supportsTopping=p=>!!p&&eggRiceNames.has(p.name);
 const supportsEgg=p=>!!p&&(eggEligibleCategories.has(p.category)||supportsTopping(p));

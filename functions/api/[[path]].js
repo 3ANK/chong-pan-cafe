@@ -24,7 +24,7 @@ function eggPrice(s){return({fried:15,omelet:20,creamy:20,century:20,shrimp:15,c
 const eggNames={fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น',century:'ไข่เยี่ยวม้า',shrimp:'กุ้ง',crab:'ปูอัด'};
 const eggRiceNames=new Set(['ข้าวไข่ข้น','ข้าวไข่เจียว','ข้าวไข่ดาว']);
 const isTopping=code=>code==='shrimp'||code==='crab';
-const eggEligibleCategories=new Set(['กะเพรา','ข้าวกระเพรา','ข้าวกระเทียม']);
+const eggEligibleCategories=new Set(['ข้าวกะเพรา','กะเพรา','ข้าวกระเพรา','ข้าวกระเทียม']);
 const validSweet=new Set(['','ปกติ','หวานน้อย','ไม่หวาน','ไม่เติมน้ำตาล','เติมหวานน้อย','เติมหวานปกติ']);
 const validStatus=new Set(['accepted','preparing','ready','completed','cancelled']);
 async function body(req,maxChars=18000){const raw=await req.text();if(raw.length>maxChars)throw new Error('คำขอใหญ่เกินกำหนด');try{return JSON.parse(raw)}catch{throw new Error('รูปแบบ JSON ไม่ถูกต้อง')}}
