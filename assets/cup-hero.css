@@ -1,16 +1,23 @@
 /* A fixed central cup with independent flavor transitions and a curved selector. */
-.showcase .stage{height:440px;container-type:inline-size;max-width:100%;background:radial-gradient(ellipse at 50% 44%,#ffffff16 0%,transparent 63%),var(--scene-color,#b95824);border-radius:12px 12px 35% 35% / 12px 12px 7% 7%;transition:background-color .8s ease;overflow:hidden;isolation:isolate}
+.showcase .stage{height:440px;container-type:inline-size;max-width:100%;background:radial-gradient(ellipse at 50% 44%,#ffffff16 0%,transparent 63%),var(--scene-color,#b95824);border-radius:12px;transition:background-color .8s ease;overflow:hidden;isolation:isolate}
 .showcase .stage:before{content:'';position:absolute;inset:4% 15% 0;background:radial-gradient(ellipse,var(--scene-glow,#f7bc74),transparent 68%);opacity:.5;filter:blur(22px);transition:background .8s;pointer-events:none}
-.showcase .stage:after{display:none}
+/* A seamless studio floor gives the objects a shared surface, without a hard horizon. */
+.showcase .stage:after{content:'';display:block;position:absolute;inset:auto 0 0;height:35%;width:auto;z-index:1;background:linear-gradient(180deg,transparent 0%,#160f0810 25%,#160f0838 100%);pointer-events:none}
 .cup-options{position:absolute;inset:0;z-index:2}
 .showcase .hero-product{top:26%;height:62%;width:39%;max-width:none;aspect-ratio:auto;transform-origin:center bottom;transition:transform .75s cubic-bezier(.2,.7,.2,1),opacity .6s;outline-offset:-6px}
-.showcase .hero-product img,.showcase .hero-product svg{width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 10px 10px #1c231b35)}
-.cup-feature{position:absolute;z-index:4;left:50%;bottom:95px;transform:translateX(-50%);width:48%;height:73%;pointer-events:none;filter:drop-shadow(0 10px 9px #1b201d40)}
+.showcase .hero-product img,.showcase .hero-product svg{width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 2px 3px #18201538)}
+.cup-feature{position:absolute;z-index:4;left:50%;bottom:104px;transform:translateX(-50%);width:48%;height:73%;pointer-events:none;filter:drop-shadow(0 2px 3px #111b1533)}
 .cup-feature>svg{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;object-position:center bottom;opacity:0;transition:opacity .7s ease;user-select:none}
 .cup-feature>svg.visible{opacity:1}
 /* A separate moss stone stays fixed while the drink and its scene change. */
-.cup-pedestal{position:absolute;z-index:3;bottom:12px;left:50%;transform:translateX(-50%);width:min(52%,360px);aspect-ratio:3/1;height:auto;background:url('drinks-hero/moss-pedestal.webp') center bottom/contain no-repeat;filter:drop-shadow(0 11px 9px #12241745);pointer-events:none}
-.cup-pedestal:before{display:none}
+.cup-pedestal{position:absolute;z-index:3;bottom:12px;left:50%;transform:translateX(-50%);width:min(58%,400px);aspect-ratio:3/1;height:auto;background:none;filter:none;pointer-events:none}
+/* Shadow is beneath the rock image and touches its alpha edge; it never floats below it. */
+.cup-pedestal:before{content:'';display:block;position:absolute;left:5%;right:5%;bottom:2.5%;height:14%;border-radius:50%;background:radial-gradient(ellipse,#10160bd9 0%,#10160b85 45%,transparent 74%);filter:blur(2.5px);box-shadow:0 4px 9px #10160b35;z-index:0}
+.cup-pedestal:after{content:'';position:absolute;inset:0;z-index:1;background:url('drinks-hero/moss-pedestal.webp') center bottom/contain no-repeat;filter:drop-shadow(0 1px 1px #0d1b0e85)}
+/* Contact patches attach the cup to the moss, and the side cups to the same floor. */
+.cup-feature:before{content:'';position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:min(52%,180px);height:11px;border-radius:50%;background:radial-gradient(ellipse,#0b1608b3,transparent 72%);filter:blur(2px)}
+.showcase .hero-product:after{content:'';position:absolute;bottom:1.5%;left:22%;right:22%;height:10px;z-index:-1;border-radius:50%;background:radial-gradient(ellipse,#121a0c85,transparent 74%);filter:blur(2.5px)}
+.food-scene .cup-feature:before,.food-scene .hero-product:after{display:none}
 .showcase .carousel-controls{margin:12px 0 0;gap:20px}
 .showcase .carousel-controls .round{width:44px;height:44px;font-size:27px}
 .showcase .product-name{font-size:23px;line-height:1.5;margin:8px 0 0;padding:0 12px;min-height:36px}
@@ -18,7 +25,7 @@
 .showcase .dots button{min-height:28px;padding:10px 5px}
 .cup-hint{text-align:center;font-size:12px;color:#6d7c62;margin:0 8px 12px}
 .food-scene .cup-pedestal{opacity:0}
-@media(max-width:760px){.showcase .stage{height:360px}.cup-feature{width:64%;height:78%;bottom:calc(5px + min(18cqw,65px))}.showcase .hero-product{width:42%;top:28%;height:57%}.cup-pedestal{width:min(72%,260px);height:auto;bottom:10px}.showcase .product-name{font-size:21px;min-height:32px}.showcase .carousel-controls{margin-top:9px}.cup-hint{font-size:12px}}
+@media(max-width:760px){.showcase .stage{height:360px}.cup-feature{width:64%;height:78%;bottom:calc(5px + min(18cqw,70px))}.showcase .hero-product{width:42%;top:28%;height:57%}.cup-pedestal{width:min(72%,280px);height:auto;bottom:10px}.showcase .product-name{font-size:21px;min-height:32px}.showcase .carousel-controls{margin-top:9px}.cup-hint{font-size:12px}}
 @media(max-width:380px){.showcase .stage{height:330px}.showcase .product-name{font-size:19px}}
 @media(prefers-reduced-motion:reduce){.cup-feature>svg,.showcase .stage,.showcase .hero-product{transition:none!important}}
 
