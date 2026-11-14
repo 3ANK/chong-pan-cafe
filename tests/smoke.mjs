@@ -497,6 +497,9 @@ console.log('PASS: repeat-order uses current prices, original quantity and optio
  for (const [id,name] of [['39','ตำไทย'],['40','ตำปู'],['41','ตำปูปลาร้า'],['42','ตำไทยไข่เค็ม']]) {
   productionDb.raw.prepare("UPDATE catalog SET name=?, category='ส้มตำ' WHERE id=?").run(name,id);
  }
+ for (const [id,name] of [['31','ปังสังขยาชาไทย'],['32','ปังสังขยาใบเตย']]) {
+  productionDb.raw.prepare("UPDATE catalog SET name=?, category='ขนมปัง', price=40 WHERE id=?").run(name,id);
+ }
  const getProductionMenu = async () => {
   const response = await onRequest({
    request:new Request('https://chongpan-ordering-v2.pages.dev/api/menu'),
@@ -505,7 +508,7 @@ console.log('PASS: repeat-order uses current prices, original quantity and optio
   assert.equal(response.status,200);
   return Object.fromEntries((await response.json()).products.map(p=>[p.id,p.price]));
  };
- const expected = {'39':60,'40':65,'41':65,'42':70,'60':15,'61':20,'62':20,'83':20,'44':85,'45':85,'46':85,'47':85,'larb-pork':70,'century-egg':20};
+ const expected = {'31':50,'32':50,'39':60,'40':65,'41':65,'42':70,'60':15,'61':20,'62':20,'83':20,'44':85,'45':85,'46':85,'47':85,'larb-pork':70,'century-egg':20};
  const actual = await getProductionMenu();
  for (const [id,price] of Object.entries(expected)) assert.equal(actual[id],price,id);
  productionDb.raw.exec("UPDATE catalog SET price=90 WHERE id='44'");
