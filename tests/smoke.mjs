@@ -487,3 +487,24 @@ assert.equal(invalidSweet.added.length,0);
 assert.equal(invalidSweet.skipped.length,1);
 console.log('PASS: repeat-order uses current prices, original quantity and options, stock checks, and cart limits');
 
+
+{
+ const productionDb = createD1();
+ productionDb.raw.exec(readFileSync(new URL('../migrations/018_owner_food_menu_20261025.sql',import.meta.url),'utf8'));
+ productionDb.raw.exec("UPDATE catalog SET category='สปาเก็ตตี้' WHERE id IN ('44','45','46','47')");
+ for (const [id,name] of Object.entries({"44":"สปาเกตตีคาโบนารา","45":"สปาเกตตีผัดขี้เมา","46":"สปาเกตตีซอสมะเขือเทศหมูสับ","47":"สปาเกตตีเบคอนพริกแห้ง"})) productionDb.raw.prepare("UPDATE catalog SET name=? WHERE id=?").run(name,id);
+ productionDb.raw.exec("UPDATE catalog SET name='กับข้าว ลาบหมู', category='กับข้าว' WHERE id='larb-pork'");
+ const getProductionMenu = async () => {
+  const response = await onRequest({
+   request:new Request('https://chongpan-ordering-v2.pages.dev/api/menu'),
+   env:{DB:productionDb}
+  });
+  assert.equal(response.status,200);
+  return Object.fromEntries((await response.json()).products.map(p=>[p.id,p.price]));
+ };
+ const expected = {'60':15,'61':20,'62':20,'83':20,'44':85,'45':85,'46':85,'47':85,'larb-pork':70,'century-egg':20};
+ const actual = await getProductionMenu();
+ for (const [id,price] of Object.entries(expected)) assert.equal(actual[id],price,id);
+ productionDb.raw.exec("UPDATE catalog SET price=90 WHERE id='44'");
+ assert.equal((await getProductionMenu())['44'],90);
+}
