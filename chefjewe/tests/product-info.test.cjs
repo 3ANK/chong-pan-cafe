@@ -58,3 +58,15 @@ test('Big C endpoint fetches validated product and image and rejects spoofed ima
 test('Big C photo fetch uses the original catalogue image instead of nested CDN resizing',()=>{
  const c=server();assert.equal(vm.runInContext("productImageUrl('https://st.bigc-cs.com/cdn-cgi/image/format=webp,quality=90/public/media/catalog/product/42/88/milk.jpg','Big C').href",c),'https://st.bigc-cs.com/public/media/catalog/product/42/88/milk.jpg');
 });
+const lotusUrl='https://www.lotuss.com/th/product/coffee-dreamy-nondairy-creamer-400g-74915819';
+const lotus={sku:'74915819',name:'คอฟฟี่ ดรีมมี่ ครีมเทียม 400 กรัม',stockStatus:'IN_STOCK',stockOnHand:9999,sellingType:'qty',weightPerPiece:0.4,regularPricePerUOW:59,finalPricePerUOW:55,priceRange:{minimumPrice:{finalPrice:{value:55,currency:'THB'}}},mediaGallery:[{url:'https://o2o-static.lotuss.com/products/91129/74915819.jpg',types:['image']}]};
+const lotusHtml=p=>'<script id="__NEXT_DATA__">'+JSON.stringify({props:{pageProps:{productDetailSSR:p}}})+'</script>';
+test('Lotus uses matching SKU, current public price and net pack size',()=>{
+ const c=server();c.fixture=lotusHtml(lotus);const data=plain(vm.runInContext(`parseLotusProduct(fixture,new URL('${lotusUrl}'))`,c));assert.equal(data.price,55);assert.equal(data.quantity,400);assert.equal(data.unit,'กรัม');assert.equal(vm.runInContext(`productInfoUrl('${lotusUrl}?').href`,c),lotusUrl);
+ for(const change of [{sku:'999'},{stockStatus:'OUT_OF_STOCK'},{sellingType:'weight'},{priceRange:{minimumPrice:{finalPrice:{value:0,currency:'THB'}}}}]){c.fixture=lotusHtml({...lotus,...change});assert.throws(()=>vm.runInContext(`parseLotusProduct(fixture,new URL('${lotusUrl}'))`,c));}
+});
+test('Lotus fetch returns photo and rejects arbitrary image hosts',async()=>{
+ const c=server(async url=>url.startsWith('https://www.lotuss.com/')?new Response(lotusHtml(lotus)):new Response(Buffer.from(image,'base64'),{headers:{'content-type':'image/jpeg'}}));
+ const data=await(await vm.runInContext(`productInfo(new Request('https://chefjewe.pages.dev/api/product-info?url='+encodeURIComponent('${lotusUrl}')))`,c)).json();assert.equal(data.photo,image);assert.equal(data.price,55);
+ assert.throws(()=>vm.runInContext(`productImageUrl('https://o2o-static.lotuss.com.evil.test/products/1/x.jpg',"Lotus's")`,c));
+});

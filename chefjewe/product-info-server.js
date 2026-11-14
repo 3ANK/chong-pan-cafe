@@ -1,6 +1,7 @@
 function productInfoUrl(value){
  const u=new URL(value);if(u.protocol!=='https:'||u.port||u.username||u.password)throw Error('unsupported');
  if(u.hostname==='www.makro.pro'&&/^\/(?:th\/|en\/)?p\/[A-Za-z0-9_-]+-\d+\/?$/.test(u.pathname)){u.search='';u.hash='';return u;}
+ if(u.hostname==='www.lotuss.com'&&/^\/(?:th|en)\/product\/(?:[A-Za-z0-9_-]+-)?\d+\/?$/.test(u.pathname)){u.search='';u.hash='';return u;}
  if(u.hostname==='www.bigc.co.th'&&/^\/(?:th\/|en\/)?product\/[^/]+\.\d+\/?$/.test(u.pathname)){u.search='';u.hash='';return u;}
  if(u.hostname==='www.simummuangonline.com'&&/^\/(?:index\.php\/)?product\/[^/]+\/[A-Za-z0-9]+\/?$/.test(u.pathname)){u.search='';u.hash='';return u;}
  throw Error('unsupported');
@@ -42,9 +43,20 @@ function parseBigCProduct(html,source){
  const price=Number(p.final_price_incl_tax??p.price_sales);if(!Number.isFinite(price)||price<=0)throw Error('unreadable');
  return {name:String(p.name).slice(0,200),price,...productPackFromTitle(p.name),packageName:String(p.unit||'').slice(0,100),imageUrl:p.image||'',supplier:'Big C',sourceUrl:source.href,checkedAt:new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),fetchedAt:new Date().toISOString()};
 }
+function parseLotusProduct(html,source){
+ const match=html.match(/<script\b[^>]*\bid=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);if(!match)throw Error('unreadable');
+ const p=JSON.parse(match[1])?.props?.pageProps?.productDetailSSR,expected=source.pathname.match(/(?:-|\/)(\d+)\/?$/)?.[1];
+ if(!p||String(p.sku)!==expected||!p.name)throw Error('unreadable');
+ if(p.stockStatus!=='IN_STOCK'||!(Number(p.stockOnHand)>0))throw Error('unavailable');
+ if(p.sellingType!=='qty')throw Error('weighted');
+ const offer=p.priceRange?.minimumPrice?.finalPrice;
+ const price=Number(offer?.value??p.finalPricePerUOW);if(offer?.currency&&offer.currency!=='THB'||!Number.isFinite(price)||price<=0)throw Error('unreadable');
+ return {name:String(p.name).slice(0,200),price,...productPackFromTitle(p.name),packageName:String(p.unitOfQuantity||'').slice(0,100),imageUrl:p.mediaGallery?.find(x=>x.types?.includes('image'))?.url||p.mediaGallery?.[0]?.url||'',supplier:"Lotus's",sourceUrl:source.href,checkedAt:new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Bangkok',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date()),fetchedAt:new Date().toISOString()};
+}
 function productImageUrl(value,supplier){
  const u=new URL(value);if(u.protocol!=='https:'||u.port||u.username||u.password||u.search||u.hash)throw Error('image');
  if(supplier==='Makro PRO'&&u.hostname==='images.mango-prod.siammakro.cloud'&&/^(?:\/SOURCE\/[A-Za-z0-9_.-]+|\/product-images\/[A-Za-z0-9_-]+\.(?:jpe?g|png|webp))$/.test(u.pathname))return u;
+ if(supplier==="Lotus's"&&u.hostname==='o2o-static.lotuss.com'&&/^\/products\/[A-Za-z0-9_/-]+\.(?:jpe?g|png|webp)$/.test(u.pathname))return u;
  if(supplier==='Big C'&&u.hostname==='st.bigc-cs.com'&&/^\/(?:cdn-cgi\/image\/format=webp,quality=90\/)?public\/media\/catalog\/product\/[A-Za-z0-9_./-]+\.(?:jpe?g|png|webp)$/.test(u.pathname)){u.pathname=u.pathname.replace(/^\/cdn-cgi\/image\/format=webp,quality=90\//,'/');return u;}
  if(supplier==='สี่มุมเมืองออนไลน์'&&u.hostname==='www.simummuangonline.com'&&/^\/files\/product\/(?:thumb_405|original)\/[A-Za-z0-9_.-]+$/.test(u.pathname))return u;
  throw Error('image');
@@ -63,7 +75,7 @@ async function fetchProductPhoto(value,supplier,signal){
  let binary='';for(let i=0;i<bytes.length;i+=16384)binary+=String.fromCharCode(...bytes.subarray(i,i+16384));return btoa(binary);
 }
 async function productInfo(request){
- let source;try{source=productInfoUrl(new URL(request.url).searchParams.get('url'));}catch{return json({message:'ขณะนี้รองรับลิงก์หน้าสินค้า Makro PRO, Big C และสี่มุมเมืองออนไลน์'},400);}
+ let source;try{source=productInfoUrl(new URL(request.url).searchParams.get('url'));}catch{return json({message:'ขณะนี้รองรับลิงก์หน้าสินค้า Makro PRO, Big C, Lotus’s และสี่มุมเมืองออนไลน์'},400);}
  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),18000);
  try{
   const response=await fetch(source.href,{redirect:'manual',signal:controller.signal,headers:{Accept:'text/html','Accept-Language':'th-TH,th;q=0.9,en;q=0.8','User-Agent':'ChefJewe/1.0 (+https://chefjewe.pages.dev)'},cf:{cacheTtl:0}});
@@ -71,6 +83,7 @@ async function productInfo(request){
   const html=new TextDecoder().decode(await boundedProductBytes(response,2*1024*1024));let data;
   if(source.hostname==='www.makro.pro')data=parseMakroProduct(html,source);
   else if(source.hostname==='www.bigc.co.th')data=parseBigCProduct(html,source);
+  else if(source.hostname==='www.lotuss.com')data=parseLotusProduct(html,source);
   else {data={...parseSupplierPrice(html,source),supplier:'สี่มุมเมืองออนไลน์',sourceUrl:source.href};data.imageUrl=html.match(/<img\b[^>]*\bsrc=["'](https:\/\/www\.simummuangonline\.com\/files\/product\/thumb_405\/[^"']+)["']/i)?.[1]||'';}
   data.photo='';if(data.imageUrl){try{data.photo=await fetchProductPhoto(data.imageUrl,data.supplier,controller.signal);}catch{data.photoWarning='ดึงรูปไม่สำเร็จ กรุณาเลือกรูปเอง';}}
   delete data.imageUrl;return json(data);
