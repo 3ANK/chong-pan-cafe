@@ -40,3 +40,17 @@ test('Makro sugar photo supports product-images CDN path while retaining host an
  assert.equal(data.photo,image);assert.equal(data.price,79);
  for(const url of [photoUrl+'?url=private',photoUrl.replace('.jpeg','.svg'),photoUrl.replace('siammakro.cloud','siammakro.cloud.evil.test')])assert.throws(()=>vm.runInContext('productImageUrl('+JSON.stringify(url)+',"Makro PRO")',c));
 });
+
+const bigcUrl='https://www.bigc.co.th/en/product/dreamy-milky-cream-1000-g.5738495';
+const bigc={product_id:5738495,name:'DREAMY Milky Cream 1000 g.',price_sales:148,final_price_incl_tax:148,status:1,not_for_sale:0,stock:'Y',qty:22,sell_in_kg:0,unit:'Bag',image:'https://st.bigc-cs.com/public/media/catalog/product/42/88/milk.jpg'};
+const flight=p=>'<script>self.__next_f.push('+JSON.stringify([1,'1:'+JSON.stringify(['$',{product:p,recommended:{...p,product_id:999,price_sales:20}}])+'\n'])+')</script>';
+test('Big C matches requested streamed product and rejects unavailable or mismatched data',()=>{
+ const c=server();c.fixture=flight(bigc);const result=plain(vm.runInContext(`parseBigCProduct(fixture,new URL('${bigcUrl}'))`,c));assert.equal(result.price,148);assert.equal(result.quantity,1000);assert.equal(result.supplier,'Big C');
+ assert.equal(vm.runInContext(`productInfoUrl('${bigcUrl}?tracking=1').href`,c),bigcUrl);
+ for(const change of [{product_id:998},{stock:'N'},{not_for_sale:1},{sell_in_kg:1},{price_sales:0,final_price_incl_tax:0}]){c.fixture=flight({...bigc,...change});assert.throws(()=>vm.runInContext(`parseBigCProduct(fixture,new URL('${bigcUrl}'))`,c));}
+});
+test('Big C endpoint fetches validated product and image and rejects spoofed image hosts',async()=>{
+ const c=server(async url=>url.includes('www.bigc.co.th')?new Response(flight(bigc)):new Response(Buffer.from(image,'base64'),{headers:{'content-type':'image/png'}}));
+ const data=await(await vm.runInContext(`productInfo(new Request('https://chefjewe.pages.dev/api/product-info?url='+encodeURIComponent('${bigcUrl}')))`,c)).json();assert.equal(data.price,148);assert.equal(data.photo,image);
+ assert.throws(()=>vm.runInContext(`productImageUrl('https://st.bigc-cs.com.evil.test/public/media/catalog/product/a.jpg','Big C')`,c));
+});

@@ -1,6 +1,6 @@
 function appendProductInfoButton(line,host,sourceInput){
  const button=document.createElement('button');button.type='button';button.dataset.productFetch='true';button.textContent='ดึงข้อมูลจากลิงก์';button.disabled=!sourceInput.value.trim()||!!line.dataset.productLoading;button.onclick=()=>pullProductInfo(line,button);host.append(button);
- const hint=document.createElement('small');hint.textContent='รองรับ Makro PRO และสี่มุมเมือง · ดึงมาให้ตรวจก่อนบันทึก';host.append(hint);
+ const hint=document.createElement('small');hint.textContent='รองรับ Makro PRO, Big C และสี่มุมเมือง · ดึงมาให้ตรวจก่อนบันทึก';host.append(hint);
 }
 async function pullProductInfo(line,button){
  if(busy||line.dataset.productLoading)return;
