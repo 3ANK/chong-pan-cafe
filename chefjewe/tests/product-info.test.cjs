@@ -54,3 +54,7 @@ test('Big C endpoint fetches validated product and image and rejects spoofed ima
  const data=await(await vm.runInContext(`productInfo(new Request('https://chefjewe.pages.dev/api/product-info?url='+encodeURIComponent('${bigcUrl}')))`,c)).json();assert.equal(data.price,148);assert.equal(data.photo,image);
  assert.throws(()=>vm.runInContext(`productImageUrl('https://st.bigc-cs.com.evil.test/public/media/catalog/product/a.jpg','Big C')`,c));
 });
+
+test('Big C photo fetch uses the original catalogue image instead of nested CDN resizing',()=>{
+ const c=server();assert.equal(vm.runInContext("productImageUrl('https://st.bigc-cs.com/cdn-cgi/image/format=webp,quality=90/public/media/catalog/product/42/88/milk.jpg','Big C').href",c),'https://st.bigc-cs.com/public/media/catalog/product/42/88/milk.jpg');
+});
