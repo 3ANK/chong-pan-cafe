@@ -239,3 +239,21 @@ test('used ingredient confirmation allows cancellation, retry after failure and 
  vm.runInContext("openIngredientDeleteConfirmation('Tea',()=>{deleted=true})",context);dialog=document.querySelector('.ingredient-delete-confirm');const remove=dialog.querySelector('.ingredient-delete-button');await remove.onclick();assert.ok(document.querySelector('.ingredient-delete-confirm'));assert.match(dialog.querySelector('[role=alert]').textContent,/ลบไม่สำเร็จ/);assert.equal(remove.disabled,false);assert.equal(vm.runInContext('recipes[0].details["Tea drink"].ingredientRows.length',context),1);
  vm.runInContext('persistState=async state=>{savedState=state;return true}',context);await remove.onclick();assert.equal(document.querySelector('.ingredient-delete-confirm'),null);assert.equal(context.deleted,true);assert.equal(context.savedState.recipes[0].details['Tea drink'].ingredientRows.length,0);
 });
+
+test('bulk price update accepts equivalent packs and preserves conversion metadata and photos',()=>{
+ const {context}=loadBook();context.row={name:'Milk',packageQuantity:1,packageUnit:'kg',packagePrice:'90',photo,usableQuantity:770,usableUnit:'ml',unitWeights:{ช้อน:5}};context.data={name:'Milk 1000g',price:100,quantity:1000,unit:'กรัม',checkedAt:'2026-11-14'};
+ const result=vm.runInContext('bulkPricePatch(row,data)',context);assert.equal(result.packagePrice,'100');assert.equal(result.packageQuantity,1);assert.equal(result.usableQuantity,770);assert.equal(result.photo,photo);assert.equal(context.row.packagePrice,'90');
+ for(const data of [{price:100,quantity:500,unit:'กรัม'},{price:100,quantity:1000,unit:'ml'},{price:0,quantity:1000,unit:'กรัม'}]){context.data=data;assert.throws(()=>vm.runInContext('bulkPricePatch(row,data)',context));}
+});
+test('cost summary exposes one bulk price button',()=>{
+ const {context,document}=loadBook();vm.runInContext('renderCostSection()',context);assert.equal(document.querySelectorAll('[data-bulk-price-update]').length,1);
+});
+test('bulk update saves successes once, leaves failures and no-cost rows unchanged',async()=>{
+ const {context,document}=loadBook();context.URL=URL;context.Event=document.defaultView.Event;
+ document.defaultView.HTMLDialogElement;
+ const calls=[];context.fetch=async url=>{calls.push(url);return {ok:!url.includes('bad'),json:async()=>url.includes('bad')?{message:'not available'}:{name:'Milk',price:110,quantity:1000,unit:'กรัม',checkedAt:'2026-11-14'}};};
+ vm.runInContext(`ingredientCosts=[{name:'Milk',packageQuantity:1000,packageUnit:'กรัม',packagePrice:90,sourceUrl:'https://www.lotuss.com/th/product/1'},{name:'Bad',packageQuantity:1000,packageUnit:'กรัม',packagePrice:80,sourceUrl:'https://www.lotuss.com/th/product/bad'},{name:'Free',packagePrice:'-',sourceUrl:''}];var savedBulk=null;persistState=async state=>{savedBulk=state;return true;};var bulkButton=document.createElement('button');document.body.append(bulkButton);`,context);
+ const proto=Object.getPrototypeOf(document.createElement('dialog'));proto.showModal=function(){this.setAttribute('open','')};proto.close=function(){this.removeAttribute('open')};
+ await vm.runInContext('updateAllIngredientPrices(bulkButton)',context);
+ assert.equal(calls.length,2);assert.ok(calls.every(x=>x.includes('priceOnly=1')));assert.equal(vm.runInContext('savedBulk.ingredientCosts[0].packagePrice',context),'110');assert.equal(vm.runInContext('savedBulk.ingredientCosts[1].packagePrice',context),80);assert.equal(vm.runInContext('savedBulk.ingredientCosts[2].packagePrice',context),'-');assert.match(document.querySelector('dialog[aria-label="อัปเดตราคาทุกรายการ"] p').textContent,/บันทึกแล้ว 1/);
+});

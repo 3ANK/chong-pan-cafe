@@ -11,6 +11,7 @@ else{
  if(!html.includes(ledger))throw Error('Missing purchase ledger save');html=html.replaceAll(ledger,"for(const input of line.querySelectorAll('[data-cost-field]'))row[input.dataset.costField]=input.value.trim();if(line.dataset.pendingPhoto)row.photo=line.dataset.pendingPhoto;return row;");
  html=html.replaceAll('if(target.dataset.costSave){',"if(target.dataset.costSave){if(target.closest('.cost-panel').querySelector('[data-product-loading]')){alert('กรุณารอให้ดึงข้อมูลสินค้าเสร็จก่อนบันทึก');return;}");
 }
+if(!html.includes('appendBulkPriceButton(exportTools);'))html=html.replace('exportTools.prepend(importButton,ingredientFile);','exportTools.prepend(importButton,ingredientFile);appendBulkPriceButton(exportTools);');
 worker=worker.replace(pattern,()=> 'const HTML = '+JSON.stringify(html)+';');
 const server='// PRODUCT_INFO_SERVER_START\n'+fs.readFileSync(path.join(root,'product-info-server.js'),'utf8')+'// PRODUCT_INFO_SERVER_END\n';
 if(worker.includes('// PRODUCT_INFO_SERVER_START'))worker=worker.replace(/\/\/ PRODUCT_INFO_SERVER_START[\s\S]*?\/\/ PRODUCT_INFO_SERVER_END\n/,server);

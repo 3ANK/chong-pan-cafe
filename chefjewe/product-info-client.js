@@ -25,3 +25,40 @@ async function pullProductInfo(line,button){
  }catch(error){status.textContent=error.message+' · ยังไม่ได้บันทึกข้อมูลทับ';}
  finally{delete line.dataset.productLoading;if(line.isConnected){for(const current of line.querySelectorAll('[data-product-fetch]'))current.disabled=!read('sourceUrl').value.trim();if(save)save.disabled=previousSaveDisabled;}}
 }
+
+function bulkPricePatch(row,data){
+ if(!Number.isFinite(Number(data.price))||Number(data.price)<=0)throw Error('อ่านราคาไม่ได้');
+ if(!(Number(data.quantity)>0)||!data.unit)throw Error('อ่านขนาดบรรจุไม่ได้');
+ const quantity=convertRecipeQuantity(Number(data.quantity),data.unit,row.packageUnit);
+ if(quantity===null||Math.abs(quantity-Number(row.packageQuantity))>Math.max(0.0001,Number(row.packageQuantity)*0.000001))throw Error('ขนาดหรือหน่วยซื้อไม่ตรง กรุณาตรวจรายการนี้เอง');
+ return {...row,packagePrice:String(data.price),checkedAt:data.checkedAt||row.checkedAt,priceProductName:data.name,priceSupplier:data.supplier};
+}
+function appendBulkPriceButton(host){
+ const button=document.createElement('button');button.type='button';button.textContent='อัปเดตราคาทุกรายการ';button.dataset.bulkPriceUpdate='true';button.onclick=()=>updateAllIngredientPrices(button);host.append(button);
+}
+async function updateAllIngredientPrices(button){
+ if(busy||document.querySelector('[data-bulk-price-running]'))return;
+ if(costsDirty||document.querySelector('dialog[open]')){$('saveStatus').textContent='กรุณาบันทึกหรือปิดหน้าต่างแก้ไขก่อนอัปเดตราคารวม';return;}
+ const state=JSON.parse(JSON.stringify(currentState())),dialog=document.createElement('dialog');dialog.dataset.bulkPriceRunning='true';dialog.className='ingredient-transfer-dialog';dialog.setAttribute('aria-label','อัปเดตราคาทุกรายการ');
+ const title=document.createElement('h2');title.textContent='อัปเดตราคาทุกรายการ';const progress=document.createElement('p');progress.setAttribute('role','status');const list=document.createElement('ul');list.style.cssText='max-height:45vh;overflow:auto;line-height:1.8';const close=document.createElement('button');close.type='button';close.textContent='หยุดหลังรายการนี้';let stopped=false,running=true;close.onclick=()=>{if(running){stopped=true;close.disabled=true;close.textContent='กำลังหยุด…';}else{dialog.close();dialog.remove();}};dialog.addEventListener('cancel',event=>{event.preventDefault();if(running){stopped=true;}else{dialog.close();dialog.remove();}});
+ dialog.append(title,progress,list,close);document.body.append(dialog);dialog.showModal();button.disabled=true;
+ const oldEditing=editing;editing=true;let updated=0,failed=0,skipped=0,done=0;
+ const cache=new Map();
+ try{
+  for(let i=0;i<(state.ingredientCosts||[]).length;i++){
+   if(stopped)break;
+   const row=state.ingredientCosts[i];done++;progress.textContent='กำลังตรวจ '+done+' / '+state.ingredientCosts.length+' · '+row.name;
+   const item=document.createElement('li');list.append(item);
+   if(noCostPrice(row)||freeIngredient(row.name)||!row.sourceUrl){skipped++;item.textContent=row.name+' · ข้าม: ไม่มีลิงก์หรือกำหนดว่าไม่มีต้นทุน';continue;}
+   try{
+    const source=new URL(row.sourceUrl);source.search='';source.hash='';
+    let data=cache.get(source.href);
+    if(!data){const response=await fetch('/api/product-info?priceOnly=1&url='+encodeURIComponent(source.href),{cache:'no-store'});data=await response.json();if(!response.ok)throw Error(data.message||'ดึงข้อมูลไม่สำเร็จ');cache.set(source.href,data);}
+    state.ingredientCosts[i]=bulkPricePatch(row,data);updated++;item.textContent=row.name+' · '+row.packagePrice+' → '+data.price+' บาท';
+   }catch(error){failed++;item.textContent=row.name+' · คงราคาเดิม: '+error.message;}
+  }
+  if(updated){progress.textContent='กำลังบันทึกราคาที่อัปเดตได้…';if(!await persistState(state))throw Error($('saveStatus').textContent||'บันทึกไม่สำเร็จ');}
+  progress.textContent=(stopped?'หยุดแล้ว · ':'')+'บันทึกแล้ว '+updated+' รายการ · ดึงไม่ได้ '+failed+' · ข้าม '+skipped+(stopped?' · ยังไม่ตรวจ '+(state.ingredientCosts.length-done):'');
+ }catch(error){progress.textContent='ยังไม่ได้บันทึกราคา: '+error.message;}
+ finally{running=false;editing=oldEditing;delete dialog.dataset.bulkPriceRunning;close.disabled=false;close.textContent='ปิด';if(button.isConnected)button.disabled=false;}
+}
