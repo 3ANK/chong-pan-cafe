@@ -29,7 +29,7 @@ const supportsEgg=p=>!!p&&(eggEligibleCategories.has(p.category)||supportsToppin
 const isTopping=code=>code==='shrimp'||code==='crab';
 const modifierLabel=it=>isTopping(it.egg)?({shrimp:'เพิ่มกุ้ง',crab:'เพิ่มปูอัด'})[it.egg]:({fried:'ไข่ดาว',omelet:'ไข่เจียว',creamy:'ไข่ข้น',century:'ไข่เยี่ยวม้า',shrimp:'กุ้ง',crab:'ปูอัด'})[it.egg]+' '+(it.eggQty??1)+' ฟอง/จาน';
 function keyOf(item){return JSON.stringify([item.id,item.sweetness,item.egg,item.egg?item.eggQty??1:0,item.note])}
-function extra(item){return (({fried:10,omelet:10,creamy:20,century:15,shrimp:15,crab:15})[item.egg]||0)*(item.egg?(item.eggQty??1):0)}
+function extra(item){return (({fried:15,omelet:20,creamy:20,century:20,shrimp:15,crab:15})[item.egg]||0)*(item.egg?(item.eggQty??1):0)}
 function breadPair(it){
  if(it.id==='30'&&it.price===15)return 25;
  if((it.id==='31'||it.id==='32')&&it.price===20)return 35;
@@ -218,7 +218,7 @@ function openOption(id){
  $('optionTitle').textContent=p.name+' · '+costLabel(p.price)+(state.redeemMode?'':(p.id==='30'&&p.price===15?' · 2 ชิ้น 25 บาท':(p.id==='31'||p.id==='32')&&p.price===20?' · 2 ชิ้น 35 บาท':''));
  const eggUnit=state.redeemMode?'แต้ม':'บาท';
  $('eggGroup').firstChild.textContent=supportsTopping(p)?'เพิ่มเครื่อง (ราคาต่อจาน)':'เพิ่มไข่ (ราคาต่อจาน)';
- const choices=supportsTopping(p)?[['','ธรรมดา',0],['shrimp','เพิ่มกุ้ง',15],['crab','เพิ่มปูอัด',15]]:[['','ไม่เพิ่มไข่',0],['fried','ไข่ดาว',10],['omelet','ไข่เจียว',10],['creamy','ไข่ข้น',20],['century','ไข่เยี่ยวม้า',15]];
+ const choices=supportsTopping(p)?[['','ธรรมดา',0],['shrimp','เพิ่มกุ้ง',15],['crab','เพิ่มปูอัด',15]]:[['','ไม่เพิ่มไข่',0],['fried','ไข่ดาว',15],['omelet','ไข่เจียว',20],['creamy','ไข่ข้น',20],['century','ไข่เยี่ยวม้า',20]];
  $('egg').innerHTML=choices.map(([value,label,price])=>'<option value="'+value+'">'+label+(price?' +'+price+' '+eggUnit:'')+'</option>').join('');
  show('sweetnessGroup',!!p.drink);
  show('eggGroup',supportsEgg(p));

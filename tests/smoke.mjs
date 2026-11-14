@@ -231,45 +231,45 @@ r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'84',qty:1}],fulfi
   {id:'33',qty:2,egg:'creamy'}
  ],fulfillment:'pickup',pickupPhone:'0812345678',pickupEta:'asap',requestKey:crypto.randomUUID()},cookie);
  assert.equal(r.status,201);
- assert.ok(lastOwnerOrderNotification.includes('1× กะเพราหมู +ไข่เจียว 1 ฟอง/จาน (+10 บาท/จาน)'));
+ assert.ok(lastOwnerOrderNotification.includes('1× กะเพราหมู +ไข่เจียว 1 ฟอง/จาน (+20 บาท/จาน)'));
  assert.ok(lastOwnerOrderNotification.includes('3× เอสเพรสโซ (หวานน้อย)'));
  assert.ok(lastOwnerOrderNotification.includes('2× กะเพราหมู +ไข่ข้น 1 ฟอง/จาน (+20 บาท/จาน)'));
  assert.ok(!lastOwnerOrderNotification.includes('omelet')&&!lastOwnerOrderNotification.includes('creamy'));
  assert.ok(lastOwnerOrderNotification.includes('3× เอสเพรสโซ (หวานน้อย)'));
- assert.equal(r.data.total,302);
+ assert.equal(r.data.total,312);
  assert.ok(lastOwnerOrderNotification.includes('กดรับ / จัดการออเดอร์นี้:'));
  assert.ok(lastOwnerOrderNotification.includes('https://chongpan-ordering-v2.pages.dev/admin/?order='+r.data.orderId));
  assert.ok(!lastOwnerOrderNotification.includes('chongpan-members.oakenzebra4.chatgpt.site'));
- // Two dishes with two fried eggs EACH: 4 eggs and 138 THB total.
+ // Two dishes with two fried eggs EACH: 4 eggs and 158 THB total.
  r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:2,egg:'fried',eggQty:2}],fulfillment:'pickup',pickupPhone:'0812345678',pickupEta:'asap',requestKey:crypto.randomUUID()},cookie);
- assert.equal(r.status,201);assert.equal(r.data.total,138);
+ assert.equal(r.status,201);assert.equal(r.data.total,158);
  const eggOrderId=r.data.orderId;
- assert.ok(lastOwnerOrderNotification.includes('2× กะเพราหมู +ไข่ดาว 2 ฟอง/จาน (+20 บาท/จาน)'));
+ assert.ok(lastOwnerOrderNotification.includes('2× กะเพราหมู +ไข่ดาว 2 ฟอง/จาน (+30 บาท/จาน)'));
  r=await call('orders','GET',undefined,cookie);
  const eggOrder=r.data.orders.find(o=>o.id===eggOrderId);
  assert.equal(eggOrder.items[0].eggQty,2);
- assert.equal(eggOrder.items[0].eggPrice,20);
+ assert.equal(eggOrder.items[0].eggPrice,30);
  // Mixed egg quantities must remain separate. Existing clients without eggQty imply one per plate.
  r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:1,egg:'fried'}],fulfillment:'pickup',pickupPhone:'0812345678',pickupEta:'asap',requestKey:crypto.randomUUID()},cookie);
- assert.equal(r.status,201);assert.equal(r.data.total,59);
+ assert.equal(r.status,201);assert.equal(r.data.total,64);
  assert.ok(lastOwnerOrderNotification.includes('1× กะเพราหมู +ไข่ดาว 1 ฟอง/จาน'));
  // Garlic rice dishes can choose fried egg, omelet or creamy egg with per-plate quantity.
  r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'55',qty:2,egg:'fried',eggQty:2}],fulfillment:'pickup',pickupPhone:'0812345678',pickupEta:'asap',requestKey:crypto.randomUUID()},cookie);
- assert.equal(r.status,201);assert.equal(r.data.total,138);
- assert.ok(lastOwnerOrderNotification.includes('2× ข้าวหมูกระเทียม +ไข่ดาว 2 ฟอง/จาน (+20 บาท/จาน)'));
+ assert.equal(r.status,201);assert.equal(r.data.total,158);
+ assert.ok(lastOwnerOrderNotification.includes('2× ข้าวหมูกระเทียม +ไข่ดาว 2 ฟอง/จาน (+30 บาท/จาน)'));
  const garlicOrderId=r.data.orderId;
  r=await call('orders','GET',undefined,cookie);
  const garlicItem=r.data.orders.find(o=>o.id===garlicOrderId)?.items?.[0];
- assert.equal(garlicItem.egg,'fried');assert.equal(garlicItem.eggQty,2);assert.equal(garlicItem.eggPrice,20);
+ assert.equal(garlicItem.egg,'fried');assert.equal(garlicItem.eggQty,2);assert.equal(garlicItem.eggPrice,30);
  r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'56',qty:1,egg:'omelet',eggQty:1}],fulfillment:'pickup',pickupPhone:'0812345678',pickupEta:'asap',requestKey:crypto.randomUUID()},cookie);
- assert.equal(r.status,201);assert.equal(r.data.total,59);
+ assert.equal(r.status,201);assert.equal(r.data.total,69);
  assert.ok(lastOwnerOrderNotification.includes('1× ข้าวไก่กระเทียม +ไข่เจียว 1 ฟอง/จาน'));
  r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'55',qty:1,egg:'creamy',eggQty:1}],fulfillment:'pickup',pickupPhone:'0812345678',pickupEta:'asap',requestKey:crypto.randomUUID()},cookie);
  assert.equal(r.status,201);assert.equal(r.data.total,69);
  assert.ok(lastOwnerOrderNotification.includes('1× ข้าวหมูกระเทียม +ไข่ข้น 1 ฟอง/จาน'));
  r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'55',qty:2,egg:'century',eggQty:2}],fulfillment:'pickup',pickupPhone:'0812345678',pickupEta:'asap',requestKey:crypto.randomUUID()},cookie);
- assert.equal(r.status,201);assert.equal(r.data.total,158);
- assert.ok(lastOwnerOrderNotification.includes('ไข่เยี่ยวม้า 2 ฟอง/จาน (+30 บาท/จาน)'));
+ assert.equal(r.status,201);assert.equal(r.data.total,178);
+ assert.ok(lastOwnerOrderNotification.includes('ไข่เยี่ยวม้า 2 ฟอง/จาน (+40 บาท/จาน)'));
  for(const badEggQty of [0,6,-1,1.5,'2']){
   r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'33',qty:1,egg:'fried',eggQty:badEggQty}],fulfillment:'pickup',pickupPhone:'0812345678',pickupEta:'asap',requestKey:crypto.randomUUID()},cookie);
   assert.equal(r.status,400);
@@ -445,7 +445,7 @@ const rerunHelper=[
  "const supportsEgg=p=>!!p&&(eggEligibleCategories.has(p.category)||supportsTopping(p));",
  "const repeatSweetness=new Set(['','ปกติ','หวานน้อย','ไม่หวาน','ไม่เติมน้ำตาล','เติมหวานน้อย','เติมหวานปกติ']);",
  "const repeatEggTypes=new Set(['fried','omelet','creamy','century','shrimp','crab']);",
- "const extra=item=>(({fried:10,omelet:10,creamy:20,century:15,shrimp:15,crab:15})[item.egg]||0)*(item.eggQty||0);",
+ "const extra=item=>(({fried:15,omelet:20,creamy:20,century:20,shrimp:15,crab:15})[item.egg]||0)*(item.eggQty||0);",
  "const keyOf=item=>JSON.stringify([item.id,item.sweetness,item.egg,item.egg?item.eggQty??1:0,item.note]);",
  reorderSection,
  "return buildRepeatBasket(order,products,currentBasket);"
@@ -466,7 +466,7 @@ const repeatSample={items:[
 const repeatA=repeatTest(repeatSample,repeatProducts,[]);
 assert.equal(repeatA.added.length,3);
 assert.equal(repeatA.skipped.length,1);
-assert.equal(repeatA.repriced.length,1);
+assert.equal(repeatA.repriced.length,2);
 assert.equal(repeatA.basket.length,3);
 assert.equal(repeatA.basket[0].eggQty,2);
 assert.equal(repeatA.basket[1].sweetness,'หวานน้อย');
