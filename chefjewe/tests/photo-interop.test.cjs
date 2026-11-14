@@ -294,3 +294,15 @@ test('review screen exposes direct recipe edits and archive filtering retains ar
 test('exports preserve lifecycle and explicit other costs without adding packaging to overhead',()=>{
  const {context}=loadBook();context.fixture={recipes:[{category:'ชา',domain:'drinks',names:['ชา'],details:{ชา:{recipeStatus:'trial',otherCostPerUnit:3,ingredientRows:[{name:'น้ำเปล่า',min:'100',unit:'ml'}],reviewItems:['ฟองนม รอปริมาณ']}}}],ingredientCosts:[],ingredientAliases:{}};const exported=vm.runInContext('buildChefJeweBackup(fixture)',context);assert.equal(exported.recipes[0].overhead,3);assert.equal(exported.recipes[0].recipeStatus,'trial');assert.equal(exported.recipes[0].reviewItems[0],'ฟองนม รอปริมาณ');assert.equal(exported.ingredients.filter(x=>x.name==='ชุดบรรจุภัณฑ์ทุกขนาด').length,1);
 });
+
+test('old cocoa URL weight never blocks entered gram costs, including migrated books',()=>{
+ const {context}=loadBook();context.fixture={recipeMigrations:['cost-audit-20261114-v1'],ingredientCosts:[{name:'ผงโกโก้',packageQuantity:450,packageUnit:'กรัม',packagePrice:345,sourceUrl:'https://www.bigc.co.th/product/cocoa-500g',costReviewRequired:'ขนาดที่บันทึก 450 กรัมไม่ตรงข้อความ 500 กรัมในลิงก์เดิม กรุณาตรวจฉลากถุงที่ร้านใช้'},{name:'แอปเปิ้ล',costReviewRequired:'ยืนยันพันธุ์'}]};
+ assert.equal(vm.runInContext('repairCostAuditState(fixture)',context),true);
+ assert.equal(context.fixture.ingredientCosts[0].costReviewRequired,undefined);
+ assert.equal(context.fixture.ingredientCosts[1].costReviewRequired,'ยืนยันพันธุ์');
+ assert.equal(vm.runInContext('validCost(fixture.ingredientCosts[0])',context),true);
+ assert.equal((345/450*10).toFixed(2),'7.67');
+ assert.equal(vm.runInContext('repairCostAuditState(fixture)',context),false);
+ context.fixture.recipeMigrations=[];vm.runInContext('repairCostAuditState(fixture)',context);
+ assert.equal(context.fixture.ingredientCosts[0].costReviewRequired,undefined);
+});

@@ -1,6 +1,10 @@
 const COST_AUDIT_VERSION='cost-audit-20261114-v1';
 function repairCostAuditState(state){
- const migrations=state.recipeMigrations||(state.recipeMigrations=[]);if(migrations.includes(COST_AUDIT_VERSION))return false;
+ let clearedSlugWarning=false;
+ for(const row of state.ingredientCosts||[])if(row.name==='ผงโกโก้'&&String(row.costReviewRequired||'').startsWith('ขนาดที่บันทึก 450 กรัมไม่ตรงข้อความ 500 กรัมในลิงก์เดิม')){
+  delete row.costReviewRequired;clearedSlugWarning=true;
+ }
+ const migrations=state.recipeMigrations||(state.recipeMigrations=[]);if(migrations.includes(COST_AUDIT_VERSION))return clearedSlugWarning;
  const costs=state.ingredientCosts||(state.ingredientCosts=[]);
  const backup=row=>{if(!row.costAuditOriginal){const {photo,costAuditOriginal,...original}=row;row.costAuditOriginal=JSON.parse(JSON.stringify(original));}};
  for(const row of costs){
@@ -12,7 +16,6 @@ function repairCostAuditState(state){
    backup(row);Object.assign(row,{packageQuantity:'1000',packageUnit:'กรัม',packagePrice:'122',priceMode:'actual',checkedAt:'2026-11-14',sourceUrl:'https://dreamyshoponline.com/product/dreamy-milky-cream-หัวนมผงเข้มข้น/',note:'Dreamy Milky Cream ดรีมมี่ มิลค์กี้ ครีม · เจ้าของร้านยืนยัน 1,000 กรัม 122 บาท · 2 ช้อนชา = 15 กรัม · ยืนยัน 14/11/2026',unitWeights:{...(row.unitWeights||{}),'ช้อนชา':7.5}});
    for(const k of ['usableQuantity','usableUnit','usablePackQuantity','usablePackUnit'])delete row[k];
   }
-  if(row.name==='ผงโกโก้'&&/500g/.test(row.sourceUrl||'')&&Number(row.packageQuantity)===450){backup(row);row.costReviewRequired='ขนาดที่บันทึก 450 กรัมไม่ตรงข้อความ 500 กรัมในลิงก์เดิม กรุณาตรวจฉลากถุงที่ร้านใช้';}
   if(row.name==='แอปเปิ้ล'&&/กาล่า/.test(row.note||'')){backup(row);row.costReviewRequired='สูตรแอปเปิ้ลเขียวใช้ราคาแอปเปิ้ลกาล่า กรุณายืนยันพันธุ์และราคาซื้อจริง';}
   if(row.name==='น้ำบ๊วย'){
    backup(row);row.costReviewRequired='ยืนยันว่าใช้น้ำจากบ๊วยดองหรือน้ำบ๊วยเข้มข้น และตวงปริมาณใช้ได้จริง ห้ามใช้จำนวนลูกแทนปริมาตรน้ำ';
