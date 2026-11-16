@@ -375,19 +375,19 @@ globalThis.fetch=async url=>{
 };
 const failedNotificationKey=crypto.randomUUID();
 r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',pickupPhone:'0812345678',pickupEta:'asap',requestKey:failedNotificationKey},cookie);
-assert.equal(r.status,201);const failedOrderId=r.data.orderId;assert.equal(attemptedPush,true);assert.equal(r.data.ownerAlertOk,false);assert.equal(r.data.shopAutoPaused,true);
-assert.equal(db.raw.prepare("SELECT value FROM shop_settings WHERE key='shop_enabled'").get().value,'0');
+assert.equal(r.status,201);const failedOrderId=r.data.orderId;assert.equal(attemptedPush,true);assert.equal(r.data.ownerAlertOk,false);
+assert.equal(db.raw.prepare("SELECT value FROM shop_settings WHERE key='shop_enabled'").get().value,'1');
 assert.equal(db.raw.prepare("SELECT COUNT(*) AS n FROM order_notifications WHERE delivered=0").get().n,1);
-// Recover the SAME order even when a failed alert automatically disables checkout.
+// Recover the SAME order after a failed LINE alert.
 const ordersBeforeRetry=db.raw.prepare("SELECT COUNT(*) AS n FROM orders").get().n;
 r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',pickupPhone:'0812345678',pickupEta:'asap',requestKey:failedNotificationKey},cookie);
 assert.equal(r.status,200);assert.equal(r.data.reused,true);assert.equal(r.data.orderId,failedOrderId);
 assert.equal(r.data.ownerAlertOk,false);
 assert.equal(db.raw.prepare("SELECT COUNT(*) AS n FROM orders").get().n,ordersBeforeRetry);
-r=await call('health');assert.equal(r.data.ordersEnabled,false);
-r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',pickupPhone:'0812345678',pickupEta:'asap',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,503);
+r=await call('health');assert.equal(r.data.ordersEnabled,true);
+r=await call('orders','POST',{paymentMethod:'cash',items:[{id:'30',qty:1}],fulfillment:'pickup',pickupPhone:'0812345678',pickupEta:'asap',requestKey:crypto.randomUUID()},cookie);assert.equal(r.status,201);assert.equal(r.data.ownerAlertOk,false);
 globalThis.fetch=realFetch;
-console.log('PASS: health, 90 products reconciled to old order display, verification gate, closed checkout, origin blocking, LINE verification mock, signed cookie, total server-side 90 not 2, idempotency, owner/admin transitions, no double points, order notification fail-closed, catalog edit');
+console.log('PASS: health, 90 products reconciled to old order display, verification gate, closed checkout, origin blocking, LINE verification mock, signed cookie, total server-side 90 not 2, idempotency, owner/admin transitions, no double points, ordering continues after LINE notification failure, catalog edit');
 
 // The storefront is narrow-mobile first, including the login header and every dialog.
 assert.ok(html.includes('class="topbar order-topbar"')&&html.includes('class="header-actions"'));
