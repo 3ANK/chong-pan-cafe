@@ -143,9 +143,10 @@ function orderCard(o){
 
 function queueOrderCard(order){
  const card=orderCard(order);
- if(order.status!=='completed'||(Number(order.total)>0&&order.payment_status!=='verified'&&!isPointsRedemption(order)))return card;
+ const settled=order.status==='completed'&&(Number(order.total)<=0||order.payment_status==='verified'||isPointsRedemption(order));
+ if(order.status!=='cancelled'&&!settled)return card;
  return '<details class="completed-order" data-order-detail="completed" data-completed-id="'+escapeText(order.id)+'"><summary>ออเดอร์ #'+escapeText(order.id.slice(0,8).toUpperCase())+
-  ' · '+(isPointsRedemption(order)?'แลกแต้ม':fmt(order.total))+' · ส่งมอบแล้ว</summary>'+card+'</details>';
+  ' · '+(isPointsRedemption(order)?'แลกแต้ม':fmt(order.total))+' · '+escapeText(statuses[order.status])+'</summary>'+card+'</details>';
 }
 
 function orderDayKey(value){
