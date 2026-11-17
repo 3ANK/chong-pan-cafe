@@ -97,9 +97,9 @@ function queueMarkup(orders){
 }
 function renderQueue(orders){
  const el=$('adminContent'),olderOpen=!!$('olderOrders')?.open;
- const expanded=Array.from(el.querySelectorAll('details[open]')).map(d=>({id:d.closest('[data-order-id]')?.dataset.orderId,kind:d.dataset.orderDetail|| (d.classList.contains('loyverse-compact')?'loyverse':'')})).filter(x=>x.id&&x.kind);
+ const expanded=Array.from(el.querySelectorAll('details[open]')).map(d=>({id:d.dataset.completedId||d.closest('[data-order-id]')?.dataset.orderId,kind:d.dataset.orderDetail|| (d.classList.contains('loyverse-compact')?'loyverse':'')})).filter(x=>x.id&&x.kind);
  el.innerHTML=recentOrdersMarkup(orders,olderOpen);
- for(const x of expanded){const card=Array.from(el.querySelectorAll('[data-order-id]')).find(n=>n.dataset.orderId===x.id);const detail=x.kind==='loyverse'?card?.querySelector('.loyverse-compact'):Array.from(card?.querySelectorAll('[data-order-detail]')||[]).find(d=>d.dataset.orderDetail===x.kind);if(detail)detail.open=true}
+ for(const x of expanded){const card=Array.from(el.querySelectorAll('[data-order-id]')).find(n=>n.dataset.orderId===x.id);const detail=x.kind==='completed'?card?.closest('.completed-order'):x.kind==='loyverse'?card?.querySelector('.loyverse-compact'):Array.from(card?.querySelectorAll('[data-order-detail]')||[]).find(d=>d.dataset.orderDetail===x.kind);if(detail)detail.open=true}
 }
 $('adminContent').addEventListener('click',e=>{
  const b=e.target.closest('[data-queue-filter]');if(!b)return;
@@ -141,6 +141,13 @@ function orderCard(o){
  '<div class="order-actions">'+pointsButton+actions+'</div></article>';
 }
 
+function queueOrderCard(order){
+ const card=orderCard(order);
+ if(order.status!=='completed'||(Number(order.total)>0&&order.payment_status!=='verified'&&!isPointsRedemption(order)))return card;
+ return '<details class="completed-order" data-order-detail="completed" data-completed-id="'+escapeText(order.id)+'"><summary>ออเดอร์ #'+escapeText(order.id.slice(0,8).toUpperCase())+
+  ' · '+(isPointsRedemption(order)?'แลกแต้ม':fmt(order.total))+' · ส่งมอบแล้ว</summary>'+card+'</details>';
+}
+
 function orderDayKey(value){
  let date=value instanceof Date?value:new Date(typeof value==='string'&&!/(Z|[+-]\d{2}:?\d{2})$/i.test(value)?value.replace(' ','T')+'Z':value);
  if(!Number.isFinite(date.getTime()))return '';
@@ -162,7 +169,7 @@ function recentOrdersMarkup(orders,olderOpen){
  const {current,previous}=groupRecentOrders(orders);
  const visible=current.filter(o=>queueFilter==='all'||o.status===queueFilter);
  const today=orderDayKey(new Date()),carry=visible.filter(o=>orderDayKey(o.created_at)!==today),todays=visible.filter(o=>orderDayKey(o.created_at)===today);
- let html=queueMarkup(orders)+(carry.length?'<h3 class="queue-day-heading">ออเดอร์ค้างวันก่อน ('+carry.length+')</h3>'+carry.map(orderCard).join(''):'')+(todays.length?'<h3 class="queue-day-heading">วันนี้ ('+todays.length+')</h3>'+todays.map(orderCard).join(''):'');
+ let html=queueMarkup(orders)+(carry.length?'<h3 class="queue-day-heading">ออเดอร์ค้างวันก่อน ('+carry.length+')</h3>'+carry.map(queueOrderCard).join(''):'')+(todays.length?'<h3 class="queue-day-heading">วันนี้ ('+todays.length+')</h3>'+todays.map(queueOrderCard).join(''):'');
  if(!visible.length)html+='<p class="empty">ไม่มีออเดอร์ในคิวที่เลือก</p>';
  if(previous.size&&queueFilter==='all'){
   const count=[...previous.values()].reduce((n,items)=>n+items.length,0);
@@ -170,7 +177,7 @@ function recentOrdersMarkup(orders,olderOpen){
   html+='<details id="olderOrders"'+(olderOpen||focusedOld?' open':'')+'><summary class="secondary"><span class="older-show">+ ดูออเดอร์วันก่อน</span><span class="older-hide">− ซ่อนออเดอร์วันก่อน</span> ('+count+')</summary>';
   for(const [day,items] of [...previous].sort(([a],[b])=>b.localeCompare(a))){
    const date=new Date(day+'T12:00:00+07:00').toLocaleDateString('th-TH',{timeZone:'Asia/Bangkok',day:'numeric',month:'long',year:'numeric'});
-   html+='<section class="older-order-day"><h3>'+escapeText(date)+'</h3>'+items.map(orderCard).join('')+'</section>';
+   html+='<section class="older-order-day"><h3>'+escapeText(date)+'</h3>'+items.map(queueOrderCard).join('')+'</section>';
   }
   html+='</details>';
  }
@@ -197,7 +204,11 @@ async function loadOrders({silent=false}={}){
     card?.classList.add('focus-order');
     const instruction=focused.status==='completed'?(focused.payment_status!=='verified'&&!isPointsRedemption(focused)&&Number(focused.total)>0?'ตรวจยอดเงินจริง แล้วกดยืนยันรับเงินด้านล่าง':'ส่งมอบเรียบร้อยแล้ว'):focused.status==='cancelled'?'ออเดอร์ถูกยกเลิกแล้ว':'ตรวจรายละเอียด แล้วเลือกดำเนินการด้านล่าง';
     status.textContent='ออเดอร์ #'+focused.id.slice(0,8).toUpperCase()+' · '+(statuses[focused.status]||focused.status)+' — '+instruction;
-    if(!silent)requestAnimationFrame(()=>card?.scrollIntoView({behavior:'smooth',block:'center'}));
+    if(!silent&&card){
+     const collapsed=card.closest('.completed-order');
+     if(collapsed)collapsed.open=true;
+     requestAnimationFrame(()=>card?.scrollIntoView({behavior:'smooth',block:'center'}));
+    }
    }else status.textContent='ไม่พบออเดอร์ที่เปิดจาก LINE ในรายการล่าสุด กรุณารีเฟรชหรือตรวจหมายเลขออเดอร์';
   }
  }catch(e){if(!silent)el.textContent=e.message}

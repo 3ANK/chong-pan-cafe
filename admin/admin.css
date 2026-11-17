@@ -188,3 +188,7 @@
 .member-pagination span{font-size:13px;color:#526149}
 .member-pagination button{min-height:44px}
 @media(max-width:480px){.member-filters{grid-template-columns:1fr}.member-pagination span{order:-1;flex-basis:100%;text-align:center}}
+
+.completed-order{margin-block:.5rem}
+.completed-order>summary{padding:.75rem 1rem;border:1px solid #d9dfd3;border-radius:.75rem;background:#f1f4ed;color:#345344;font-weight:600;cursor:pointer}
+.completed-order[open]>summary{margin-bottom:.5rem}
