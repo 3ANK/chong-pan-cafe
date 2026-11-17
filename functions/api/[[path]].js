@@ -72,6 +72,24 @@ async function confirmPayment(req,db){
  return json({ok:true,paymentStatus:'verified'});
 }
 
+const telegramConfigured=env=>!!env.TELEGRAM_BOT_TOKEN&&!!env.TELEGRAM_CHAT_ID;
+async function sendTelegram(env,message){
+ try{
+  const response=await fetch('https://api.telegram.org/bot'+env.TELEGRAM_BOT_TOKEN+'/sendMessage',{
+   method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({chat_id:env.TELEGRAM_CHAT_ID,text:message,link_preview_options:{is_disabled:true}}),
+   signal:AbortSignal.timeout(3500)
+  });
+  if(!response.ok)return {ok:false,status:response.status};
+  return {ok:(await response.json()).ok===true,status:response.status};
+ }catch{return {ok:false,status:null}}
+}
+async function testTelegram(env){
+ if(!telegramConfigured(env))return fail('ยังไม่ได้ตั้งค่า Telegram Bot Token และ Chat ID',409);
+ const result=await sendTelegram(env,'ทดสอบแจ้งเตือน Telegram ร้านชง&ปั่น · ไม่ใช่ออเดอร์จริง');
+ if(!result.ok)return fail(result.status?'Telegram ส่งไม่สำเร็จ · HTTP '+result.status:'เชื่อมต่อ Telegram ไม่สำเร็จ',502);
+ return json({ok:true});
+}
 async function readiness(db,env){
  const [catalog,flag]=await Promise.all([
   db.prepare("SELECT COUNT(*) AS total,SUM(CASE WHEN c.available=1 AND (c.price<=0 OR COALESCE(r.verified,0)<>1) THEN 1 ELSE 0 END) AS unverified FROM catalog c LEFT JOIN catalog_price_reviews r ON r.product_id=c.id").first(),
@@ -81,7 +99,7 @@ async function readiness(db,env){
   {id:'menu',label:'ยืนยันราคาสินค้าที่เปิดขายทุกเมนู',ok:Number(catalog?.unverified||0)===0},
   {id:'liff',label:'ตั้งค่า LINE Login / LIFF ID / Session',ok:!!env.LINE_CHANNEL_ID&&!!env.LIFF_ID&&!!env.SESSION_SECRET},
   {id:'liff_endpoint',label:'ยืนยันการเปลี่ยน LIFF Endpoint และทดสอบ LINE Login จริง',ok:env.LIFF_ENDPOINT_CONFIRMED==='true'},
-  {id:'alert_token',label:'ตั้งค่า LINE Messaging Access Token เพื่อแจ้งร้าน',ok:!!env.LINE_MESSAGING_ACCESS_TOKEN},
+  {id:'alert_token',label:'ตั้งค่าช่องทางแจ้งออเดอร์ LINE หรือ Telegram',ok:!!env.LINE_MESSAGING_ACCESS_TOKEN||telegramConfigured(env)},
   {id:'owner',label:'ตั้งค่า LINE ผู้ดูแลร้าน',ok:!!env.OWNER_LINE_USER_ID},
   {id:'shop_cloudflare',label:'Cloudflare SHOP_ENABLED=true',ok:env.SHOP_ENABLED==='true'},
   {id:'shop_database',label:'ตั้งค่าเปิดร้านในฐานข้อมูล',ok:flag?.value==='1'}
@@ -192,20 +210,25 @@ async function createOrder(req,env,db,s){
  const created=await db.prepare('SELECT id,total,points_used,payment_method FROM orders WHERE id=?').bind(id).first();
  if(!created)return fail('แต้มคงเหลือไม่พอ กรุณาอัปเดตยอดแล้วลองใหม่',409);
  const balance=await db.prepare('SELECT points FROM members WHERE line_user_id=?').bind(s.sub).first();
- let alertOk=false;
- try{
+ const orderUrl='https://chongpan-ordering-v2.pages.dev/admin/?order='+encodeURIComponent(id);
+ const fulfillmentLabel=data.fulfillment==='delivery'?'จัดส่ง':data.fulfillment==='dinein'?'สั่งจากในร้าน':'รับที่ร้าน';
+ const telegramMessage=['ชง&ปั่น · ออเดอร์ใหม่ #'+id.slice(0,8).toUpperCase(),
+  redeemOnly?'แลกแต้ม · ไม่ต้องรับเงิน':'ยอด '+total+' บาท · '+(paymentMethod==='qr'?'สแกน QR':'เงินสด'),
+  fulfillmentLabel,orderUrl].join('\n');
+ let alertOk=telegramConfigured(env)&&(await sendTelegram(env,telegramMessage)).ok;
+ if(!alertOk&&env.LINE_MESSAGING_ACCESS_TOKEN)try{
   const lines=validated.map(i=>i.qty+'× '+i.name+(i.sweetness?' ('+i.sweetness+')':'')+(i.egg?' +'+eggNames[i.egg]+ (isTopping(i.egg)?'':' '+i.eggQty+' ฟอง/จาน')+' (+'+i.extra+' บาท/จาน)':'')+(i.note?' | '+i.note:''));
   const msg=['มีออเดอร์ใหม่ #'+id.slice(0,8),
    ...(redeemOnly?['ประเภท: แลกแต้มเป็นเมนู']:[]),
    'ลูกค้า: '+name,...(redeemOnly?[]:['ยอดชำระ: '+total+' บาท']),
    ...(pointsUsed?['ใช้แลกเมนู: '+pointsUsed+' แต้ม · ไม่ต้องรับเงิน']:[]),
    'ชำระเงิน: '+(paymentMethod==='points'?'แลกแต้ม · ไม่ต้องรับเงิน':paymentMethod==='qr'?'สแกน QR · รอตรวจสลิปใน LINE OA':'เงินสด · รอรับเงินจริง'),
-   'วิธีรับ: '+(data.fulfillment==='delivery'?'จัดส่ง':data.fulfillment==='dinein'?'สั่งจากในร้าน':'รับที่ร้าน'),
+   'วิธีรับ: '+fulfillmentLabel,
    ...(data.fulfillment==='delivery'?['ที่อยู่: '+address]:[]),
    ...(pickupTimeLabel?['เวลารับ: '+pickupTimeLabel]:[]),
    ...(pickupPhone?['เบอร์โทร: '+pickupPhone]:[]),
    ...(customerNote?['หมายเหตุ: '+customerNote]:[]),...lines].join('\n').slice(0,4350)+
-   '\n\n📲 กดรับ / จัดการออเดอร์นี้:\nhttps://chongpan-ordering-v2.pages.dev/admin/?order='+encodeURIComponent(id);
+   '\n\n📲 กดรับ / จัดการออเดอร์นี้:\n'+orderUrl;
   const recipients=await adminLineUserIds(db,env);
   const results=await Promise.all(recipients.map(async to=>{
    try{
@@ -217,7 +240,7 @@ async function createOrder(req,env,db,s){
    }catch{return false}
   }));
   alertOk=recipients.length>0&&results.every(Boolean);
- }catch{/* Order is saved even if a LINE notification fails. */}
+ }catch{/* Order is saved even if notifications fail. */}
  await db.prepare('INSERT INTO order_notifications(order_id,delivered) VALUES(?,?)').bind(id,alertOk?1:0).run();
  return json({orderId:id,total,pointsUsed,pointsRemaining:Number(balance?.points||0),paymentMethod,ownerAlertOk:alertOk},201);
 }
@@ -500,4 +523,4 @@ async function reopenCheckoutOnce(db) {
  ]);
 }
 
-export async function onRequest({request,env,waitUntil}){const path=new URL(request.url).pathname.replace(/^\/api\/?/,'');const method=request.method.toUpperCase();const db=env.DB;if(!db)return fail('ยังไม่ได้ผูกฐานข้อมูล D1',503);if(!['GET','HEAD'].includes(method)){const origin=request.headers.get('Origin');if(origin&&origin!==new URL(request.url).origin)return fail('Origin ไม่ได้รับอนุญาต',403)}try{if(new URL(request.url).hostname==='chongpan-ordering-v2.pages.dev'){await reopenCheckoutOnce(db);await applyNovemberMenuPrices(db);await applyCatalogPricesOnce(db,'migration:20261114-somtam-prices',somtamPrices);await applyCatalogPricesOnce(db,'migration:20261114-custard-bread-prices',custardBreadPrices);await applyCatalogPricesOnce(db,'migration:20261114-butter-toast-price',[['30','ปังเนยนม','ขนมปัง',40]]);}if(path==='health'&&method==='GET')return json({ok:true,service:'chongpan-ordering-v2',ordersEnabled:(await menu(db,env)).shopEnabled,db:true});if(path==='menu'&&method==='GET')return json(await menu(db,env));if(path==='loyalty/info'&&method==='GET')return json({liffId:env.LIFF_ID||'',policy:{bahtPerPoint:25,awardWhen:'completed',fractionalCarry:false}});if(path==='payment/config'&&method==='GET')return json(await paymentConfig(db,env));if(path==='auth/line'&&method==='POST')return authLine(request,env,db);if(path==='auth/logout'&&method==='POST')return json({ok:true},200,{'Set-Cookie':'chongpan_sid=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0'});const s=await session(request,env);if(path==='member/visit'&&method==='POST')return await recordMemberVisit(db,s);if(path==='points'&&method==='GET'){if(!s)return fail('กรุณาเข้าสู่ LINE เพื่อดูแต้มสมาชิก',401);return pointHistory(db,s)}if(path==='me'&&method==='GET'){if(!s)return json({member:null});const m=await db.prepare('SELECT display_name,points FROM members WHERE line_user_id=?').bind(s.sub).first();return json({member:{name:m?.display_name||s.name,points:m?.points||0,isOwner:await isAdmin(s,env,db),isPrimaryOwner:primaryOwner(s,env)}})}if(path==='orders'&&method==='GET'){if(!s)return fail('กรุณาเข้าสู่ LINE',401);return json({orders:await getOrders(db,'WHERE line_user_id=?',[s.sub])})}if(path==='orders'&&method==='POST')return await createOrder(request,env,db,s);if(path.startsWith('admin/')){if(!await isAdmin(s,env,db))return fail('เฉพาะผู้ดูแลร้าน',403);if(path==='admin/admins'){if(!primaryOwner(s,env))return fail('เฉพาะเจ้าของร้านเท่านั้นที่จัดการสิทธิ์แอดมินได้',403);if(method==='GET')return adminRoster(db,env);if(method==='POST')return addAdmin(request,db,s,env);if(method==='DELETE')return removeAdmin(request,db,env)}if(path==='admin/loyverse'&&['GET','POST'].includes(method)){if(!primaryOwner(s,env))return fail('เฉพาะเจ้าของร้านที่ตั้งค่า Loyverse ได้',403);return loyverseSettings(request,env,db)}if(path==='admin/loyverse/sync'&&method==='POST')return loyverseSyncRoute(request,env,db);if(path==='admin/readiness'&&method==='GET')return json(await readiness(db,env));if(path==='admin/payment/config'&&method==='GET')return json(await paymentConfig(db,env));if(path==='admin/payment/config'&&method==='POST')return setPaymentConfig(request,db,env);if(path==='admin/orders/payment'&&method==='PATCH'){const copy=request.clone();const result=await confirmPayment(request,db);if(result.ok){const d=await copy.json();const task=syncLoyverse(db,env,d.id).catch(()=>{});if(waitUntil)waitUntil(task);else await task}return result;}if(path==='admin/line/test'&&method==='POST')return testOwnerLinePush(env,db);if(path==='admin/shop'&&method==='POST')return setShop(request,env,db);if(path==='admin/orders'&&method==='GET')return json({orders:await getOrders(db)});if(path==='admin/orders'&&method==='PATCH'){const copy=request.clone();const result=await updateOrder(request,db);if(result.ok){const d=await copy.json();if(d.status==='completed'){const task=syncLoyverse(db,env,d.id).catch(()=>{});if(waitUntil)waitUntil(task);else await task}}return result;}if(path==='admin/menu'&&method==='GET')return listAdminMenu(db,primaryOwner(s,env));if(path==='admin/menu'&&method==='PATCH')return updateMenu(request,db,s,env);if(path==='admin/menu'&&method==='POST')return createMenu(request,db);if(path==='admin/menu'&&method==='DELETE')return deleteMenu(request,db,s,env);if(path==='admin/member-points'&&['GET','POST'].includes(method))return counterMemberPoints(request,db,s);if(path==='admin/members'&&method==='GET')return listAdminMembers(db);if(path==='admin/members'&&method==='PATCH')return await renameAdminMember(request,db);if(path==='admin/legacy'&&method==='GET')return legacyList(db);if(path==='admin/legacy/assign'&&method==='POST')return assignLegacy(request,db,s)}return fail('ไม่พบ API',404)}catch(e){if(e instanceof Error&&['รูปแบบ JSON ไม่ถูกต้อง','คำขอใหญ่เกินกำหนด'].includes(e.message))return fail(e.message);return fail('ระบบมีปัญหาชั่วคราว',500)}}
+export async function onRequest({request,env,waitUntil}){const path=new URL(request.url).pathname.replace(/^\/api\/?/,'');const method=request.method.toUpperCase();const db=env.DB;if(!db)return fail('ยังไม่ได้ผูกฐานข้อมูล D1',503);if(!['GET','HEAD'].includes(method)){const origin=request.headers.get('Origin');if(origin&&origin!==new URL(request.url).origin)return fail('Origin ไม่ได้รับอนุญาต',403)}try{if(new URL(request.url).hostname==='chongpan-ordering-v2.pages.dev'){await reopenCheckoutOnce(db);await applyNovemberMenuPrices(db);await applyCatalogPricesOnce(db,'migration:20261114-somtam-prices',somtamPrices);await applyCatalogPricesOnce(db,'migration:20261114-custard-bread-prices',custardBreadPrices);await applyCatalogPricesOnce(db,'migration:20261114-butter-toast-price',[['30','ปังเนยนม','ขนมปัง',40]]);}if(path==='health'&&method==='GET')return json({ok:true,service:'chongpan-ordering-v2',ordersEnabled:(await menu(db,env)).shopEnabled,db:true});if(path==='menu'&&method==='GET')return json(await menu(db,env));if(path==='loyalty/info'&&method==='GET')return json({liffId:env.LIFF_ID||'',policy:{bahtPerPoint:25,awardWhen:'completed',fractionalCarry:false}});if(path==='payment/config'&&method==='GET')return json(await paymentConfig(db,env));if(path==='auth/line'&&method==='POST')return authLine(request,env,db);if(path==='auth/logout'&&method==='POST')return json({ok:true},200,{'Set-Cookie':'chongpan_sid=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0'});const s=await session(request,env);if(path==='member/visit'&&method==='POST')return await recordMemberVisit(db,s);if(path==='points'&&method==='GET'){if(!s)return fail('กรุณาเข้าสู่ LINE เพื่อดูแต้มสมาชิก',401);return pointHistory(db,s)}if(path==='me'&&method==='GET'){if(!s)return json({member:null});const m=await db.prepare('SELECT display_name,points FROM members WHERE line_user_id=?').bind(s.sub).first();return json({member:{name:m?.display_name||s.name,points:m?.points||0,isOwner:await isAdmin(s,env,db),isPrimaryOwner:primaryOwner(s,env)}})}if(path==='orders'&&method==='GET'){if(!s)return fail('กรุณาเข้าสู่ LINE',401);return json({orders:await getOrders(db,'WHERE line_user_id=?',[s.sub])})}if(path==='orders'&&method==='POST')return await createOrder(request,env,db,s);if(path.startsWith('admin/')){if(!await isAdmin(s,env,db))return fail('เฉพาะผู้ดูแลร้าน',403);if(path==='admin/admins'){if(!primaryOwner(s,env))return fail('เฉพาะเจ้าของร้านเท่านั้นที่จัดการสิทธิ์แอดมินได้',403);if(method==='GET')return adminRoster(db,env);if(method==='POST')return addAdmin(request,db,s,env);if(method==='DELETE')return removeAdmin(request,db,env)}if(path==='admin/loyverse'&&['GET','POST'].includes(method)){if(!primaryOwner(s,env))return fail('เฉพาะเจ้าของร้านที่ตั้งค่า Loyverse ได้',403);return loyverseSettings(request,env,db)}if(path==='admin/loyverse/sync'&&method==='POST')return loyverseSyncRoute(request,env,db);if(path==='admin/readiness'&&method==='GET')return json(await readiness(db,env));if(path==='admin/payment/config'&&method==='GET')return json(await paymentConfig(db,env));if(path==='admin/payment/config'&&method==='POST')return setPaymentConfig(request,db,env);if(path==='admin/orders/payment'&&method==='PATCH'){const copy=request.clone();const result=await confirmPayment(request,db);if(result.ok){const d=await copy.json();const task=syncLoyverse(db,env,d.id).catch(()=>{});if(waitUntil)waitUntil(task);else await task}return result;}if(path==='admin/telegram/test'&&method==='POST')return testTelegram(env);if(path==='admin/line/test'&&method==='POST')return testOwnerLinePush(env,db);if(path==='admin/shop'&&method==='POST')return setShop(request,env,db);if(path==='admin/orders'&&method==='GET')return json({orders:await getOrders(db)});if(path==='admin/orders'&&method==='PATCH'){const copy=request.clone();const result=await updateOrder(request,db);if(result.ok){const d=await copy.json();if(d.status==='completed'){const task=syncLoyverse(db,env,d.id).catch(()=>{});if(waitUntil)waitUntil(task);else await task}}return result;}if(path==='admin/menu'&&method==='GET')return listAdminMenu(db,primaryOwner(s,env));if(path==='admin/menu'&&method==='PATCH')return updateMenu(request,db,s,env);if(path==='admin/menu'&&method==='POST')return createMenu(request,db);if(path==='admin/menu'&&method==='DELETE')return deleteMenu(request,db,s,env);if(path==='admin/member-points'&&['GET','POST'].includes(method))return counterMemberPoints(request,db,s);if(path==='admin/members'&&method==='GET')return listAdminMembers(db);if(path==='admin/members'&&method==='PATCH')return await renameAdminMember(request,db);if(path==='admin/legacy'&&method==='GET')return legacyList(db);if(path==='admin/legacy/assign'&&method==='POST')return assignLegacy(request,db,s)}return fail('ไม่พบ API',404)}catch(e){if(e instanceof Error&&['รูปแบบ JSON ไม่ถูกต้อง','คำขอใหญ่เกินกำหนด'].includes(e.message))return fail(e.message);return fail('ระบบมีปัญหาชั่วคราว',500)}}

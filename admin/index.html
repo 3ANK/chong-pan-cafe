@@ -6,7 +6,7 @@
 <link rel="icon" href="/assets/chongpan-main-logo.webp" type="image/webp">
 <link rel="stylesheet" href="/styles.css?v=rice-category-layout-20261022"><link rel="stylesheet" href="/admin/admin.css?v=member-pages-20261112">
 <script src="https://static.line-scdn.net/liff/edge/2/sdk.js" defer></script>
-<script src="/admin/admin.js?v=member-recent-20261112" defer></script><script src="/catalog-admin.js?v=safer-delete-20261028" defer></script>
+<script src="/admin/admin.js?v=telegram-20261117" defer></script><script src="/catalog-admin.js?v=safer-delete-20261028" defer></script>
 <script src="/admin/loyverse.js?v=compact-loyverse-20261021" defer></script>
 <style>#olderOrders{margin:18px 0}#olderOrders>summary{cursor:pointer;list-style:none;padding:12px 16px}#olderOrders>summary::-webkit-details-marker{display:none}#olderOrders .older-hide{display:none}#olderOrders[open] .older-hide{display:inline}#olderOrders[open] .older-show{display:none}.older-order-day{margin-top:18px}.older-order-day h3{font-size:16px;margin:10px 0;color:#405a32}</style></head><body>
 <div class="admin-wrap">
@@ -42,7 +42,7 @@
 
 <section id="settingsPanel" class="admin-section" hidden><div class="admin-section-head"><h2>ตั้งค่าร้าน</h2><button id="closeSettings" class="secondary" type="button">ปิด</button></div>
 <div class="settings-actions"><button id="manageLoyverse" class="secondary" type="button" hidden>เชื่อม Loyverse</button><button id="manageAdmins" class="secondary" type="button" hidden>จัดการแอดมิน</button></div>
-<details id="systemDetails" class="system-details"><summary>สถานะระบบ</summary><div class="settings-actions"><button id="checkReadiness" class="secondary" type="button">ตรวจอีกครั้ง</button><button id="testLineAlert" class="secondary" type="button">ทดสอบแจ้งเตือน LINE</button></div><section id="readinessReport" class="readiness-report" hidden></section></details><section id="loyversePanel" class="admin-section" hidden><h2>เชื่อม Loyverse</h2><div id="loyverseSettings"></div></section><section id="adminsPanel" class="admin-section" hidden>
+<details id="systemDetails" class="system-details"><summary>สถานะระบบ</summary><div class="settings-actions"><button id="checkReadiness" class="secondary" type="button">ตรวจอีกครั้ง</button><button id="testLineAlert" class="secondary" type="button">ทดสอบแจ้งเตือน LINE</button><button id="testTelegramAlert" class="secondary" type="button">ทดสอบแจ้งเตือน Telegram</button></div><section id="readinessReport" class="readiness-report" hidden></section></details><section id="loyversePanel" class="admin-section" hidden><h2>เชื่อม Loyverse</h2><div id="loyverseSettings"></div></section><section id="adminsPanel" class="admin-section" hidden>
  <div class="admin-section-head"><h2>จัดการแอดมิน</h2><button id="refreshAdmins" class="secondary" type="button">อัปเดต</button></div>
  <p id="adminRosterSummary" class="caption" role="status"></p>
  <p class="caption">แอดมินทุกคนจะได้รับแจ้งเตือนออเดอร์และเข้าหลังบ้านได้ ให้ผู้ที่จะเพิ่มเปิดหน้าเมนูสั่งอาหารและเข้าสู่ระบบ LINE อย่างน้อยหนึ่งครั้ง พร้อมเพิ่มเพื่อน LINE OA ของร้านก่อน</p>

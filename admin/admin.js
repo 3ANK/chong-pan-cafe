@@ -274,6 +274,15 @@ $('testLineAlert').addEventListener('click',async()=>{
  if(!confirm('ส่งข้อความทดสอบไปยัง LINE เจ้าของร้าน?'))return;
  try{const r=await request('admin/line/test',{method:'POST',body:'{}'});if(r.acceptedByLine)alert('LINE รับคำขอแล้ว ตรวจมือถือเจ้าของร้านอีกครั้ง')}catch(e){alert(e.message)}
 });
+$('testTelegramAlert').addEventListener('click',async event=>{
+ const button=event.currentTarget;
+ button.disabled=true;
+ try{
+  await request('admin/telegram/test',{method:'POST',body:'{}'});
+  alert('Telegram รับข้อความทดสอบแล้ว กรุณาตรวจแชตร้าน');
+ }catch(e){alert(e.message)}
+ finally{button.disabled=false}
+});
 $('toggleShop').addEventListener('click',async()=>{
  try{
   const s=await request('admin/readiness');

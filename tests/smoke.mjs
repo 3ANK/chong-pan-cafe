@@ -155,6 +155,25 @@ db.raw.exec("UPDATE catalog_price_reviews SET verified=1 WHERE product_id='7'");
 r=await call('health');assert.equal(r.data.ordersEnabled,false); // Another gate: LINE must be configured.
 env.LINE_MESSAGING_ACCESS_TOKEN='fake-test-token';env.LIFF_ID='2011951537-7IBatvMp';env.LIFF_ENDPOINT_CONFIRMED='true';
 r=await call('admin/line/test','POST',{},cookie);assert.equal(r.status,200);assert.equal(r.data.acceptedByLine,true);assert.equal(r.data.confirmOnPhone,true);
+r=await call('admin/telegram/test','POST',{},cookie);assert.equal(r.status,409);
+{
+ const mockedLineFetch=globalThis.fetch;
+ env.TELEGRAM_BOT_TOKEN='test-bot';env.TELEGRAM_CHAT_ID='12345';
+ try{
+  globalThis.fetch=async (url,options)=>{
+   assert.equal(url,'https://api.telegram.org/bottest-bot/sendMessage');
+   const payload=JSON.parse(options.body);
+   assert.equal(payload.chat_id,'12345');
+   assert.match(payload.text,/ทดสอบแจ้งเตือน Telegram/);
+   return Response.json({ok:true});
+  };
+  r=await call('admin/telegram/test','POST',{});assert.equal(r.status,403);
+  r=await call('admin/telegram/test','POST',{},cookie);assert.equal(r.status,200);
+ }finally{
+  delete env.TELEGRAM_BOT_TOKEN;delete env.TELEGRAM_CHAT_ID;
+  globalThis.fetch=mockedLineFetch;
+ }
+}
 r=await call('admin/shop','POST',{enabled:false},cookie);assert.equal(r.status,200);assert.equal(r.data.shopEnabled,false);
 r=await call('health');assert.equal(r.data.ordersEnabled,false);
 r=await call('admin/shop','POST',{enabled:true,ownerConfirmed:false},cookie);assert.equal(r.status,400);
