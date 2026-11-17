@@ -212,12 +212,20 @@ async function createOrder(req,env,db,s){
  const balance=await db.prepare('SELECT points FROM members WHERE line_user_id=?').bind(s.sub).first();
  const orderUrl='https://chongpan-ordering-v2.pages.dev/admin/?order='+encodeURIComponent(id);
  const fulfillmentLabel=data.fulfillment==='delivery'?'จัดส่ง':data.fulfillment==='dinein'?'สั่งจากในร้าน':'รับที่ร้าน';
+ const lines=validated.map(i=>i.qty+'× '+i.name+(i.sweetness?' ('+i.sweetness+')':'')+(i.egg?' +'+eggNames[i.egg]+ (isTopping(i.egg)?'':' '+i.eggQty+' ฟอง/จาน')+' (+'+i.extra+' บาท/จาน)':'')+(i.note?' | '+i.note:''));
+ const telegramItems=[];
+ let itemLength=0;
+ for(const line of lines){
+  if(itemLength+line.length+3>3000)break;
+  telegramItems.push('• '+line);
+  itemLength+=line.length+3;
+ }
+ if(telegramItems.length<lines.length)telegramItems.push('… อีก '+(lines.length-telegramItems.length)+' รายการ ดูทั้งหมดในหลังบ้าน');
  const telegramMessage=['ชง&ปั่น · ออเดอร์ใหม่ #'+id.slice(0,8).toUpperCase(),
   redeemOnly?'แลกแต้ม · ไม่ต้องรับเงิน':'ยอด '+total+' บาท · '+(paymentMethod==='qr'?'สแกน QR':'เงินสด'),
-  fulfillmentLabel,orderUrl].join('\n');
+  fulfillmentLabel,...telegramItems,orderUrl].join('\n');
  let alertOk=telegramConfigured(env)&&(await sendTelegram(env,telegramMessage)).ok;
  if(!alertOk&&env.LINE_MESSAGING_ACCESS_TOKEN)try{
-  const lines=validated.map(i=>i.qty+'× '+i.name+(i.sweetness?' ('+i.sweetness+')':'')+(i.egg?' +'+eggNames[i.egg]+ (isTopping(i.egg)?'':' '+i.eggQty+' ฟอง/จาน')+' (+'+i.extra+' บาท/จาน)':'')+(i.note?' | '+i.note:''));
   const msg=['มีออเดอร์ใหม่ #'+id.slice(0,8),
    ...(redeemOnly?['ประเภท: แลกแต้มเป็นเมนู']:[]),
    'ลูกค้า: '+name,...(redeemOnly?[]:['ยอดชำระ: '+total+' บาท']),
