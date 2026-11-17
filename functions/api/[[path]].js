@@ -387,10 +387,24 @@ async function testOwnerLinePush(env,db){
  const now=new Date().toLocaleString('th-TH',{timeZone:'Asia/Bangkok'});
  const message='ทดสอบระบบแจ้งออเดอร์ร้านชง&ปั่น\n'+now+'\nข้อความนี้เป็นการทดสอบ ไม่ใช่ออเดอร์จริง';
  const results=await Promise.all(recipients.map(async to=>{
-  try{return (await fetch('https://api.line.me/v2/bot/message/push',{method:'POST',headers:{Authorization:'Bearer '+env.LINE_MESSAGING_ACCESS_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({to,messages:[{type:'text',text:message}]}),signal:AbortSignal.timeout(8000)})).ok}catch{return false}
+  try{
+   const response=await fetch('https://api.line.me/v2/bot/message/push',{method:'POST',headers:{Authorization:'Bearer '+env.LINE_MESSAGING_ACCESS_TOKEN,'Content-Type':'application/json'},body:JSON.stringify({to,messages:[{type:'text',text:message}]}),signal:AbortSignal.timeout(8000)});
+   if(response.ok)return null;
+   const detail=await response.json().catch(()=>null);
+   if(response.status===429&&/monthly limit/i.test(detail?.message||''))return 'HTTP 429 โควตาข้อความรายเดือน';
+   if(response.status===429&&/rate limit/i.test(detail?.message||''))return 'HTTP 429 ส่งถี่เกินกำหนด';
+   if(response.status===401)return 'HTTP 401 LINE ไม่ยอมรับโทเคน';
+   if(response.status===403)return 'HTTP 403 LINE ไม่อนุญาตให้ส่ง';
+   return 'HTTP '+response.status;
+  }catch(err){
+   return err?.name==='TimeoutError'?'รอ LINE ตอบเกินเวลา':'เชื่อมต่อ LINE ไม่สำเร็จ';
+  }
  }));
- const sent=results.filter(Boolean).length;
- if(sent!==recipients.length)return fail('LINE รับข้อความทดสอบ '+sent+' จาก '+recipients.length+' บัญชี กรุณาตรวจว่าทุกแอดมินเพิ่มเพื่อน LINE OA แล้ว',502);
+ const sent=results.filter(result=>result===null).length;
+ if(sent!==recipients.length){
+  const errors=[...new Set(results.filter(Boolean))].map(error=>error+' ('+results.filter(result=>result===error).length+' บัญชี)');
+  return fail('LINE รับข้อความทดสอบ '+sent+' จาก '+recipients.length+' บัญชี · '+errors.join(' / '),502);
+ }
  return json({ok:true,acceptedByLine:true,confirmOnPhone:true,recipients:sent});
 }
 async function setShop(req,env,db){
