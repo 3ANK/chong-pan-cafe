@@ -206,9 +206,8 @@ async function loadOrders({silent=false}={}){
     const instruction=focused.status==='completed'?(focused.payment_status!=='verified'&&!isPointsRedemption(focused)&&Number(focused.total)>0?'ตรวจยอดเงินจริง แล้วกดยืนยันรับเงินด้านล่าง':'ส่งมอบเรียบร้อยแล้ว'):focused.status==='cancelled'?'ออเดอร์ถูกยกเลิกแล้ว':'ตรวจรายละเอียด แล้วเลือกดำเนินการด้านล่าง';
     status.textContent='ออเดอร์ #'+focused.id.slice(0,8).toUpperCase()+' · '+(statuses[focused.status]||focused.status)+' — '+instruction;
     if(!silent&&card){
-     const collapsed=card.closest('.completed-order');
-     if(collapsed)collapsed.open=true;
-     requestAnimationFrame(()=>card?.scrollIntoView({behavior:'smooth',block:'center'}));
+     const scrollTarget=card.closest('.completed-order')||card;
+     requestAnimationFrame(()=>scrollTarget.scrollIntoView({behavior:'smooth',block:'center'}));
     }
    }else status.textContent='ไม่พบออเดอร์ที่เปิดจาก LINE ในรายการล่าสุด กรุณารีเฟรชหรือตรวจหมายเลขออเดอร์';
   }
