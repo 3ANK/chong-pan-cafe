@@ -97,7 +97,7 @@ async function pairPosDevice(req,db){
  const d=await body(req);
  const code=text(d.code).replace(/\s/g,'');
  const label=safe(d.label||'Android POS',60);
- if(!/^\d{8}$/.test(code))return fail('กรุณากรอกรหัสจับคู่ 6 หลัก');
+ if(!/^\d{8}$/.test(code))return fail('กรุณากรอกรหัสจับคู่ 8 หลัก');
  const codeHash=await sha256(code),token=randomToken(32),tokenHash=await sha256(token);
  const deviceId=crypto.randomUUID();
  await db.batch([
