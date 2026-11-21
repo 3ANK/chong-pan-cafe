@@ -422,6 +422,15 @@ $('paymentSettingsForm').addEventListener('submit',async e=>{
  try{const s=await request('admin/payment/config',{method:'POST',body:JSON.stringify({oaId:$('oaId').value.trim(),qrPath:$('qrPath').value.trim()})});$('paymentSettingsStatus').textContent=s.qrEnabled?'บันทึกแล้ว: สแกนจ่ายพร้อมแสดง QR':'บันทึกแล้ว: สแกนจ่ายยังปิดอยู่จนกว่ารูป QR และ LINE OA ID จะครบ'}
  catch(err){alert(err.message)}finally{b.disabled=false}
 });
+$('createPosPairing').addEventListener('click',async()=>{
+ const button=$('createPosPairing'),result=$('posPairingResult');
+ button.disabled=true;result.textContent='กำลังสร้างรหัสจับคู่…';
+ try{
+  const d=await request('admin/pos/pairing',{method:'POST',body:JSON.stringify({label:'Samsung Galaxy Tab S9'})});
+  result.innerHTML='<strong style="font-size:2rem;letter-spacing:.25em">'+escapeText(d.code)+'</strong><br>กรอกรหัสนี้ในแอป CHONG&PAN POS ภายใน 5 นาที · ใช้ได้ครั้งเดียว';
+ }catch(e){result.textContent='สร้างรหัสไม่สำเร็จ: '+e.message}
+ finally{button.disabled=false}
+});
 $('logoutAdmin').addEventListener('click',async()=>{
  try{await request('auth/logout',{method:'POST',body:'{}'});if(window.liff){const info=await request('loyalty/info');await liff.init({liffId:info.liffId});if(liff.isLoggedIn())liff.logout();}location.replace('/admin/')}
  catch(e){alert('ออกจากระบบไม่สำเร็จ: '+e.message)}
