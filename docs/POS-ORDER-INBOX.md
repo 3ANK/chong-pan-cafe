@@ -12,10 +12,11 @@ The current order creation flow sends the existing order summary to the configur
 The Telegram message remains as before: order short ID, amount/payment method, fulfillment, item list/modifiers, and the existing admin deep link.
 
 ## POS device API
-Configure a Cloudflare Pages secret named `POS_DEVICE_TOKEN` with a cryptographically random value of at least 32 characters. Never commit it to GitHub or embed it in an APK.
+Pair devices using the owner-only pairing panel in the admin dashboard. It issues an eight-digit, single-use code valid for five minutes. The Android app exchanges it at `POST /api/pos/pair` for a random device token. Only the SHA-256 token hash is stored in D1; the raw token is returned once to the app and must be stored in Android Keystore. Never commit or log the token.
 
+- `POST /api/pos/pair` (no prior token): body `{"code":"12345678","label":"Samsung Tab S9"}`; returns `accessToken` once.
 - `GET /api/pos/orders`
-  - Header: `Authorization: Bearer <POS_DEVICE_TOKEN>`
+  - Header: `Authorization: Bearer <device access token>`
   - Returns active orders in `pending`, `accepted`, `preparing`, or `ready` status using the existing order serializer, including items, modifiers, fulfillment, payment status, and existing Loyverse sync metadata.
 - `PATCH /api/pos/orders`
   - Same Authorization header.
@@ -25,8 +26,9 @@ Configure a Cloudflare Pages secret named `POS_DEVICE_TOKEN` with a cryptographi
 Unauthorized requests receive HTTP 401. The endpoint does not expose customer LINE identifiers.
 
 ## Important security / deployment notes
-1. Do not deploy this branch to production until a POS-device credential provisioning and rotation method is selected.
-2. A bearer token embedded in an APK can be extracted. For production, use a pairing flow that exchanges a one-time pairing code for a revocable device credential, or another short-lived device-auth design. The static secret endpoint is for controlled integration testing only.
+1. Apply `migrations/021_pos_device_pairing.sql` to the preview D1 database before deploying this branch.
+2. Device tokens are revocable by setting `revoked_at` in `pos_devices`; add a device-management screen before broad rollout.
+3. Pairing endpoints should be protected with Cloudflare rate limiting before public production rollout.
 3. Do not reuse the LINE Messaging token, Telegram bot token, or Loyverse token as the POS credential.
 4. Keep Telegram Bot and group settings unchanged. Do not configure LINE owner-push fallback.
 5. The Android app integration and Firebase push notifications are not included in this backend-only change yet. The POS should initially poll this authenticated endpoint while the app is foregrounded; FCM/background delivery requires Firebase project configuration and device registration.
@@ -34,8 +36,8 @@ Unauthorized requests receive HTTP 401. The endpoint does not expose customer LI
 7. The API returns only active orders, maximum 100, sorted newest first. Poll with a modest interval and deduplicate by order UUID on the device.
 
 ## Test plan
-- Set `POS_DEVICE_TOKEN` only in a non-production Pages preview environment.
-- GET without token: expect 401.
+- Use a non-production Pages preview environment and apply migration 021 to its D1 binding.
+- GET without token: expect 401. Pair with an unexpired code, then verify the code cannot be reused.
 - GET with token: expect active orders and nested item details.
 - PATCH invalid transition: expect 409.
 - PATCH valid transition: expect the same result as the admin dashboard.
