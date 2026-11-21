@@ -88,7 +88,7 @@ async function posDeviceAuthorized(req,db){
 async function createPosPairing(req,db){
  const d=await body(req);
  const label=safe(d.label||'Samsung Tab POS',60);
- const code=String(crypto.getRandomValues(new Uint32Array(1))[0]%1000000).padStart(6,'0');
+ const code=String(crypto.getRandomValues(new Uint32Array(1))[0]%100000000).padStart(8,'0');
  const hash=await sha256(code);
  await db.prepare("INSERT INTO pos_pairing_codes(code_hash,device_label,expires_at) VALUES(?,?,?)").bind(hash,label,Math.floor(Date.now()/1000)+300).run();
  return json({ok:true,code,expiresInSeconds:300,label});
@@ -97,7 +97,7 @@ async function pairPosDevice(req,db){
  const d=await body(req);
  const code=text(d.code).replace(/\s/g,'');
  const label=safe(d.label||'Android POS',60);
- if(!/^\d{6}$/.test(code))return fail('กรุณากรอกรหัสจับคู่ 6 หลัก');
+ if(!/^\d{8}$/.test(code))return fail('กรุณากรอกรหัสจับคู่ 6 หลัก');
  const codeHash=await sha256(code),token=randomToken(32),tokenHash=await sha256(token);
  const deviceId=crypto.randomUUID();
  await db.batch([
