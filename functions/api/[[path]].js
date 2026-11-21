@@ -76,7 +76,7 @@ async function confirmPayment(req,db){
 const hex=b=>Array.from(new Uint8Array(b),x=>x.toString(16).padStart(2,'0')).join('');
 async function sha256(value){return hex(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value)))}
 function randomToken(bytes=32){const a=crypto.getRandomValues(new Uint8Array(bytes));return b64(a)}
-function posBearer(req){return (req.headers.get('Authorization')||'').replace(/^Bearer\\s+/i,'')}
+function posBearer(req){return (req.headers.get('Authorization')||'').replace(/^Bearer\s+/i,'')}
 async function posDeviceAuthorized(req,db){
  const token=posBearer(req);if(token.length<40||token.length>200)return null;
  const hash=await sha256(token);
@@ -95,9 +95,9 @@ async function createPosPairing(req,db){
 }
 async function pairPosDevice(req,db){
  const d=await body(req);
- const code=text(d.code).replace(/\\s/g,'');
+ const code=text(d.code).replace(/\s/g,'');
  const label=safe(d.label||'Android POS',60);
- if(!/^\\d{6}$/.test(code))return fail('กรุณากรอกรหัสจับคู่ 6 หลัก');
+ if(!/^\d{6}$/.test(code))return fail('กรุณากรอกรหัสจับคู่ 6 หลัก');
  const codeHash=await sha256(code),token=randomToken(32),tokenHash=await sha256(token);
  const deviceId=crypto.randomUUID();
  await db.batch([
