@@ -105,7 +105,7 @@ async function readiness(db,env){
   {id:'menu',label:'ยืนยันราคาสินค้าที่เปิดขายทุกเมนู',ok:Number(catalog?.unverified||0)===0},
   {id:'liff',label:'ตั้งค่า LINE Login / LIFF ID / Session',ok:!!env.LINE_CHANNEL_ID&&!!env.LIFF_ID&&!!env.SESSION_SECRET},
   {id:'liff_endpoint',label:'ยืนยันการเปลี่ยน LIFF Endpoint และทดสอบ LINE Login จริง',ok:env.LIFF_ENDPOINT_CONFIRMED==='true'},
-  {id:'alert_token',label:'ตั้งค่าช่องทางแจ้งออเดอร์ LINE หรือ Telegram',ok:!!env.LINE_MESSAGING_ACCESS_TOKEN||telegramConfigured(env)},
+  {id:'alert_token',label:'ตั้งค่า Telegram Bot สำหรับแจ้งออเดอร์',ok:telegramConfigured(env)},
   {id:'owner',label:'ตั้งค่า LINE ผู้ดูแลร้าน',ok:!!env.OWNER_LINE_USER_ID},
   {id:'shop_cloudflare',label:'Cloudflare SHOP_ENABLED=true',ok:env.SHOP_ENABLED==='true'},
   {id:'shop_database',label:'ตั้งค่าเปิดร้านในฐานข้อมูล',ok:flag?.value==='1'}
@@ -230,31 +230,9 @@ async function createOrder(req,env,db,s){
  const telegramMessage=['ชง&ปั่น · ออเดอร์ใหม่ #'+id.slice(0,8).toUpperCase(),
   redeemOnly?'แลกแต้ม · ไม่ต้องรับเงิน':'ยอด '+total+' บาท · '+(paymentMethod==='qr'?'สแกน QR':'เงินสด'),
   fulfillmentLabel,...telegramItems,orderUrl].join('\n');
- let alertOk=telegramConfigured(env)&&(await sendTelegram(env,telegramMessage)).ok;
- if(!alertOk&&env.LINE_MESSAGING_ACCESS_TOKEN)try{
-  const msg=['มีออเดอร์ใหม่ #'+id.slice(0,8),
-   ...(redeemOnly?['ประเภท: แลกแต้มเป็นเมนู']:[]),
-   'ลูกค้า: '+name,...(redeemOnly?[]:['ยอดชำระ: '+total+' บาท']),
-   ...(pointsUsed?['ใช้แลกเมนู: '+pointsUsed+' แต้ม · ไม่ต้องรับเงิน']:[]),
-   'ชำระเงิน: '+(paymentMethod==='points'?'แลกแต้ม · ไม่ต้องรับเงิน':paymentMethod==='qr'?'สแกน QR · รอตรวจสลิปใน LINE OA':'เงินสด · รอรับเงินจริง'),
-   'วิธีรับ: '+fulfillmentLabel,
-   ...(data.fulfillment==='delivery'?['ที่อยู่: '+address]:[]),
-   ...(pickupTimeLabel?['เวลารับ: '+pickupTimeLabel]:[]),
-   ...(pickupPhone?['เบอร์โทร: '+pickupPhone]:[]),
-   ...(customerNote?['หมายเหตุ: '+customerNote]:[]),...lines].join('\n').slice(0,4350)+
-   '\n\n📲 กดรับ / จัดการออเดอร์นี้:\n'+orderUrl;
-  const recipients=await adminLineUserIds(db,env);
-  const results=await Promise.all(recipients.map(async to=>{
-   try{
-    const push=await fetch('https://api.line.me/v2/bot/message/push',{
-     method:'POST',headers:{Authorization:'Bearer '+env.LINE_MESSAGING_ACCESS_TOKEN,'Content-Type':'application/json'},
-     body:JSON.stringify({to,messages:[{type:'text',text:msg}]}),signal:AbortSignal.timeout(8000)
-    });
-    return push.ok;
-   }catch{return false}
-  }));
-  alertOk=recipients.length>0&&results.every(Boolean);
- }catch{/* Order is saved even if notifications fail. */}
+ // Telegram is the sole owner order-alert channel. Do not fall back to LINE,
+ // because the shop's LINE Messaging quota is limited.
+ const alertOk=telegramConfigured(env)&&(await sendTelegram(env,telegramMessage)).ok;
  await db.prepare('INSERT INTO order_notifications(order_id,delivered) VALUES(?,?)').bind(id,alertOk?1:0).run();
  return json({orderId:id,total,pointsUsed,pointsRemaining:Number(balance?.points||0),paymentMethod,ownerAlertOk:alertOk},201);
 }
