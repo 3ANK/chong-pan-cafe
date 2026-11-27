@@ -75,7 +75,7 @@ function orderItemSubtotal(i){
  return pair===null?(price+eggExtra)*qty:Math.floor(qty/2)*pair+(qty%2)*price;
 }
 
-let queueFilter='all',latestQueueOrders=[];
+let queueFilter='all',latestQueueOrders=[],todayRevenue=0;
 function orderDate(value){
  if(value==null||value==='')return null;
  const text=String(value);
@@ -166,11 +166,12 @@ function groupRecentOrders(orders,now=new Date()){
  return {current,previous};
 }
 function recentOrdersMarkup(orders,olderOpen){
- if(!orders.length)return '<p class="empty">ยังไม่มีออเดอร์</p>';
+ const todayHeading=count=>'<h3 class="queue-day-heading">วันนี้ ('+count+') · รายได้ '+fmt(todayRevenue)+'</h3>';
+ if(!orders.length)return todayHeading(0)+'<p class="empty">ยังไม่มีออเดอร์</p>';
  const {current,previous}=groupRecentOrders(orders);
  const visible=current.filter(o=>queueFilter==='all'||o.status===queueFilter);
  const today=orderDayKey(new Date()),carry=visible.filter(o=>orderDayKey(o.created_at)!==today),todays=visible.filter(o=>orderDayKey(o.created_at)===today);
- let html=queueMarkup(orders)+(carry.length?'<h3 class="queue-day-heading">ออเดอร์ค้างวันก่อน ('+carry.length+')</h3>'+carry.map(queueOrderCard).join(''):'')+(todays.length?'<h3 class="queue-day-heading">วันนี้ ('+todays.length+')</h3>'+todays.map(queueOrderCard).join(''):'');
+ let html=queueMarkup(orders)+(carry.length?'<h3 class="queue-day-heading">ออเดอร์ค้างวันก่อน ('+carry.length+')</h3>'+carry.map(queueOrderCard).join(''):'')+todayHeading(todays.length)+todays.map(queueOrderCard).join('');
  if(!visible.length)html+='<p class="empty">ไม่มีออเดอร์ในคิวที่เลือก</p>';
  if(previous.size&&queueFilter==='all'){
   const count=[...previous.values()].reduce((n,items)=>n+items.length,0);
@@ -191,7 +192,8 @@ async function loadOrders({silent=false}={}){
  const olderOpen=!!$('olderOrders')?.open;
  const expanded=new Set(Array.from(el.querySelectorAll('.loyverse-compact[open]')).map(d=>d.closest('[data-order-id]')?.dataset.orderId).filter(Boolean));
  try{
-  const orders=(await request('admin/orders')).orders;
+  const {orders,todayRevenue:revenue}=await request('admin/orders');
+  todayRevenue=revenue;
   latestQueueOrders=orders;
   if(!silent&&selectedOrderId)queueFilter='all';
   renderQueue(orders);
