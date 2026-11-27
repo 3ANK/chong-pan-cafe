@@ -34,12 +34,11 @@ const dineInAddressMarker='chongpan:fulfillment:dinein';
 async function adminOrders(db){
  const [orders,revenue]=await Promise.all([
   getOrders(db),
-  db.prepare(`SELECT COALESCE(SUM(total),0) AS total FROM orders
-   WHERE created_at >= datetime('now','+7 hours','start of day','-7 hours')
-     AND created_at < datetime('now','+7 hours','start of day','+1 day','-7 hours')
-     AND payment_status='verified' AND status<>'cancelled' AND total>0`).first()
+  db.prepare(`SELECT date(created_at,'+7 hours') AS day,SUM(total) AS total FROM orders
+   WHERE payment_status='verified' AND status<>'cancelled' AND total>0
+   GROUP BY day`).all()
  ]);
- return json({orders,todayRevenue:revenue.total});
+ return json({orders,revenueByDay:Object.fromEntries(revenue.results.map(({day,total})=>[day,total]))});
 }
 async function getOrders(db,where='',args=[]){const q=`SELECT * FROM orders ${where} ORDER BY created_at DESC LIMIT 100`;const result=await db.prepare(q).bind(...args).all();const rows=result.results||[];if(!rows.length)return [];const ids=rows.map(x=>x.id);const binds=ids.map(()=>'?').join(',');const [itemResult,pointsResult]=await Promise.all([
  db.prepare(`SELECT * FROM order_items WHERE order_id IN (${binds})`).bind(...ids).all(),
